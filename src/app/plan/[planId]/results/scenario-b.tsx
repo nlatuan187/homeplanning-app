@@ -78,42 +78,37 @@ export default function ResultsScenarioB({
     const displayYear = selectedYearState; // The year being explained
     const currentYearProjection = projectionData.find(p => p.year === currentYear);
 
-    // Income components for the selected/display year
-    const luongNamMucTieu = Math.round(selectedYearProjection.primaryIncome / 12); // Monthly
-    const thuNhapVoChongNamMucTieu = Math.round(selectedYearProjection.spouseIncome / 12); // Monthly
-    const thuNhapKhacNamMucTieu = Math.round(selectedYearProjection.otherIncome / 12); // Monthly
-    
-    // Verified total income for the selected/display year (monthly)
-    const tongThuThangDisplay = Math.round(selectedYearProjection.annualIncome / 12);
+    const formatToLocaleOneDecimal = (value: number) => {
+      return parseFloat(value.toFixed(1)).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    };
+    const formatToNumberOneDecimal = (value: number) => {
+      return parseFloat(value.toFixed(1));
+    };
 
-    // Income components for the current year (for "Lương hiện tại", "Thu nhập khác hiện tại")
-    const luongHienTaiThang = Math.round((currentYearProjection?.primaryIncome || 0) / 12);
-    const luongHienTaiNam = luongHienTaiThang * 12;
-    const thuNhapKhacHienTaiThang = Math.round((currentYearProjection?.otherIncome || 0) / 12);
-    const thuNhapKhacHienTaiNam = thuNhapKhacHienTaiThang * 12;
-    // Spouse income for current year (if needed for display, though design doesn't explicitly show it for "hiện tại")
-    // const thuNhapVoChongHienTaiThang = Math.round((currentYearProjection?.spouseIncome || 0) / 12);
+    // Income components for the selected/display year (monthly, one decimal)
+    const luongNamMucTieu = formatToNumberOneDecimal(selectedYearProjection.primaryIncome / 12);
+    const thuNhapVoChongNamMucTieu = formatToNumberOneDecimal(selectedYearProjection.spouseIncome / 12);
+    const thuNhapKhacNamMucTieu = formatToNumberOneDecimal(selectedYearProjection.otherIncome / 12);
+    const tongThuThangDisplay = formatToNumberOneDecimal(selectedYearProjection.annualIncome / 12);
 
-    const mucTangLuong = selectedYearProjection.pctSalaryGrowth; // %
-    // Assuming 0% growth for other income as per design D2.1 "Mức tăng thu nhập khác: 0%/năm"
-    // const mucTangThuNhapKhac = 0; // % - This needs to come from plan assumptions if variable
-    // Spouse income growth is assumed to be same as primary pctSalaryGrowth in generateProjections
+    // Income components for the current year (monthly, one decimal for display consistency, annual as is)
+    const luongHienTaiThang = formatToNumberOneDecimal((currentYearProjection?.primaryIncome || 0) / 12);
+    const luongHienTaiNam = Math.round(currentYearProjection?.primaryIncome || 0);
+    const thuNhapKhacHienTaiThang = formatToNumberOneDecimal((currentYearProjection?.otherIncome || 0) / 12);
+    const thuNhapKhacHienTaiNam = Math.round(currentYearProjection?.otherIncome || 0);
 
-    const chiPhiHienTaiThang = Math.round((currentYearProjection?.annualExpenses || 0) / 12);
-    const chiPhiHienTaiNam = chiPhiHienTaiThang * 12;
-    const mucTangChiPhi = selectedYearProjection.pctExpenseGrowth; // %
-    const chiPhiSinhHoatNamMucTieu = Math.round(selectedYearProjection.annualExpenses / 12); // Monthly
+    const mucTangLuong = selectedYearProjection.pctSalaryGrowth;
 
-    const soTienVay = Math.round(selectedYearProjection.loanAmountNeeded);
-    // const laiSuatVay = selectedYearProjection.loanInterestRate; // This should come from plan.loanInterestRate
-    // const thoiHanVay = selectedYearProjection.loanTermMonths / 12; // years
-    const tienTraGopHangThang = Math.round(selectedYearProjection.monthlyPayment);
+    // Expense components (monthly, one decimal)
+    const chiPhiHienTaiThang = formatToNumberOneDecimal((currentYearProjection?.annualExpenses || 0) / 12);
+    const chiPhiHienTaiNam = Math.round(currentYearProjection?.annualExpenses || 0);
+    const mucTangChiPhi = selectedYearProjection.pctExpenseGrowth;
+    const chiPhiSinhHoatNamMucTieu = formatToNumberOneDecimal(selectedYearProjection.annualExpenses / 12);
 
-    const tongChiThang = chiPhiSinhHoatNamMucTieu + tienTraGopHangThang;
-    // const tongChiNam = tongChiThang * 12;
-
-    const ketLuanBuffer = Math.round(selectedYearProjection.buffer);
-
+    const soTienVay = Math.round(selectedYearProjection.loanAmountNeeded); // Keep as integer for "triệu"
+    const tienTraGopHangThang = formatToNumberOneDecimal(selectedYearProjection.monthlyPayment);
+    const tongChiThang = formatToNumberOneDecimal(chiPhiSinhHoatNamMucTieu + tienTraGopHangThang); // Recalculate sum with one decimal
+    const ketLuanBuffer = formatToNumberOneDecimal(selectedYearProjection.buffer);
 
     return (
       <div className="w-full space-y-6 p-4 bg-black text-slate-100"> {/* Removed max-w classes */}
@@ -138,29 +133,25 @@ export default function ResultsScenarioB({
         <div className="space-y-3 p-1 md:p-2">
           <h2 className="text-lg md:text-xl font-semibold">Tổng thu <span className="text-sm md:text-base font-normal text-slate-400">(thu nhập từ công việc chính + thu nhập khác)</span></h2>
           <div className="text-sm md:text-base space-y-1 text-slate-300">
-            <div className="flex justify-between"><span>Lương hiện tại:</span> <span className="text-slate-100">{luongHienTaiThang.toLocaleString()} triệu/tháng → {luongHienTaiNam.toLocaleString()} triệu/năm</span></div>
+            <div className="flex justify-between"><span>Lương hiện tại:</span> <span className="text-slate-100">{formatToLocaleOneDecimal(luongHienTaiThang)} triệu/tháng → {luongHienTaiNam.toLocaleString()} triệu/năm</span></div>
             <div className="flex justify-between"><span>Mức tăng lương:</span> <span className="text-slate-100">{mucTangLuong}%/năm</span></div>
-            <div className="flex justify-between"><span>Lương năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{luongNamMucTieu.toLocaleString()} triệu/tháng</span></div>
+            <div className="flex justify-between"><span>Lương năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(luongNamMucTieu)} triệu/tháng</span></div>
             
-            {thuNhapVoChongNamMucTieu > 0 && (
-              <>
-                <hr className="border-slate-700 my-1" />
-                {/* Assuming spouse income starts from 0 if not married initially, or grows from current spouse income */}
-                <div className="flex justify-between"><span>Thu nhập vợ/chồng năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{thuNhapVoChongNamMucTieu.toLocaleString()} triệu/tháng</span></div>
-              </>
-            )}
+            {/* Always show spouse income line, even if 0 */}
+            <hr className="border-slate-700 my-1" />
+            <div className="flex justify-between"><span>Thu nhập vợ/chồng năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(thuNhapVoChongNamMucTieu)} triệu/tháng</span></div>
 
             <hr className="border-slate-700 my-1" />
-            <div className="flex justify-between"><span>Thu nhập khác hiện tại:</span> <span className="text-slate-100">{thuNhapKhacHienTaiThang.toLocaleString()} triệu/tháng → {thuNhapKhacHienTaiNam.toLocaleString()} triệu/năm</span></div>
+            <div className="flex justify-between"><span>Thu nhập khác hiện tại:</span> <span className="text-slate-100">{formatToLocaleOneDecimal(thuNhapKhacHienTaiThang)} triệu/tháng → {thuNhapKhacHienTaiNam.toLocaleString()} triệu/năm</span></div>
             <div className="flex justify-between"><span>Mức tăng thu nhập khác:</span> <span className="text-slate-100">0%/năm</span></div>
-            <div className="flex justify-between"><span>Thu nhập khác năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{thuNhapKhacNamMucTieu.toLocaleString()} triệu/tháng</span></div>
+            <div className="flex justify-between"><span>Thu nhập khác năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(thuNhapKhacNamMucTieu)} triệu/tháng</span></div>
           </div>
           <div className="bg-slate-800 p-3 rounded-md text-center"> {/* Changed to bg-slate-800 */}
             <p className="font-medium">
-              Tổng thu = {luongNamMucTieu.toLocaleString()}
-              {thuNhapVoChongNamMucTieu > 0 ? ` + ${thuNhapVoChongNamMucTieu.toLocaleString()} (V/C)` : ""}
-              {thuNhapKhacNamMucTieu > 0 ? ` + ${thuNhapKhacNamMucTieu.toLocaleString()} (Khác)` : ""}
-              {' = '}{tongThuThangDisplay.toLocaleString()} triệu/tháng
+              Tổng thu = {formatToLocaleOneDecimal(luongNamMucTieu)}
+              {' + '}{formatToLocaleOneDecimal(thuNhapVoChongNamMucTieu)} (V/C)
+              {' + '}{formatToLocaleOneDecimal(thuNhapKhacNamMucTieu)} (Khác)
+              {' = '}{formatToLocaleOneDecimal(tongThuThangDisplay)} triệu/tháng
             </p>
           </div>
         </div>
@@ -169,18 +160,18 @@ export default function ResultsScenarioB({
         <div className="space-y-3 p-1 md:p-2">
           <h2 className="text-lg md:text-xl font-semibold">Tổng chi <span className="text-sm md:text-base font-normal text-slate-400">(chi phí sinh hoạt + tiền trả góp vay mua nhà)</span></h2>
           <div className="text-sm md:text-base space-y-1 text-slate-300">
-            <div className="flex justify-between"><span>Chi phí hiện tại:</span> <span className="text-slate-100">{chiPhiHienTaiThang.toLocaleString()} triệu/tháng → {chiPhiHienTaiNam.toLocaleString()} triệu/năm</span></div>
+            <div className="flex justify-between"><span>Chi phí hiện tại:</span> <span className="text-slate-100">{formatToLocaleOneDecimal(chiPhiHienTaiThang)} triệu/tháng → {chiPhiHienTaiNam.toLocaleString()} triệu/năm</span></div>
             <div className="flex justify-between"><span>Mức tăng chi phí:</span> <span className="text-slate-100">{mucTangChiPhi}%/năm</span></div>
-            <div className="flex justify-between"><span>Chi phí năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{chiPhiSinhHoatNamMucTieu.toLocaleString()} triệu/tháng</span></div>
+            <div className="flex justify-between"><span>Chi phí năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(chiPhiSinhHoatNamMucTieu)} triệu/tháng</span></div>
             <hr className="border-slate-700 my-1" />
             <div className="flex justify-between"><span>Số tiền vay để mua nhà:</span> <span className="text-slate-100">{soTienVay.toLocaleString()} triệu</span></div>
             {/* Values for interest rate and term now come from plan props */}
             <div className="flex justify-between"><span>Lãi suất vay:</span> <span className="text-slate-100">{planLoanInterestRate}%/năm</span></div>
             <div className="flex justify-between"><span>Thời hạn vay:</span> <span className="text-slate-100">{planLoanTermMonths / 12} năm</span></div>
-            <div className="flex justify-between"><span>Tiền trả góp hàng tháng:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{tienTraGopHangThang.toLocaleString()} triệu/tháng</span></div>
+            <div className="flex justify-between"><span>Tiền trả góp hàng tháng:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(tienTraGopHangThang)} triệu/tháng</span></div>
           </div>
           <div className="bg-slate-800 p-3 rounded-md text-center"> {/* Changed to bg-slate-800 */}
-            <p className="font-medium">Tổng chi = {chiPhiSinhHoatNamMucTieu.toLocaleString()} + {tienTraGopHangThang.toLocaleString()} = {tongChiThang.toLocaleString()} triệu/tháng</p>
+            <p className="font-medium">Tổng chi = {formatToLocaleOneDecimal(chiPhiSinhHoatNamMucTieu)} + {formatToLocaleOneDecimal(tienTraGopHangThang)} = {formatToLocaleOneDecimal(tongChiThang)} triệu/tháng</p>
           </div>
         </div>
         
@@ -188,7 +179,7 @@ export default function ResultsScenarioB({
         <div className="bg-green-500/20 p-4 rounded-lg text-sm md:text-base">
           <p className="font-semibold text-green-300 mb-1">Kết luận:</p>
           <p className="text-slate-200">
-            Tổng thu là {tongThuThangDisplay.toLocaleString()} triệu/tháng, lớn hơn tổng chi là {tongChiThang.toLocaleString()} triệu/tháng, đồng nghĩa hàng tháng bạn vẫn còn dư <span className="font-semibold text-green-300">{ketLuanBuffer.toLocaleString()} triệu</span> để chi tiêu và trả nợ.
+            Tổng thu là {formatToLocaleOneDecimal(tongThuThangDisplay)} triệu/tháng, lớn hơn tổng chi là {formatToLocaleOneDecimal(tongChiThang)} triệu/tháng, đồng nghĩa hàng tháng bạn vẫn còn dư <span className="font-semibold text-green-300">{formatToLocaleOneDecimal(ketLuanBuffer)} triệu</span> để chi tiêu và trả nợ.
           </p>
         </div>
 
