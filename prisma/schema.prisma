@@ -1,0 +1,105 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Connection string from environment variable
+}
+
+// User model linked to Clerk userId
+model User {
+  id        String   @id @unique // Clerk User ID
+  email     String   @unique   // Store email for reference/potential future use
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plans     Plan[]   // Relation to user's plans
+  feedback  Feedback[] // Relation to user's feedback
+}
+
+// Represents user feedback
+model Feedback {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  userId    String   // Foreign key linking to the User model (Clerk ID)
+  userEmail String?  // Store email for reference
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Represents a single financial plan created by a user
+model Plan {
+  id        String   @id @default(cuid()) // Unique plan identifier
+  userId    String   // Foreign key linking to the User model (Clerk ID)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Define the relation
+
+  planName  String?  // Optional name for the plan (e.g., "My First Apartment Plan")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Store the INPUTS used for this specific plan ---
+  // Goal Inputs
+  yearsToPurchase    Int
+  targetHousePriceN0 Float // Store as Float/Decimal for precision
+  targetHouseType    String? // Or Enum if defined
+  targetLocation     String?
+
+  // User Data Inputs (Snapshot at time of plan creation/update)
+  maritalStatus String // "Single", "Married/Partnered"
+  hasDependents Boolean
+  numberOfDependents Int?
+  // Store future plans info if provided
+  plansMarriageBeforeTarget Boolean?
+  targetMarriageYear        Int?
+  plansChildBeforeTarget    Boolean?
+  targetChildYear           Int?
+
+  // Financial Inputs
+  initialSavingsGoal           Float
+  incomeLastYear               Float
+  monthlyOtherIncome           Float
+  monthlyLivingExpenses        Float
+  monthlyNonHousingDebt        Float
+  currentAnnualInsurancePremium Float
+  spouseMonthlyIncome          Float? // Nullable if not applicable/provided
+
+  // Assumptions/Overrides Used for this plan
+  pctHouseGrowth       Float    @default(10.0) // Store the value used
+  pctSalaryGrowth      Float    @default(7.0)
+  pctExpenseGrowth     Float    @default(4.0)
+  pctInvestmentReturn  Float    @default(11.0)
+  factorMarriage       Float    @default(60.0)
+  factorChild          Float    @default(40.0)
+  loanInterestRate     Float    @default(11.0)
+  loanTermMonths       Int      @default(300)
+  paymentMethod        String?  @default("fixed") // "fixed" or "decreasing"
+
+  // --- Store the RESULT of the plan ---
+  affordabilityOutcome String? // "ScenarioA", "ScenarioB"
+  firstViableYear      Int?    // The actual year (e.g., 2027), null if ScenarioA
+  confirmedPurchaseYear Int?   // The year user selected after comparison, null initially or if ScenarioA
+
+  // --- Report caching fields ---
+  reportGeneratedAt      DateTime? 
+  reportAssetEfficiency  String?   @db.Text
+  reportCapitalStructure String?   @db.Text
+  // reportRiskManagement   String?   @db.Text // Removed
+  reportSpendingPlan     String?   @db.Text
+  reportInsurance        String?   @db.Text // Kept for refactored insurance action
+  reportBackupPlans      String?   @db.Text // Kept for refactored backupPlans action
+  // reportFuturePlanning   String?   @db.Text // Removed
+
+  // --- Fields for plan editing and tracking ---
+  revisionCount          Int       @default(0)
+  revisionHistory        Json?
+  userEmail              String?
+  buffer                 Float?
+
+  // Note: We are NOT storing the full ProjectionDataTable here for MVP to save space.
+  // It will be recalculated when the plan is viewed.
+}
