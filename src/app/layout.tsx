@@ -4,7 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { viVN } from "@clerk/localizations/vi-VN";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { FeedbackButton } from "@/components/feedback-button";
+// import { FeedbackButton } from "@/components/feedback-button"; // Removed FeedbackButton import
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +24,7 @@ export default function RootLayout({
         <body className={inter.className}>
           <TooltipProvider>
             {children}
-            <FeedbackButton />
+            {/* <FeedbackButton /> */} {/* Removed FeedbackButton component */}
           </TooltipProvider>
         </body>
       </html>

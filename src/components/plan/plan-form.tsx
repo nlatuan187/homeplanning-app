@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react"; // Added Fragment
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import LoadingOverlay from "@/components/ui/loading-overlay"; // Import LoadingOverlay
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import GoalSection from "./sections/goal-section";
 import SituationSection from "./sections/situation-section";
@@ -254,9 +255,26 @@ export default function PlanForm({ userId, existingPlan, editMode = false, start
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>
+    <Fragment> {/* Use Fragment to wrap Card and LoadingOverlay */}
+      {isSubmitting && (
+        <LoadingOverlay
+          messages={["Đang xử lý..."]}
+          durations={[3000]} // 5 seconds
+          onSequenceComplete={() => {
+            // This callback is mostly a fallback. 
+            // If navigation due to submitPlan success is faster than 7s, this component unmounts.
+            // If submitPlan errors out and sets isSubmitting to false, this also might not run or be needed.
+            // However, if for some reason the overlay is still shown after 7s and no error/navigation,
+            // this will hide it.
+            if (isSubmitting) { // Check if still submitting to avoid race conditions if error already handled it
+              setIsSubmitting(false);
+            }
+          }}
+        />
+      )}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>
           {editMode ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch mới"}: {getSectionTitle()}
         </CardTitle>
         <CardDescription>
@@ -282,13 +300,13 @@ export default function PlanForm({ userId, existingPlan, editMode = false, start
         </Button>
         {currentSection === "review" ? (
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Đang xử lý..." : "Tính toán Kế hoạch"} 
-            {/* This button's text change is the simple loading for this step */}
+            {isSubmitting ? "Đang xử lý..." : "Tính toán Kế hoạch"}
           </Button>
         ) : (
           <Button onClick={handleNext}>Tiếp tục</Button>
         )}
       </CardFooter>
     </Card>
+  </Fragment>
   );
 }
