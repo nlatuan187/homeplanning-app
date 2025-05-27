@@ -71,10 +71,26 @@ const SupportSheetContent = () => {
   return (
     <>
       <SheetHeader className="pb-2">
-        <SheetTitle>Yêu cầu hỗ trợ</SheetTitle>
+        <SheetTitle>Trò chuyện sâu về Kế hoạch Mua nhà & Finful</SheetTitle>
         <SheetDescription>
-          Liên hệ với chúng tôi để được trực tiếp giải đáp về kế hoạch hoặc gửi phản hồi để giúp chúng tôi cải thiện.
+          Cảm ơn bạn đã sẵn sàng chia sẻ! Cuộc trò chuyện này rất quan trọng để Finful hiểu rõ hơn về những điểm sau:
         </SheetDescription>
+        {/* Moved UL and subsequent text out of SheetDescription */}
+        <div className="text-sm text-muted-foreground mt-2 space-y-2">
+          <ul className="list-disc list-inside space-y-1 text-slate-300 pl-2">
+            <li><strong className="font-medium text-slate-100">Vấn đề cốt lõi:</strong> Kế hoạch mua nhà có phải là điều bạn thực sự trăn trở và muốn giải quyết?</li>
+            <li><strong className="font-medium text-slate-100">Giá trị của Finful:</strong> Công cụ này đã giúp bạn làm rõ điều gì, hay tạo động lực ra sao trong việc mua nhà?</li>
+            <li><strong className="font-medium text-slate-100">Trải nghiệm sản phẩm:</strong> Có điểm nào trong Finful khiến bạn thấy dễ dùng, hay còn bối rối, cần cải thiện?</li>
+            <li><strong className="font-medium text-slate-100">Mong muốn tương lai:</strong> Nếu Finful có thể làm thêm một điều gì đó cho kế hoạch tài chính của bạn, đó sẽ là gì?</li>
+          </ul>
+            <p>
+            Để cảm ơn thời gian và những đóng góp giá trị của bạn, Finful xin gửi tặng <strong>100.000 VNĐ</strong> sau cuộc trò chuyện.
+            Vui lòng đặt lịch hẹn với Tuấn qua Cal.com bên dưới.
+            </p>
+          <p>
+            Nếu bạn chưa tiện trò chuyện, cũng có thể để lại những suy nghĩ ban đầu của mình vào khung bên dưới.
+          </p>
+        </div>
       </SheetHeader>
       {showSuccess ? (
         <div className="py-8 flex flex-col items-center justify-center space-y-3">
@@ -86,7 +102,7 @@ const SupportSheetContent = () => {
         <>
           <div className="py-4">
             <Textarea
-              placeholder="Nhập phản hồi hoặc câu hỏi của bạn ở đây..."
+              placeholder="Chia sẻ ban đầu của bạn về trải nghiệm lập kế hoạch mua nhà với Finful..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               className="min-h-[120px] bg-slate-800 border-slate-700 text-slate-50 placeholder-slate-400"
@@ -97,7 +113,7 @@ const SupportSheetContent = () => {
             disabled={!feedback.trim() || isSubmitting}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
+            {isSubmitting ? "Đang gửi..." : "Gửi chia sẻ nhanh"}
             {!isSubmitting && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
         </>
@@ -122,7 +138,7 @@ const SupportSheetContent = () => {
           className="flex items-center justify-center gap-2"
         >
           <CalendarDays className="h-4 w-4" />
-          Đặt lịch nói chuyện với Tuấn
+          Đặt lịch trò chuyện sâu (nhận 100k tri ân)
           <ExternalLink className="h-3 w-3 text-slate-500" />
         </a>
       </Button>
@@ -169,11 +185,11 @@ export default function Dashboard() {
         <div className="p-2 bg-blue-500/20 rounded-full">
           <MessageSquareText className="h-6 w-6 text-blue-400" />
         </div>
-        <CardTitle className="text-slate-100 text-lg">Yêu cầu hỗ trợ</CardTitle>
+        <CardTitle className="text-slate-100 text-lg">Trò chuyện về kế hoạch mua nhà của bạn?</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-slate-400 text-sm">
-          Liên hệ với chúng tôi để được trực tiếp giải đáp về kế hoạch tài chính của bạn.
+        <p className="text-slate-400 text-sm leading-relaxed">
+          Bạn đang nghiêm túc với kế hoạch mua nhà và đã dùng Finful? Chúng tôi rất muốn lắng nghe hành trình, trăn trở của bạn và cách Finful có thể đồng hành tốt hơn. Những chia sẻ sâu sắc sẽ giúp chúng tôi phát triển sản phẩm thực sự giá trị. Dành thời gian trò chuyện và nhận ngay <strong>100.000 VNĐ</strong> như một lời cảm ơn!
         </p>
       </CardContent>
     </Card>
