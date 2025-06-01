@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card"; // CardHeader, CardTitle removed as they are not used in the current implementation of the detailed view
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { useRouter } from "next/navigation";
 import { confirmPurchaseYear } from "@/actions";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckIcon } from "lucide-react"; // Info removed as it's not used
+// Accordion components removed
+import { CheckIcon } from "lucide-react";
 
 interface ResultsScenarioBProps {
   planId: string;
@@ -31,13 +31,12 @@ export default function ResultsScenarioB({
   const [selectedYearState, setSelectedYearState] = useState<number>(firstViableYear);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [accordionValue, setAccordionValue] = useState<string | undefined>(undefined);
+  // accordionValue state removed
 
-
-  // Get all viable years for the accordion
+  // Get all viable years for the list
   const viableYears = projectionData
     .filter(p => p.isAffordable && p.year >= firstViableYear)
-    .slice(0, 5); // Limit to 5 years for simplicity, as in current code
+    .slice(0, 5); // Limit to 5 years for simplicity
 
   const handleConfirm = async () => {
     setIsConfirming(true);
@@ -221,10 +220,10 @@ export default function ResultsScenarioB({
     );
   }
 
-  // Initial View with Accordion (D1.1.A and D1.1.B)
+  // Initial View (where Accordion was removed)
   return (
     <div className="w-full space-y-4 p-4 bg-black"> {/* Removed max-w classes, parent page will control max-width */}
-      <Card className="bg-slate-900 text-white shadow-lg rounded-xl"> {/* Changed to bg-slate-900 */}
+      <Card className="bg-slate-900 text-white shadow-lg rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-start space-x-3">
             <CheckIcon className="h-6 w-6 text-green-400 mt-1 shrink-0" />
@@ -233,7 +232,6 @@ export default function ResultsScenarioB({
               <p className="mt-1 text-sm md:text-base text-slate-300">
                 Bắt đầu từ năm {firstViableYear}, bạn đã có đủ khả năng tài chính để mua được nhà.
               </p>
-              {/* Styled "Giải thích lý do" as a button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -247,26 +245,12 @@ export default function ResultsScenarioB({
         </CardContent>
       </Card>
 
-      <Accordion
-        type="single"
-        collapsible
-        value={accordionValue}
-        onValueChange={setAccordionValue}
-        className="w-full"
-      >
-        <AccordionItem value="yearSelection" className="border-none">
-          <AccordionTrigger
-            onClick={() => setAccordionValue(accordionValue === "yearSelection" ? undefined : "yearSelection")}
-            className="w-full bg-white text-black hover:bg-slate-200 px-4 py-3 rounded-lg text-sm font-medium data-[state=open]:rounded-b-none"
-            style={{ justifyContent: 'center' }}
-          >
-            Xem kế hoạch mua nhà sớm hơn
-          </AccordionTrigger>
-          <AccordionContent className="bg-slate-800 text-white p-0 rounded-b-lg">
-            <div className="p-4 space-y-3">
-              {viableYears.map((yearData) => {
-                // downPaymentPct removed as it was unused
-                const loanRatioPct = yearData.housePriceProjected > 0 ? Math.round((yearData.loanAmountNeeded / yearData.housePriceProjected) * 100) : 0;
+      {/* Year Selection Section - Accordion Removed, direct display */}
+      <div className="mt-6 space-y-4">
+        <h3 className="text-md md:text-lg font-semibold text-slate-100 text-center">Chọn năm mua nhà bạn mong muốn:</h3>
+        <div className="space-y-3">
+          {viableYears.map((yearData) => {
+            const loanRatioPct = yearData.housePriceProjected > 0 ? Math.round((yearData.loanAmountNeeded / yearData.housePriceProjected) * 100) : 0;
 
 
                 const isFirstViable = yearData.year === firstViableYear;
@@ -330,25 +314,27 @@ export default function ResultsScenarioB({
                   </div>
                 );
               })}
-            </div>
+            </div> {/* Closes div className="space-y-3" which wraps the .map() */}
 
+            {/* Conditional error display - ensuring this block is cleanly separated */}
             {error && (
-              <div className="p-4 text-red-400 bg-red-900/30 text-sm">
+              <div className="p-4 text-red-400 bg-red-900/30 text-sm mt-3">
                 {error}
               </div>
             )}
-            <div className="p-4">
+            {/* End of conditional error display */}
+
+            {/* Confirmation button section - ensuring this block starts cleanly */}
+            <div className="mt-4">
               <Button
                 onClick={handleConfirm}
                 disabled={isConfirming}
-                className="w-full bg-white text-black hover:bg-slate-200 text-sm font-medium py-3"
+                className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-lg"
               >
                 {isConfirming ? "Đang xác nhận..." : `Xác nhận mua nhà năm ${selectedYearState}`}
               </Button>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
+      </div> {/* Closes div className="w-full space-y-4 p-4 bg-black" */}
+    </div> /* Closes main return div for ResultsScenarioB component */
   );
 }
