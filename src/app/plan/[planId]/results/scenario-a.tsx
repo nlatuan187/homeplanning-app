@@ -17,6 +17,47 @@ interface ResultsScenarioAProps {
   planLoanTermMonths: number;
 }
 
+// Helper function to calculate additional savings needed for Scenario A
+function calculateAdditionalSavingsForViability(
+  targetYearProjection: ProjectionRow,
+  loanInterestRateAnnual: number, // e.g., 11 for 11%
+  loanTermMonths: number
+): number {
+  const monthlyIncomeTargetYear = targetYearProjection.annualIncome / 12;
+  // annualExpenses in ProjectionRow is pre-mortgage living expenses
+  const monthlyLivingExpensesTargetYear = targetYearProjection.annualExpenses / 12;
+
+  // Max affordable monthly mortgage payment (with 0 buffer)
+  const maxAffordableMonthlyMortgage = monthlyIncomeTargetYear - monthlyLivingExpensesTargetYear;
+
+  let additionalSavings: number;
+
+  if (maxAffordableMonthlyMortgage <= 0) {
+    // Income doesn't even cover living expenses. User needs to save for the entire house price
+    // relative to their current savings path, or fundamentally change income/expenses.
+    // The "additional savings" here means what's lacking to buy the house if no loan was viable due to cash flow.
+    additionalSavings = targetYearProjection.housePriceProjected - targetYearProjection.cumulativeSavings;
+  } else {
+    const monthlyInterestRate = loanInterestRateAnnual / 100 / 12;
+    let maxLoanAmount = 0;
+    if (monthlyInterestRate > 0) {
+      maxLoanAmount = maxAffordableMonthlyMortgage * 
+                      (1 - Math.pow(1 + monthlyInterestRate, -loanTermMonths)) / 
+                      monthlyInterestRate;
+    } else { // Edge case: 0% interest loan
+      maxLoanAmount = maxAffordableMonthlyMortgage * loanTermMonths;
+    }
+    maxLoanAmount = Math.max(0, maxLoanAmount); // Ensure loan amount isn't negative
+
+    const housePrice = targetYearProjection.housePriceProjected;
+    const minDownPaymentNeeded = Math.max(0, housePrice - maxLoanAmount);
+    const currentSavingsAtTargetYear = targetYearProjection.cumulativeSavings;
+    additionalSavings = minDownPaymentNeeded - currentSavingsAtTargetYear;
+  }
+  
+  return Math.round(Math.max(0, additionalSavings)); // Return rounded, non-negative
+}
+
 export default function ResultsScenarioA({
   planId,
   targetYear,
@@ -28,6 +69,12 @@ export default function ResultsScenarioA({
 }: ResultsScenarioAProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  const additionalSavingsNeeded = calculateAdditionalSavingsForViability(
+    projection,
+    planLoanInterestRate,
+    planLoanTermMonths
+  );
 
   const handleEdit = async () => {
     setIsEditing(true);
@@ -210,7 +257,7 @@ export default function ResultsScenarioA({
   // Initial card with basic information (D1.2)
   return (
     <div className="w-full space-y-6 p-4 bg-black text-slate-100"> {/* Removed max-w classes */}
-      <Card className="bg-slate-900 text-white shadow-lg rounded-xl"> {/* Changed to bg-slate-900 */}
+      <Card className="bg-slate-900 text-white shadow-lg rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="h-6 w-6 text-red-400 mt-1 shrink-0" />
@@ -219,7 +266,6 @@ export default function ResultsScenarioA({
               <p className="mt-1 text-sm md:text-base text-slate-300">
                 Bạn chưa đủ khả năng tài chính để mua nhà vào năm {targetYear} như mong muốn.
               </p>
-              {/* Styled "Giải thích lý do" as a button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -234,9 +280,12 @@ export default function ResultsScenarioA({
       </Card>
 
       <div>
-        <h3 className="text-xl md:text-2xl font-semibold mb-4 text-slate-100">Khuyến nghị của chúng tôi</h3>
+        {/* <h3 className="text-xl md:text-2xl font-semibold mb-2 text-slate-100">Khuyến nghị của chúng tôi</h3> */}
+        <p className="text-lg md:text-xl font-medium mb-1" style={{color: '#34D0DB'}}>
+          Bạn cần có thêm {additionalSavingsNeeded.toLocaleString()} triệu VNĐ vào quỹ tiết kiệm để có thể mua nhà vào năm {targetYear}.
+        </p>
         <p className="text-sm md:text-base text-slate-400 mb-4">
-          Để có đủ khả năng mua nhà vào năm {targetYear}, chúng tôi đề xuất bạn một số giải pháp sau:
+          Tham khảo những cách sau để đạt được mục tiêu này:
         </p>
         <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4">
           {recommendations.map((rec, index) => (

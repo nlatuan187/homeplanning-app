@@ -91,13 +91,13 @@ export default function FinancesSection({ formState, setFormState }: FinancesSec
             render={() => (
               <FormItem>
                 <div className="flex items-center space-x-2">
-                  <FormLabel>Bạn đã tiết kiệm riêng được bao nhiêu cho việc mua nhà này? (triệu VNĐ)</FormLabel>
+                  <FormLabel>Số tiền tích luỹ và được hỗ trợ từ người thân cho việc mua nhà? (triệu VNĐ)</FormLabel>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoIcon className="h-4 w-4 text-slate-500" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="max-w-xs">Tổng số tiền bạn đã tiết kiệm được và dự định dùng cho việc mua nhà này.</p>
+                      <p className="max-w-xs">Tổng số tiền bạn đã tiết kiệm và được cho dùng cho việc mua nhà này.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
