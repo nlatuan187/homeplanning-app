@@ -1,128 +1,135 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { Prisma } from "@prisma/client";
+import { Plan } from "@prisma/client";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { determineAffordabilityOutcome } from "@/lib/calculations/projections/generateComparisonData";
-import { FormState } from "@/components/plan/plan-form";
+import { PlanFormState } from "@/components/plan/multi-step-form/types";
+// import { FormState } from "@/components/plan/plan-form"; // Old form state
 
 /**
- * Server Action 1: Initial Plan Submission & Basic Calculation
+ * Server Action: Plan Submission & Calculation (Updated for Multi-Step Form)
  * 
- * This action:
- * 1. Receives validated plan data and userId
- * 2. Saves the plan to the database
- * 3. Executes core projections
- * 4. Determines affordability outcome using corrected logic
- * 5. Updates the plan with results
- * 6. Returns minimal result to frontend
+ * This action handles both creation and updates from the new multi-step form.
+ * 1. Receives validated plan data from the new form structure.
+ * 2. Maps the new form state to the updated Prisma schema.
+ * 3. Saves or updates the plan in the database.
+ * 4. Executes core projections and updates the plan with results.
  */
-export async function submitPlan(formData: FormState & { planId?: string }) {
+export async function submitPlan(formData: PlanFormState & { planId?: string; userId: string }) {
   try {
-    // Get authenticated user
-    const { userId } = await auth();
-    const user = await currentUser();
+    const { userId, planId, ...planData } = formData;
 
-    if (!userId) {
-      throw new Error("Unauthorized");
+    // Validate the user
+    const clerkUser = await currentUser();
+    if (!clerkUser || clerkUser.id !== userId) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    // Create a new plan in the database with type assertion to bypass TypeScript errors
-    // The schema has been updated with the new fields, but TypeScript types haven't been regenerated correctly
-    const planData = {
-      userId,
-      planName: "Kế hoạch mua nhà",
-      userEmail: user?.emailAddresses[0]?.emailAddress,
-      yearsToPurchase: Number(formData.yearsToPurchase),
-      targetHousePriceN0: Number(formData.targetHousePriceN0),
-      targetHouseType: formData.targetHouseType,
-      targetLocation: formData.targetLocation,
-      maritalStatus: formData.maritalStatus,
-      hasDependents: Boolean(formData.hasDependents),
-      numberOfDependents: Number(formData.numberOfDependents || 0),
-      plansMarriageBeforeTarget: Boolean(formData.plansMarriageBeforeTarget || false),
-      targetMarriageYear: formData.targetMarriageYear ? Number(formData.targetMarriageYear) : null,
-      plansChildBeforeTarget: Boolean(formData.plansChildBeforeTarget || false),
-      targetChildYear: formData.targetChildYear ? Number(formData.targetChildYear) : null,
-      initialSavingsGoal: Number(formData.initialSavingsGoal),
-      incomeLastYear: Number(formData.incomeLastYear),
-      monthlyOtherIncome: Number(formData.monthlyOtherIncome),
-      monthlyLivingExpenses: Number(formData.monthlyLivingExpenses),
-      monthlyNonHousingDebt: Number(formData.monthlyNonHousingDebt),
-      currentAnnualInsurancePremium: Number(formData.currentAnnualInsurancePremium),
-      spouseMonthlyIncome: Number(formData.spouseMonthlyIncome || 0),
-      // Các trường có thể để trống - chuyển thành 0 nếu undefined
-      pctHouseGrowth: formData.pctHouseGrowth !== undefined ? Number(formData.pctHouseGrowth) : 0,
-      pctSalaryGrowth: formData.pctSalaryGrowth !== undefined ? Number(formData.pctSalaryGrowth) : 0,
-      pctExpenseGrowth: formData.pctExpenseGrowth !== undefined ? Number(formData.pctExpenseGrowth) : 0,
-      pctInvestmentReturn: formData.pctInvestmentReturn !== undefined ? Number(formData.pctInvestmentReturn) : 0,
-      factorMarriage: formData.factorMarriage !== undefined ? Number(formData.factorMarriage) : 0,
-      factorChild: formData.factorChild !== undefined ? Number(formData.factorChild) : 0,
-      
-      // Các trường bắt buộc - đã được validation đảm bảo > 0
-      loanInterestRate: Number(formData.loanInterestRate),
-      loanTermMonths: Number(formData.loanTermMonths),
+    const { familySupport, paymentMethod, ...restOfPlanData } = planData;
+
+    // The payload for the main Plan model should only contain its direct fields.
+    const planPayload = {
+      ...restOfPlanData,
+      paymentMethod: paymentMethod,
     };
 
-    // Check if we're updating an existing plan or creating a new one
-    let plan;
-    if (formData.planId) {
+    // Explicitly map fields from the form's familySupport object to what the database expects.
+    // This prevents trying to save UI-only fields like 'hasFamilySupport'.
+    const familySupportPayload = familySupport.hasFamilySupport ? {
+      familySupportType: familySupport.familySupportType,
+      familySupportAmount: familySupport.familySupportAmount,
+      familyGiftTiming: familySupport.familyGiftTiming,
+      familyLoanRepaymentType: familySupport.familyLoanRepaymentType,
+      familyLoanInterestRate: familySupport.familyLoanInterestRate,
+      familyLoanTermYears: familySupport.familyLoanTermYears,
+    } : {
+      // If user says they have no support, explicitly clear all fields.
+      familySupportType: null,
+      familySupportAmount: null,
+      familyGiftTiming: null,
+      familyLoanRepaymentType: null,
+      familyLoanInterestRate: null,
+      familyLoanTermYears: null,
+    };
+
+    let plan: Plan;
+    if (planId) {
       // Update existing plan
       plan = await db.plan.update({
-        where: {
-          id: formData.planId,
+        where: { id: planId, userId: userId },
+        data: {
+          ...planPayload,
+          familySupport: {
+            upsert: {
+              create: familySupportPayload,
+              update: familySupportPayload,
+            },
+          },
+          revisionCount: { increment: 1 },
         },
-        data: planData as unknown as Prisma.PlanUpdateInput,
       });
     } else {
       // Create new plan
       plan = await db.plan.create({
-        data: planData as unknown as Prisma.PlanCreateInput,
+        data: {
+          ...planPayload,
+          userId: userId,
+          userEmail:
+            clerkUser.emailAddresses.find(
+              (e) => e.id === clerkUser.primaryEmailAddressId
+            )?.emailAddress || '',
+          familySupport: {
+            create: familySupportPayload,
+          },
+        },
+        include: {
+          familySupport: true,
+        }
       });
     }
 
-    // Generate projections
-    const projectionData = generateProjections(plan);
+    // After submission, we need the full plan with the new relation
+    const fullPlan = await db.plan.findUnique({
+      where: { id: plan.id },
+      include: {
+        familySupport: true,
+      },
+    });
 
-    // Determine affordability outcome using corrected logic
+    if (!fullPlan) {
+      return { success: false, error: "Failed to retrieve plan after creation." };
+    }
+
+    // Re-enable and update projection logic
+    const projectionData = generateProjections(fullPlan);
+
+    // Determine affordability outcome
     const { affordabilityOutcome, firstViableYear } = determineAffordabilityOutcome(
       projectionData,
       plan.yearsToPurchase
     );
-
-    // Get the buffer for the target year
     const targetYearBuffer = projectionData[plan.yearsToPurchase].buffer;
 
-    // Update the plan with the affordability outcome, first viable year, and buffer
-    // Using type assertion for the update data to handle the new fields
-    const updateData = {
-      affordabilityOutcome,
-      firstViableYear,
-      buffer: targetYearBuffer,
-    };
-
-    // Update the plan with the affordability outcome, first viable year, and buffer
-    // Also, invalidate report cache since plan inputs have changed
+    // Update the plan with the affordability outcome
     await db.plan.update({
-      where: {
-        id: plan.id,
-      },
+      where: { id: plan.id },
       data: {
-        ...updateData,
-        // Invalidate report cache
+        affordabilityOutcome,
+        firstViableYear,
+        buffer: targetYearBuffer,
+        // Invalidate report cache since plan inputs have changed
         reportGeneratedAt: null,
         reportAssetEfficiency: null,
         reportCapitalStructure: null,
         reportSpendingPlan: null,
         reportInsurance: null,
         reportBackupPlans: null,
-        // confirmedPurchaseYear might also need to be reset if plan inputs change significantly
-        // For now, only clearing report cache. Affordability outcome might lead to new confirmed year flow.
-      } as Prisma.PlanUpdateInput, 
+      },
     });
 
-    // Return minimal result
+    // Return the full result
     return {
       success: true,
       planId: plan.id,
@@ -130,10 +137,10 @@ export async function submitPlan(formData: FormState & { planId?: string }) {
       firstViableYear,
     };
   } catch (error) {
-    console.error("[SUBMIT_PLAN]", error);
+    console.error("[SUBMIT_PLAN_V2]", error);
     return {
       success: false,
-      error: "Failed to create plan",
+      error: error instanceof Error ? error.message : "Failed to process plan",
     };
   }
 }

@@ -7,7 +7,8 @@ interface ExpertExplanation {
   a: string;
 }
 
-export interface InsuranceReportData { // Added export
+export interface InsuranceReportData {
+  plan: PrismaPlan;
   currentInsuranceAmount: number;
   recommendedInsuranceAmount: number;
   coveragePercentage: number; // Value between 0 and 1
@@ -66,6 +67,7 @@ export async function generateInsuranceSection(
     ];
         
     return {
+      plan: plan,
       currentInsuranceAmount,
       recommendedInsuranceAmount,
       coveragePercentage,

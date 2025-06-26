@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 interface LoadingOverlayProps {
   messages: string[];
   durations?: number[]; // Optional: duration for each message in ms
-  onSequenceComplete: () => void;
+  onSequenceComplete?: () => void; // Make this optional to support both modes
   spinnerColor?: string; // Optional: hex color for the spinner
 }
 
@@ -18,23 +18,30 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   useEffect(() => {
-    if (currentMessageIndex >= messages.length) {
-      onSequenceComplete();
-      return;
+    // Only run the timer sequence if onSequenceComplete is provided.
+    // Otherwise, the component will persist with the first message.
+    if (onSequenceComplete) {
+      if (currentMessageIndex >= messages.length) {
+        onSequenceComplete();
+        return;
+      }
+
+      const duration = durations?.[currentMessageIndex] || 2000; // Use a more realistic default duration
+
+      const timer = setTimeout(() => {
+        setCurrentMessageIndex(prevIndex => prevIndex + 1);
+      }, duration);
+
+      return () => clearTimeout(timer);
     }
-
-    const duration = durations?.[currentMessageIndex] || 1000; // Default 1s if not specified
-
-    const timer = setTimeout(() => {
-      setCurrentMessageIndex(prevIndex => prevIndex + 1);
-    }, duration);
-
-    return () => clearTimeout(timer);
   }, [currentMessageIndex, messages, durations, onSequenceComplete]);
 
-  if (currentMessageIndex >= messages.length) {
-    return null; // All messages shown, component can unmount or be hidden by parent
+  // For sequence mode, hide when done. For persistent mode, this is never reached.
+  if (onSequenceComplete && currentMessageIndex >= messages.length) {
+    return null;
   }
+  
+  const messageToShow = messages[currentMessageIndex] || messages[0];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 p-8">
@@ -63,7 +70,7 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         </svg>
       </div>
       <p className="text-white text-lg md:text-xl text-center">
-        {messages[currentMessageIndex]}
+        {messageToShow}
       </p>
     </div>
   );

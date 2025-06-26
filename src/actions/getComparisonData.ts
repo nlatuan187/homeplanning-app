@@ -52,6 +52,9 @@ export async function getComparisonData(planId: string) {
         id: planId,
         userId,
       },
+      include: {
+        familySupport: true,
+      },
     });
 
     if (!plan) {

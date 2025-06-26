@@ -247,13 +247,13 @@ export default function ReportPage() {
 
       {/* Scrollable Content Area - Constrained Width */}
       <div className="container mx-auto max-w-5xl px-4">
-        {/* Sticky Header for TabsList and ReportHeaderCard */}
-        <div 
-          className="z-30 bg-cover bg-center rounded-xl mt-1" // Assuming top-nav height is ~64px (top-16)
-          style={{ backgroundImage: `url(${currentGradient})`}}
-        >
-          <div className="bg-black/40 backdrop-blur-sm p-4 rounded-xl"> {/* Overlay for text readability, also rounded */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Sticky Header for TabsList and ReportHeaderCard */}
+          <div 
+            className="z-30 bg-cover bg-center rounded-xl mt-1" // Assuming top-nav height is ~64px (top-16)
+            style={{ backgroundImage: `url(${currentGradient})`}}
+          >
+            <div className="bg-black/40 backdrop-blur-sm p-4 rounded-xl"> {/* Overlay for text readability, also rounded */}
               <TabsList className="grid w-full grid-cols-5 bg-white/10 rounded-lg p-1">
                 <TabsTrigger value="tich-luy" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-md py-2 text-xs sm:text-sm">Tích lũy</TabsTrigger>
                 <TabsTrigger value="chi-tieu" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-slate-300 rounded-md py-2 text-xs sm:text-sm">Chi tiêu</TabsTrigger>
@@ -263,38 +263,29 @@ export default function ReportPage() {
               </TabsList>
               {/* ReportHeaderCard is inside the gradient box */}
               <ReportHeaderCard title={headerCardTitle} description={headerCardDescription} />
-              {/* No TabsContent here, it's below */}
-            </Tabs>
+            </div>
           </div>
-        </div>
 
-        {/* Tab Content (Accordions) - Below the Gradient Box */}
-        <Tabs value={activeTab} className="w-full mt-6"> {/* This Tabs is for TabsContent only */}
-            <TabsContent value="tich-luy" className="mt-0">
-              <AccumulationReportTab plan={plan} projectionData={projectionData} reportData={!reportSections.assetEfficiency || 'error' in reportSections.assetEfficiency ? null : reportSections.assetEfficiency} />
+          <div className="mt-6">
+            <TabsContent value="tich-luy">
+                <AccumulationReportTab data={reportSections.assetEfficiency} />
             </TabsContent>
-            <TabsContent value="chi-tieu" className="mt-0">
-              <SpendingReportTab plan={plan} projectionData={projectionData} reportData={!reportSections.spendingPlan || 'error' in reportSections.spendingPlan ? null : reportSections.spendingPlan} setActiveTab={setActiveTab} />
+            <TabsContent value="chi-tieu">
+                <SpendingReportTab data={reportSections.spendingPlan} setActiveTab={setActiveTab} />
             </TabsContent>
-            <TabsContent value="vay-muon" className="mt-0">
-              <BorrowingReportTab 
-                plan={plan} 
-                confirmedYearData={confirmedYearData} 
-                loanSummary={loanSummary} 
-                capitalStructureData={!reportSections.capitalStructure || 'error' in reportSections.capitalStructure ? null : reportSections.capitalStructure} 
-              />
+            <TabsContent value="vay-muon">
+                <BorrowingReportTab data={reportSections.capitalStructure} />
             </TabsContent>
-            <TabsContent value="du-phong" className="mt-0">
-              <BackupPlansSection plan={plan} projectionData={projectionData} reportDataBackup={!reportSections.backupPlans || 'error' in reportSections.backupPlans ? null : reportSections.backupPlans} /> 
+            <TabsContent value="du-phong">
+                <BackupPlansSection data={reportSections.backupPlans} />
             </TabsContent>
-            <TabsContent value="bao-ve" className="mt-0">
-              <InsuranceSection plan={plan} reportDataInsurance={!reportSections.insurance || 'error' in reportSections.insurance ? null : reportSections.insurance} />
+            <TabsContent value="bao-ve">
+                <InsuranceSection data={reportSections.insurance} />
             </TabsContent>
+          </div>
         </Tabs>
-        <div className="pb-16">
-          <FeedbackButton />
-        </div>
       </div>
+      <FeedbackButton planId={plan.id} userEmail={plan.userEmail ?? ''} />
     </main>
   );
 }

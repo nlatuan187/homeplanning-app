@@ -20,6 +20,9 @@ export async function GET(
         id: planId,
         userId,
       },
+      include: {
+        familySupport: true,
+      },
     });
 
     if (!plan) {
@@ -57,6 +60,9 @@ export async function PATCH(
       where: {
         id: planId,
         userId,
+      },
+      include: {
+        familySupport: true,
       },
     });
 
@@ -97,6 +103,9 @@ export async function DELETE(
       where: {
         id: planId,
         userId,
+      },
+      include: {
+        familySupport: true,
       },
     });
 

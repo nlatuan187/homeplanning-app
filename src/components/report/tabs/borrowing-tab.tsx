@@ -1,136 +1,215 @@
 "use client";
 
-import { Plan } from "@prisma/client";
-import { ProjectionRow } from "@/lib/calculations/affordability";
-import { LoanSummary } from "@/lib/calculations/projections/calculateLoanSummary";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatNumber } from "@/actions/utils/formatters";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import AmortizationScheduleSheet from "../amortization-schedule-sheet";
-import { type CapitalStructureReportData } from "@/actions/reportSections/capitalStructure"; // Import correct type, AmortizationScheduleData is part of it
+import { type CapitalStructureReportData } from "@/actions/reportSections/capitalStructure";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// Local type definitions (CapitalStructureData, MonthlyScheduleItem, YearlyScheduleItem, AmortizationSummary) removed
+type SectionData<T> = T | { error: true; message: string; details: string };
 
 interface BorrowingReportTabProps {
-  plan: Plan | null;
-  confirmedYearData: ProjectionRow | null;
-  loanSummary: LoanSummary | null;
-  capitalStructureData: CapitalStructureReportData | null; // Use imported type
+  data: SectionData<CapitalStructureReportData>;
 }
 
-// Helper to format currency (can be moved to utils)
-const formatCurrency = (value: number | undefined | null, unit = "tỷ VND", precision = 2): string => {
-  if (value === undefined || value === null || isNaN(value)) return `N/A ${unit}`;
-  if (unit === "tỷ VND") {
-    return `${(value / 1000).toFixed(precision)} ${unit}`;
-  }
-  return `${Math.round(value).toLocaleString()} ${unit}`;
-};
-
-const formatMillionsCurrency = (value: number | undefined | null, unit = "triệu VND"): string => {
-  if (value === undefined || value === null || isNaN(value)) return `N/A ${unit}`;
-  return `${Math.round(value).toLocaleString()} ${unit}`;
-}
-
-const BorrowingReportTab: React.FC<BorrowingReportTabProps> = ({ 
-  plan, 
-  confirmedYearData, 
-  loanSummary, 
-  capitalStructureData
-  // setActiveTab // Removed
-}) => {
+const BorrowingReportTab: React.FC<BorrowingReportTabProps> = ({ data }) => {
   const [isAmortizationSheetOpen, setIsAmortizationSheetOpen] = useState(false);
 
-  if (!plan || !confirmedYearData || !loanSummary || !capitalStructureData) {
-    return <div className="text-center p-8">Đang tải dữ liệu cho tab Vay mượn...</div>;
+  if ('error' in data) {
+    return (
+      <div className="text-center p-8 bg-slate-900 rounded-lg">
+        <p className="text-red-500 font-semibold">Lỗi tải dữ liệu</p>
+        <p className="text-slate-400 text-sm mt-2">{data.message}</p>
+      </div>
+    );
   }
-
-  const {
-    currentSituation,
-    expertExplanation,
-    // recommendations: capitalRecs, // Not used directly, part of capitalStructureData
-    amortizationSchedule // Directly from capitalStructureData
-  } = capitalStructureData;
   
-  // const amortizationSchedule = capitalStructureData.amortizationSchedule; // Already destructured
+  const { 
+    plan, 
+    loanSummary, 
+    expertExplanation, 
+    amortizationSchedule,
+    familyLoanDetails,
+    currentSituation
+  } = data;
 
+  if (!plan || !loanSummary || !currentSituation) {
+    return <div className="text-center p-8">Dữ liệu không đầy đủ cho tab Vay mượn.</div>;
+  }
+  
+  const {
+    donutChart,
+    bankLoanAmount,
+  } = currentSituation;
 
-  const loanAmountForDisplay = confirmedYearData.loanAmountNeeded;
-  const purchaseYearForDisplay = plan.confirmedPurchaseYear;
-  const housePriceGrowthForDisplay = plan.pctHouseGrowth;
-  const housePriceForDisplay = confirmedYearData.housePriceProjected;
-  // const savingsForDisplay = confirmedYearData.cumulativeSavings; // Unused variable
+  const hasFamilySupport = !!(familyLoanDetails || (plan.familySupport?.familySupportType === 'GIFT' && plan.familySupport.familySupportAmount > 0));
 
-  const loanTermYears = Math.round(plan.loanTermMonths / 12);
-  const monthlyPaymentForDisplay = loanSummary.monthlyPayment;
-  const paymentMethodValue = (plan as Plan & { paymentMethod?: "fixed" | "decreasing" }).paymentMethod;
-  const paymentMethodText = paymentMethodValue === "decreasing" ? "giảm dần" : "cố định";
+  const chartData = donutChart.map(item => ({ name: item.name, value: item.value }));
+  const COLORS = ["#00ACB8", "#F2C94C", "#EB5757", "#2F80ED"];
 
   return (
-    <div className="space-y-6">
-      <Accordion type="multiple" defaultValue={["item-1", "item-2", "item-3"]} className="w-full space-y-3"> {/* Auto open accordion */}
-        {/* Mục 1: Vay X tỷ VND */}
-        <AccordionItem value="item-1" className="bg-slate-900 rounded-lg border-none">
-          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100">
-            1 | Vay {formatCurrency(loanAmountForDisplay)} vào năm {purchaseYearForDisplay}
-          </AccordionTrigger>
-          <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">
-            <p className="leading-relaxed">
-              Vào năm {purchaseYearForDisplay}, với tốc độ tăng giá nhà {housePriceGrowthForDisplay}%/năm, căn nhà bạn muốn mua sẽ có giá {formatCurrency(housePriceForDisplay)}. 
-              Lúc này, số tiền bạn cần vay được tính bằng cách:
-            </p>
-            <div className="bg-slate-800 p-3 rounded-md space-y-2 text-slate-200"> {/* Changed to bg-slate-800 */}
-              <div className="flex justify-between"><span>Giá trị căn nhà:</span> <span>{formatCurrency(currentSituation?.housePrice)}</span></div>
-              <hr className="border-slate-600"/>
-              <div className="flex justify-between"><span>Số tiền bạn đã tích lũy:</span> <span>{formatCurrency(currentSituation?.equityAmount)}</span></div>
-              <hr className="border-slate-600"/>
-              <div className="flex justify-between font-semibold"><span>Số tiền bạn cần vay:</span> <span>{formatCurrency(currentSituation?.loanAmount)}</span></div>
+    <div className="space-y-8">
+      {/* Capital Allocation Section */}
+      <Card className="bg-slate-900/50 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-white">1. Phân bổ Nguồn vốn</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div style={{ width: '100%', height: 350 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ 
+                    backgroundColor: '#1C1C1E', 
+                    borderColor: '#333333', 
+                    borderRadius: '0.5rem' 
+                  }}
+                  formatter={(value: number, name: string) => [`${formatNumber(value)}`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-4">
+              {chartData.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-slate-800/60 rounded-lg">
+                      <div className="flex items-center">
+                          <span className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                          <span className="text-slate-300">{item.name}</span>
+                      </div>
+                      <span className="font-semibold text-white">{formatNumber(item.value)}</span>
+                  </div>
+              ))}
+          </div>
+        </CardContent>
+        {plan.familySupport?.familySupportType === 'GIFT' && plan.familySupport.familyGiftTiming === 'NOW' && (
+          <div className="px-6 pb-4 text-xs text-slate-400 italic">
+            * Ghi chú: Khoản hỗ trợ {formatNumber(plan.familySupport.familySupportAmount)} từ gia đình đã được tính vào "Vốn tự có" vì bạn nhận ngay từ bây giờ để đầu tư.
+          </div>
+        )}
+      </Card>
+      
+      {/* Loan Details Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Bank Loan Details */}
+        <Card className={`bg-slate-900/50 border-slate-800 ${!hasFamilySupport ? 'lg:col-span-2' : ''}`}>
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-white">2. Chi tiết Vay Ngân hàng</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Số tiền vay</span>
+              <span className="font-medium text-slate-100">{formatNumber(bankLoanAmount)}</span>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Mục 2: Trả góp */}
-        <AccordionItem value="item-2" className="bg-slate-900 rounded-lg border-none"> {/* Changed to bg-slate-900 */}
-          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100">
-            2 | Trả góp cả gốc và lãi hàng tháng
-          </AccordionTrigger>
-          <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">
-            <p className="leading-relaxed">
-              Với gói vay trong thời gian {loanTermYears} năm (tương đương {plan.loanTermMonths} tháng), 
-              bắt đầu từ tháng đầu tiên sau khi vay, bạn phải trả góp {formatMillionsCurrency(monthlyPaymentForDisplay)}/tháng. 
-              Số tiền này sẽ {paymentMethodText} theo thời gian tùy thuộc vào gói vay bạn chọn.
-            </p>
-            <Button variant="outline" onClick={() => setIsAmortizationSheetOpen(true)} className="w-full bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-100">
-              Xem bảng thống kê trả nợ đầy đủ
+            <div className="flex justify-between">
+              <span className="text-slate-400">Lãi suất dự kiến</span>
+              <span className="font-medium text-slate-100">{plan.loanInterestRate}%/năm</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Thời hạn vay</span>
+              <span className="font-medium text-slate-100">{plan.loanTermYears} năm</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Trả góp hàng tháng</span>
+              <span className="font-medium text-cyan-400">{formatNumber(loanSummary.monthlyPayment)}</span>
+            </div>
+             <Button variant="outline" onClick={() => setIsAmortizationSheetOpen(true)} className="w-full mt-4 bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-100">
+              Xem bảng thống kê trả nợ
             </Button>
-          </AccordionContent>
-        </AccordionItem>
+          </CardContent>
+        </Card>
 
-        {/* Mục 3: Giải thích của chuyên gia */}
-        <AccordionItem value="item-3" className="bg-slate-900 rounded-lg border-none"> {/* Changed to bg-slate-900 */}
-          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100 data-[state=open]:text-cyan-400">
-            Giải thích của chuyên gia
-          </AccordionTrigger>
-          <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">
-            <div className="bg-slate-800 p-3 rounded-lg">
-              <p className="font-semibold text-slate-100 mb-1">Tại sao giá nhà trung bình tăng 10%/năm?</p>
+        {/* Family Support Details (Conditional) */}
+        {hasFamilySupport && (
+           <Card className="bg-slate-900/50 border-slate-800">
+             <CardHeader>
+               <CardTitle className="text-xl font-semibold text-white">
+                 3. {plan.familySupport?.familySupportType === 'LOAN' ? 'Chi tiết Vay Gia đình' : 'Chi tiết Hỗ trợ từ Gia đình'}
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{plan.familySupport?.familySupportType === 'LOAN' ? 'Số tiền vay' : 'Số tiền được tặng'}</span>
+                  <span className="font-medium text-slate-100">{formatNumber(plan.familySupport?.familySupportAmount ?? 0)}</span>
+                </div>
+
+                {plan.familySupport?.familySupportType === 'LOAN' && familyLoanDetails ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Lãi suất</span>
+                      <span className="font-medium text-slate-100">{familyLoanDetails.interestRate ?? 0}%/năm</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Hình thức trả</span>
+                      <span className="font-medium text-slate-100">
+                        {familyLoanDetails.repaymentType === 'MONTHLY' ? `Trả góp trong ${familyLoanDetails.termYears} năm` : 'Trả 1 lần khi đáo hạn'}
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-800/60 rounded-md mt-2 text-slate-300 leading-relaxed">
+                      {familyLoanDetails.repaymentType === 'MONTHLY' 
+                        ? `Với các thông số trên, bạn cần hoàn trả cho gia đình khoảng ${formatNumber(familyLoanDetails.monthlyPayment)} mỗi tháng.`
+                        : `Đây là một khoản nợ cần được hoàn trả vào cuối kỳ hạn ${familyLoanDetails.termYears} năm. Finful sẽ nhắc bạn về nghĩa vụ này.`
+                      }
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Thời điểm nhận</span>
+                      <span className="font-medium text-slate-100">
+                        {plan.familySupport?.familyGiftTiming === 'NOW' ? 'Đã nhận & đang đầu tư' : 'Nhận khi mua nhà'}
+                      </span>
+                    </div>
+                     <div className="p-3 bg-slate-800/60 rounded-md mt-2 text-slate-300 leading-relaxed">
+                       Đây là khoản hỗ trợ không cần hoàn lại, giúp bạn giảm số tiền cần vay từ ngân hàng và đạt được mục tiêu sớm hơn.
+                    </div>
+                  </>
+                )}
+             </CardContent>
+           </Card>
+        )}
+      </div>
+
+      {/* Expert Explanation */}
+       <Card className="bg-slate-900/50 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-white">Giải thích của chuyên gia</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-slate-300">
+             <div className="bg-slate-800 p-3 rounded-lg">
+              <p className="font-semibold text-slate-100 mb-1">Tại sao giá nhà trung bình tăng {plan.pctHouseGrowth}%/năm?</p>
               <p className="leading-relaxed">{expertExplanation?.reasoningForHouseGrowth || "Do nhu cầu ở cao, đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hàng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng."}</p>
             </div>
             <div className="bg-slate-800 p-3 rounded-lg">
-              <p className="font-semibold text-slate-100 mb-1">Tại sao lãi suất đi vay là 11%/năm?</p>
-              <p className="leading-relaxed">{expertExplanation?.reasoningForInterestRate || "Con số này này dựa trên chi phí huy động vốn, rủi ro tín dụng, chi phí vận hành của ngân hàng, cùng với chính sách tiền tệ và lạm phát hiện tại ở Việt Nam. Đây là mức lãi suất cân bằng dựa trên thị trường và kinh tế thực tế."}</p>
+              <p className="font-semibold text-slate-100 mb-1">Tại sao nên vay với lãi suất dưới {plan.loanInterestRate + 1}%/năm?</p>
+              <p className="leading-relaxed">{expertExplanation?.reasoningForInterestRate || "Đây là mức lãi suất khá tốt trên thị trường, giúp bạn giảm áp lực trả nợ hàng tháng và nhanh chóng sở hữu căn nhà của riêng mình. Để có mức lãi suất này, bạn cần có điểm tín dụng tốt và thu nhập ổn định."}</p>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-      
+          </CardContent>
+        </Card>
+
       <AmortizationScheduleSheet 
-        monthlySchedule={amortizationSchedule?.monthlySchedule} 
-        yearlySchedule={amortizationSchedule?.yearlySchedule}
-        isOpen={isAmortizationSheetOpen} 
-        onOpenChange={setIsAmortizationSheetOpen} 
+        isOpen={isAmortizationSheetOpen}
+        onOpenChange={setIsAmortizationSheetOpen}
+        amortizationData={amortizationSchedule}
+        loanAmount={bankLoanAmount}
+        interestRate={plan.loanInterestRate}
+        loanTerm={plan.loanTermYears}
       />
-      {/* Placeholder div for sheet removed as actual sheet is now implemented */}
     </div>
   );
 };

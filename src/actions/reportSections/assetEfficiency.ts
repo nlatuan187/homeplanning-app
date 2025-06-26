@@ -1,5 +1,4 @@
 import { ProjectionRow } from "@/lib/calculations/affordability";
-// import { calculateLoanSummary } from "@/lib/calculations/projections/calculateLoanSummary"; // loanSummary is passed but not used
 import { Plan as PrismaPlan } from "@prisma/client";
 
 // Assuming UserContext is defined elsewhere (e.g. generateFinalReport.ts or a shared types file)
@@ -27,6 +26,8 @@ interface SavingsProjectionItem {
 }
 
 export interface AssetEfficiencyReportData {
+  plan: PrismaPlan;
+  projectionData: ProjectionRow[];
   currentSituation: {
     donutChart: DonutChartItem[];
     totalSavings: number;
@@ -77,65 +78,71 @@ interface AssetEfficiencyError {
 export async function generateAssetEfficiencySection(
   plan: PrismaPlan,
   confirmedYearData: ProjectionRow,
-  userContext: UserContextForAssetEfficiency, // Use specific part of UserContext
-  // loanSummary: ReturnType<typeof calculateLoanSummary>, // Not used in this function
+  userContext: UserContextForAssetEfficiency,
   projectionData: ProjectionRow[]
 ): Promise<AssetEfficiencyReportData | AssetEfficiencyError> {
   try {
-    // Calculate values for the donut chart based on actual data
-    const emergencyFund = Math.round(confirmedYearData.targetEF);
-    const currentSavings = Math.round(plan.initialSavingsGoal - emergencyFund);
-    const totalSavings = Math.round(plan.initialSavingsGoal);
+    // --- Calculations ---
+
+    // Emergency Fund calculation based on initial monthly expenses
+    const initialMonthlyExpenses = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0);
+    const emergencyFund = Math.round(initialMonthlyExpenses * 6);
+
+    // Current savings for the house is the initial savings minus the calculated emergency fund.
+    // Ensure it doesn't go below zero.
+    const currentHouseSavings = Math.max(0, Math.round(plan.initialSavings - emergencyFund));
+    const totalInitialSavings = Math.round(plan.initialSavings);
     
-    // Calculate target savings and percentages
+    // Target savings and house price at the confirmed purchase year
     const targetSavings = Math.round(confirmedYearData.cumulativeSavings);
     const targetHousePrice = Math.round(confirmedYearData.housePriceProjected);
-    const currentPercentage = Math.round((totalSavings / targetHousePrice) * 100);
-    const targetPercentage = Math.round((targetSavings / targetHousePrice) * 100);
     
-    // Current year and confirmed year
+    // Percentages
+    const currentPercentage = targetHousePrice > 0 ? Math.round((totalInitialSavings / targetHousePrice) * 100) : 0;
+    const targetPercentage = targetHousePrice > 0 ? Math.round((targetSavings / targetHousePrice) * 100) : 0;
+    
+    // Year-related values
     const currentYear = new Date().getFullYear();
     const confirmedYear = userContext.confirmedPurchaseYear;
     const yearsToPurchase = confirmedYear - currentYear;
     
-    // Create projection data for savings growth
+    // Create projection data for the savings growth chart
     const relevantProjections = projectionData.filter(p => 
       p.year >= currentYear && p.year <= confirmedYear
     );
     
-    const savingsProjections = relevantProjections.map((projection, index) => {
-      return {
+    const savingsProjections = relevantProjections.map((projection, index) => ({
         year: projection.year,
         cumulativeSavings: Math.round(projection.cumulativeSavings),
         investmentRate: index === 0 ? 0 : userContext.pctInvestmentReturn
-      };
-    });
+    }));
     
-    // Return structured data for UI rendering
+    // --- Data Structuring for UI ---
+
     return {
+      plan: plan,
+      projectionData: projectionData,
       // Section 1: Current Situation
       currentSituation: {
         donutChart: [
           { name: 'Quỹ dự phòng', value: emergencyFund },
-          { name: 'Tiết kiệm Mua nhà', value: currentSavings }
+          { name: 'Tiết kiệm Mua nhà', value: currentHouseSavings }
         ],
-        totalSavings: totalSavings,
+        totalSavings: totalInitialSavings,
         emergencyFund: emergencyFund,
-        currentSavings: currentSavings,
+        currentSavings: currentHouseSavings,
         annotations: [
           {
-            text: `${emergencyFund} triệu`,
-            description: plan.hasDependents || plan.plansChildBeforeTarget 
-              ? "số tiền sẽ dùng để thành quỹ dự phòng để chuẩn bị cho kế hoạch sinh em bé của bạn"
-              : "số tiền dành cho quỹ dự phòng (tương đương 6 tháng chi tiêu)"
+            text: `${emergencyFund.toLocaleString()} triệu`,
+            description: "số tiền dành cho quỹ dự phòng (tương đương 6 tháng chi tiêu của bạn)"
           },
           {
-            text: `${currentSavings} triệu`,
+            text: `${currentHouseSavings.toLocaleString()} triệu`,
             description: "số tiền bạn đã có, dùng tích lũy để mua nhà"
           },
           {
-            text: `${totalSavings} triệu`,
-            description: "số tiền tiết kiệm bạn đang có"
+            text: `${totalInitialSavings.toLocaleString()} triệu`,
+            description: "tổng số tiền tiết kiệm bạn đang có"
           }
         ]
       },
@@ -146,18 +153,16 @@ export async function generateAssetEfficiencySection(
         yearsToPurchase: yearsToPurchase,
         targetSavings: targetSavings,
         targetPercentage: targetPercentage,
-        currentSavings: totalSavings,
+        currentSavings: totalInitialSavings,
         investmentRate: userContext.pctInvestmentReturn,
         
-        // Current situation box
         current: {
           year: currentYear,
           housePrice: targetHousePrice,
-          savings: totalSavings,
+          savings: totalInitialSavings,
           percentage: currentPercentage
         },
         
-        // Target situation box
         target: {
           year: confirmedYear,
           housePrice: targetHousePrice,
@@ -173,7 +178,6 @@ export async function generateAssetEfficiencySection(
         reasoning: `Giá nhà tăng ${userContext.pctHouseGrowth}%/năm. Để đuổi kịp, tỷ suất đầu tư của bạn cần tăng cao hơn tốc độ tăng giá nhà. Đó là lý do tại sao bạn cần tăng tỷ suất đầu tư lên ${userContext.pctInvestmentReturn}%.`,
         savingsProjections: savingsProjections
       },
-      // Populate static explanations, matching current UI fallbacks
       salaryGrowthExplanation: "Tiền lương là khoản thu đóng góp rất lớn vào tích lũy hàng năm, vì vậy cần tăng trưởng lương để giúp sở hữu căn nhà đầu tiên sớm hơn. Con số 7% được tính toán dựa trên mức tăng lương trung bình của người lao động.",
       investmentReturnExplanation: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá, ít nhất là 11%/năm."
     };

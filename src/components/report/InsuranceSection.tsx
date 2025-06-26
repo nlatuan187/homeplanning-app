@@ -1,43 +1,40 @@
 "use client";
 
-import { Plan } from "@prisma/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { formatCurrency } from "@/actions/utils/formatters";
 import React from 'react'; 
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'; // Text import removed
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { type InsuranceReportData } from "@/actions/reportSections/insurance";
 
-// Define the type for the data coming from generateInsuranceSection action
-interface ExpertExplanationItem {
-  q: string;
-  a: string;
-}
-interface InsuranceReportDataItem {
-  currentInsuranceAmount: number;
-  recommendedInsuranceAmount: number;
-  coveragePercentage: number; // Value between 0 and 1
-  gaugeValue: number; // coveragePercentage * 100
-  expertExplanations: ExpertExplanationItem[];
-}
+type SectionData<T> = T | { error: true; message: string; details: string };
 
 interface InsuranceSectionProps {
-  plan: Plan | null; // Still needed for some basic plan info if not in reportDataInsurance
-  reportDataInsurance: InsuranceReportDataItem | null; 
+  data: SectionData<InsuranceReportData>; 
 }
 
-const InsuranceSection: React.FC<InsuranceSectionProps> = ({ plan, reportDataInsurance }) => {
-  if (!plan || !reportDataInsurance) { // Check for reportDataInsurance as well
-    return <div className="text-center p-8">Đang tải dữ liệu cho tab Bảo vệ...</div>;
+const InsuranceSection: React.FC<InsuranceSectionProps> = ({ data }) => {
+  if ('error' in data) {
+    return (
+      <div className="text-center p-8 bg-slate-900 rounded-lg">
+        <p className="text-red-500 font-semibold">Lỗi tải dữ liệu</p>
+        <p className="text-slate-400 text-sm mt-2">{data.message}</p>
+      </div>
+    );
   }
 
-  // Use data from reportDataInsurance
-  const { 
+  const {
+    plan, // Although not directly used in rendering, it's available if needed
     currentInsuranceAmount, 
     recommendedInsuranceAmount, 
     coveragePercentage, 
     gaugeValue, 
     expertExplanations 
-  } = reportDataInsurance;
+  } = data;
 
+  if (!plan || expertExplanations === undefined) {
+    return <div className="text-center p-8">Dữ liệu không đầy đủ cho tab Bảo vệ...</div>;
+  }
+  
   const getCoverageLevelText = () => {
     if (coveragePercentage <= 0.3) return "Yếu";
     if (coveragePercentage <= 0.6) return "Trung bình";
@@ -45,22 +42,17 @@ const InsuranceSection: React.FC<InsuranceSectionProps> = ({ plan, reportDataIns
   };
   const coverageLevelText = getCoverageLevelText();
 
-  // Renaming to legendColorData for clarity and to avoid potential conflicts
   const legendColorData = [
     { minValue: "0", maxValue: "30", code: "#FF5F5F", label: "Yếu (0-30%)" },
     { minValue: "30", maxValue: "60", code: "#FFC344", label: "Trung bình (31-60%)" },
     { minValue: "60", maxValue: "100", code: "#50E3C2", label: "Mạnh (61-100%)" }
   ];
 
-  // Data for Recharts Pie
   const pieChartData = legendColorData.map(item => ({
     name: item.label,
-    // value for Recharts Pie is the span of the arc segment
     value: parseFloat(item.maxValue) - parseFloat(item.minValue), 
     color: item.code
   }));
-
-  // expertExplanations now comes from props (reportDataInsurance.expertExplanations)
 
   return (
     <div className="space-y-6">

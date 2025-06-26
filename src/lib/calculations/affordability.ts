@@ -15,9 +15,14 @@ export type ProjectionRow = {
   cumulativeSavings: number;
   loanAmountNeeded: number;
   monthlyPayment: number;
-  monthlySurplus: number; // Monthly savings after expenses
+  monthlySurplus: number;
+  buffer: number;
   isAffordable: boolean;
-  buffer: number; // Surplus - Payment (for comparison)
+  loanTermYears: number; // Add this to ensure it's passed through
+  familyLoanRepayment: number; // Annual family loan repayment amount
+
+  // Detailed numbers for context and debugging
+  baseExpenses: number;
 
   // Additional fields from the specification
   pctHouseGrowth: number;
@@ -33,7 +38,6 @@ export type ProjectionRow = {
   spouseIncome: number;
 
   // Expense components
-  baseExpenses: number;
   preInsuranceExpenses: number;
   insurancePremium: number;
 

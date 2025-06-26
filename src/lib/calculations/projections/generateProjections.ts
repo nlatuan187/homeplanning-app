@@ -1,249 +1,244 @@
 import { Plan } from "@prisma/client";
 import { ProjectionRow } from "../affordability";
 
-// Calculate monthly mortgage payment
+// Define a more specific type for the plan object to satisfy TypeScript
+type PlanWithPaymentMethod = Plan & {
+  paymentMethod: "fixed" | "decreasing";
+};
+
+/**
+ * A more specific type for the plan object that includes nested family support.
+ * This ensures TypeScript understands the full data structure we're working with.
+ */
+type PlanWithDetails = Plan & {
+  paymentMethod: "fixed" | "decreasing";
+  familySupport?: {
+    familySupportType: 'GIFT' | 'LOAN' | null;
+    familySupportAmount: number | null;
+    familyGiftTiming: 'NOW' | 'AT_PURCHASE' | null;
+    familyLoanRepaymentType: 'LUMP_SUM' | 'MONTHLY' | null;
+    familyLoanInterestRate: number | null;
+    familyLoanTermYears: number | null;
+  } | null;
+};
+
+/**
+ * Calculates the monthly mortgage payment based on loan details.
+ * Supports both fixed and decreasing payment methods.
+ */
 function calculateMonthlyPayment(
   loanAmount: number, 
   annualInterestRate: number, 
-  termMonths: number, 
+  termYears: number,
   paymentMethod: "fixed" | "decreasing" = "fixed"
 ): number {
-  // Handle edge case: If loanAmount <= 0, return 0
   if (loanAmount <= 0) return 0;
 
-  // Calculate monthly interest rate
+  const termMonths = termYears * 12;
   const monthlyRate = annualInterestRate / 12 / 100;
 
-  // Handle edge case: If monthlyRate == 0, return loanAmount / termMonths
   if (monthlyRate === 0) return loanAmount / termMonths;
 
   if (paymentMethod === "fixed") {
-    // Calculate fixed monthly payment using the formula: M = P * [ i * (1 + i)^n ] / [ (1 + i)^n – 1]
+    // Standard fixed-rate mortgage calculation
     return (
       (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) /
       (Math.pow(1 + monthlyRate, termMonths) - 1)
     );
   } else {
     // For decreasing payment method, calculate the first month's payment
-    // Principal component is fixed: loanAmount / termMonths
     const monthlyPrincipal = loanAmount / termMonths;
-    // Interest component for the first month: loanAmount * monthlyRate
     const firstMonthInterest = loanAmount * monthlyRate;
-    // First month's payment is the highest
     return monthlyPrincipal + firstMonthInterest;
   }
 }
 
 /**
- * Generates financial projections for a given plan
- * This is the core calculation that creates the ProjectionDataTable
+ * Generates financial projections based on the new, simplified Plan model.
+ * This is the core calculation engine for the application.
  */
-export function generateProjections(plan: Plan, maxProjectionYear?: number): ProjectionRow[] {
-  // Current year
+export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: number): ProjectionRow[] {
   const currentYear = new Date().getFullYear();
-
-  // Target purchase year
-  const targetPurchaseYear = currentYear + plan.yearsToPurchase;
-
-  // Maximum projection year (5 years beyond target)
-  const maxYears = maxProjectionYear || (plan.yearsToPurchase + 5);
-
-  // Initialize projection data
+  const maxYears = maxYearsToProject || (plan.yearsToPurchase + 5);
   const projectionData: ProjectionRow[] = [];
 
-  // Year 0 (current year) initialization
-  const initialEF = (plan.monthlyLivingExpenses + plan.monthlyNonHousingDebt) * 6; // 6 months of expenses
-  const baseExpenseN0 = (plan.monthlyLivingExpenses + plan.monthlyNonHousingDebt) * 12;
-
-  // Marriage and child factors
-  const isMarriedInitially = plan.maritalStatus === "Đã kết hôn/Sống chung";
-  const factorMarriage = isMarriedInitially ? plan.factorMarriage : 0;
-  const factorChild = plan.hasDependents ? (plan.factorChild * (plan.numberOfDependents || 0)) : 0;
-
-  // Calculate spouse income - FIXED: Use 50% of primary income as default
-  let spouseIncomeAbsolute = 0;
-  if (isMarriedInitially) {
-    spouseIncomeAbsolute = plan.spouseMonthlyIncome && plan.spouseMonthlyIncome > 0
-      ? plan.spouseMonthlyIncome * 12
-      : plan.incomeLastYear * 0.50; // Default to 50% of primary income
+  // --- Year 0 (Current State) Initialization ---
+  
+  // Start with user's own savings
+  let initialSavings = plan.initialSavings;
+  // If user gets a gift NOW, add it to initial savings to let it grow.
+  if (plan.familySupport?.familySupportType === 'GIFT' && plan.familySupport?.familyGiftTiming === 'NOW' && plan.familySupport?.familySupportAmount) {
+    initialSavings += plan.familySupport.familySupportAmount;
   }
 
-  // Year 0 calculations
+  const userMonthlyIncomeN0 = plan.userMonthlyIncome;
+  const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0;
+  const otherMonthlyIncomeN0 = plan.monthlyOtherIncome || 0;
+  
+  const totalMonthlyIncomeN0 = userMonthlyIncomeN0 + coApplicantMonthlyIncomeN0 + otherMonthlyIncomeN0;
+  const annualIncomeN0 = totalMonthlyIncomeN0 * 12;
+
+  const monthlyExpensesN0 = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0) + ((plan.currentAnnualInsurancePremium || 0) / 12);
+  const annualExpensesN0 = monthlyExpensesN0 * 12;
+  
+  const annualSavingsN0 = annualIncomeN0 - annualExpensesN0;
+  
+  // Emergency Fund (EF) is not explicitly part of the new flow, but we can calculate it for context.
+  // We will assume initialSavings is purely for the house down payment and not double-counted for EF.
+  const targetEFN0 = monthlyExpensesN0 * 6;
+
+  // Use the extended type to access paymentMethod without 'any'
+  const paymentMethod = (plan as unknown as PlanWithPaymentMethod).paymentMethod || "fixed";
+
   const year0: ProjectionRow = {
     year: currentYear,
     n: 0,
     housePriceProjected: plan.targetHousePriceN0,
-    primaryIncome: plan.incomeLastYear,
-    otherIncome: plan.monthlyOtherIncome * 12,
-    spouseIncome: spouseIncomeAbsolute,
-    annualIncome: plan.incomeLastYear + spouseIncomeAbsolute + (plan.monthlyOtherIncome * 12),
-    baseExpenses: baseExpenseN0,
-    preInsuranceExpenses: baseExpenseN0 * (1 + (factorMarriage / 100) + (factorChild / 100)),
-    // insurancePremium will store the *additional* premium needed to reach 12.5% target
-    insurancePremium: 0, // Calculated below
-    annualExpenses: 0, // Will be calculated below
-    annualSavings: 0, // Will be calculated below
-    targetEF: initialEF,
-    efTopUp: 0, // No top-up in initial year
-    cumulativeSavings: plan.initialSavingsGoal - initialEF,
-    loanAmountNeeded: 0, // Will be calculated below
-    ltvRatio: 0, // Will be calculated below
-    monthlyPayment: 0, // Will be calculated below
-    monthlySurplus: 0, // Will be calculated below
-    buffer: 0, // Will be calculated below
-    isAffordable: false, // Will be calculated below
+    primaryIncome: userMonthlyIncomeN0 * 12,
+    spouseIncome: coApplicantMonthlyIncomeN0 * 12,
+    otherIncome: otherMonthlyIncomeN0 * 12,
+    annualIncome: annualIncomeN0,
+    annualExpenses: annualExpensesN0,
+    annualSavings: annualSavingsN0,
+    cumulativeSavings: initialSavings, // Use the potentially adjusted initial savings
+    loanAmountNeeded: Math.max(0, plan.targetHousePriceN0 - initialSavings),
+    monthlyPayment: 0, // Calculated below
+    monthlySurplus: annualSavingsN0 / 12,
+    buffer: 0, // Calculated below
+    isAffordable: false, // Calculated below
+    
+    // Other fields for context, simplifying or removing obsolete ones
+    baseExpenses: plan.monthlyLivingExpenses * 12, // For tracking growth
+    preInsuranceExpenses: (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 12,
+    insurancePremium: plan.currentAnnualInsurancePremium || 0,
+    targetEF: targetEFN0,
+    efTopUp: 0, // Simplified: EF is assumed managed outside this projection for now
+    ltvRatio: 0,
     pctHouseGrowth: plan.pctHouseGrowth,
     pctSalaryGrowth: plan.pctSalaryGrowth,
     pctExpenseGrowth: plan.pctExpenseGrowth,
     pctInvestmentReturn: plan.pctInvestmentReturn,
-    factorMarriage: factorMarriage,
-    factorChild: factorChild
+    factorMarriage: 0, // Obsolete
+    factorChild: 0,    // Obsolete
+    loanTermYears: plan.loanTermYears,
   };
 
-  // Complete year 0 calculations
-  const actualInsurancePaidN0 = plan.currentAnnualInsurancePremium || 0;
-  const targetInsuranceN0 = 0.125 * year0.preInsuranceExpenses;
-  year0.insurancePremium = Math.max(0, targetInsuranceN0 - actualInsurancePaidN0); // Additional premium needed
-  year0.annualExpenses = year0.preInsuranceExpenses + actualInsurancePaidN0; // Total expenses include actual paid insurance
-
-  year0.annualSavings = year0.annualIncome - year0.annualExpenses;
   year0.loanAmountNeeded = Math.max(0, year0.housePriceProjected - year0.cumulativeSavings);
   year0.ltvRatio = year0.housePriceProjected > 0 ? (year0.loanAmountNeeded / year0.housePriceProjected) * 100 : 0;
-  // Get payment method from plan or default to "fixed"
-  const paymentMethod = (plan as any).paymentMethod === "decreasing" ? "decreasing" : "fixed";
-  
-  year0.monthlyPayment = calculateMonthlyPayment(
-    year0.loanAmountNeeded, 
-    plan.loanInterestRate, 
-    plan.loanTermMonths,
-    paymentMethod
-  );
-  year0.monthlySurplus = year0.annualSavings / 12;
+  year0.monthlyPayment = calculateMonthlyPayment(year0.loanAmountNeeded, plan.loanInterestRate, plan.loanTermYears, paymentMethod);
   year0.buffer = year0.monthlySurplus - year0.monthlyPayment;
-  
-  // FIXED: Buffer must be positive for affordability
   year0.isAffordable = year0.buffer >= 0;
 
-  // Add year 0 to projection data
   projectionData.push(year0);
 
-  // Projection loop for years 1 to maxProjectionYear
+  // --- Projection Loop for Future Years ---
+
   for (let n = 1; n <= maxYears; n++) {
     const prevYear = projectionData[n - 1];
-    const currentCalendarYear = currentYear + n;
-
-    // Check if marriage happens this year
-    let currentFactorMarriage = prevYear.factorMarriage;
-    if (currentFactorMarriage === 0 && plan.plansMarriageBeforeTarget && plan.targetMarriageYear === currentCalendarYear) {
-      currentFactorMarriage = plan.factorMarriage;
-    }
-
-    // Check if child is born this year
-    let currentFactorChild = prevYear.factorChild;
-    if (plan.plansChildBeforeTarget && plan.targetChildYear === currentCalendarYear) {
-      currentFactorChild += plan.factorChild; // Add one child's factor
-    }
-
-    // Calculate projected values
-    const housePriceProjected = prevYear.housePriceProjected * (1 + (plan.pctHouseGrowth / 100));
-    const primaryIncome = prevYear.primaryIncome * (1 + (plan.pctSalaryGrowth / 100));
-
-    // FIXED: Spouse income calculation
-    // If spouse income exists, grow it at salary growth rate
-    // If spouse income doesn't exist but marriage factor is present, use 50% of primary income
-    const spouseIncome = prevYear.spouseIncome > 0
-      ? prevYear.spouseIncome * (1 + (plan.pctSalaryGrowth / 100))
-      : (currentFactorMarriage > 0 ? primaryIncome * 0.50 : 0); // Use 50% factor, not expense factor
-
-    // Other income remains constant
-    const otherIncome = prevYear.otherIncome;
-
-    // Total income
-    const annualIncome = primaryIncome + spouseIncome + otherIncome;
-
-    // Expenses grow with the expense growth rate
-    const baseExpenses = prevYear.baseExpenses * (1 + (plan.pctExpenseGrowth / 100));
-
-    // FIXED: Use marriage/child factors only for expenses
-    const preInsuranceExpenses = baseExpenses * (1 + (currentFactorMarriage / 100) + (currentFactorChild / 100));
     
-    const actualInsurancePaidN = plan.currentAnnualInsurancePremium || 0; // Assuming insurance premium input is an annual figure and doesn't grow with inflation for simplicity, unless specified otherwise
-    const targetInsuranceN = 0.125 * preInsuranceExpenses;
-    const insurancePremium = Math.max(0, targetInsuranceN - actualInsurancePaidN); // Additional premium needed for this year
-    const annualExpenses = preInsuranceExpenses + actualInsurancePaidN; // Total expenses include actual paid insurance
+    // Income and expense projections remain the same
+    const userAnnualIncome = prevYear.primaryIncome * (1 + (plan.pctSalaryGrowth / 100));
+    const coApplicantAnnualIncome = prevYear.spouseIncome * (1 + ((plan.coApplicantSalaryGrowth ?? plan.pctSalaryGrowth) / 100));
+    const otherAnnualIncome = prevYear.otherIncome;
+    const totalAnnualIncome = userAnnualIncome + coApplicantAnnualIncome + otherAnnualIncome;
 
-    // Target emergency fund based on current expenses (pre-insurance, as EF is for living costs)
-    const targetEF = (preInsuranceExpenses / 12) * 6; 
-    const efTopUp = Math.max(0, targetEF - initialEF);
+    const livingExpensesAnnual = prevYear.baseExpenses * (1 + (plan.pctExpenseGrowth / 100));
+    const nonHousingDebtAnnual = (plan.monthlyNonHousingDebt || 0) * 12;
+    const insuranceAnnual = plan.currentAnnualInsurancePremium || 0;
+    const totalAnnualExpenses = livingExpensesAnnual + nonHousingDebtAnnual + insuranceAnnual;
+    
+    // Initial annual savings before deducting family loan repayments
+    let annualSavings = totalAnnualIncome - totalAnnualExpenses;
+    
+    // --- Family Loan Repayment Calculation ---
+    // This now happens for years *after* the house purchase year.
+    let annualFamilyLoanRepayment = 0;
+    if (n > plan.yearsToPurchase && plan.familySupport?.familySupportType === 'LOAN') {
+        const familyLoanInfo = plan.familySupport;
+        const yearsSincePurchase = n - plan.yearsToPurchase;
+        const familyLoanTerm = familyLoanInfo.familyLoanTermYears ?? 0;
+        const familyLoanAmount = familyLoanInfo.familySupportAmount ?? 0;
 
-    // Annual savings
-    const annualSavings = annualIncome - annualExpenses;
+        // Check if we are within the family loan repayment period
+        if (familyLoanAmount > 0 && familyLoanTerm > 0 && yearsSincePurchase <= familyLoanTerm) {
+            if (familyLoanInfo.familyLoanRepaymentType === 'MONTHLY') {
+                // For now, assume a simple interest-free loan repayment schedule
+                annualFamilyLoanRepayment = familyLoanAmount / familyLoanTerm;
+            } else if (familyLoanInfo.familyLoanRepaymentType === 'LUMP_SUM' && yearsSincePurchase === familyLoanTerm) {
+                // For a lump sum, the full amount is due in the final year of the term.
+                annualFamilyLoanRepayment = familyLoanAmount;
+            }
+        }
+    }
+    
+    // Subtract the family loan repayment from the user's annual savings.
+    // This correctly impacts how much they can save each year *after* buying the house.
+    annualSavings -= annualFamilyLoanRepayment;
+    
+    // Savings Projection
+    const cumulativeSavings = (prevYear.cumulativeSavings * (1 + (plan.pctInvestmentReturn / 100))) + annualSavings;
 
-    // Cumulative savings with investment returns
-    const cumulativeSavings = (prevYear.cumulativeSavings * (1 + (plan.pctInvestmentReturn / 100))) +
-                              annualSavings - efTopUp;
+    const housePriceProjected = prevYear.housePriceProjected * (1 + (plan.pctHouseGrowth / 100));
+    
+    // --- New Loan Calculation Logic ---
 
-    // Loan amount needed
-    const loanAmountNeeded = Math.max(0, housePriceProjected - cumulativeSavings);
+    // 1. Start with user's own accumulated savings
+    let equityForPurchase = cumulativeSavings;
 
-    // LTV ratio
-    const ltvRatio = housePriceProjected > 0 ? (loanAmountNeeded / housePriceProjected) * 100 : 0;
+    // 2. Add gift if it's timed for the year of purchase
+    if (n === plan.yearsToPurchase && plan.familySupport?.familySupportType === 'GIFT' && plan.familySupport?.familyGiftTiming === 'AT_PURCHASE' && plan.familySupport?.familySupportAmount) {
+      equityForPurchase += plan.familySupport.familySupportAmount;
+    }
 
-    // Monthly payment
-    const monthlyPayment = calculateMonthlyPayment(
-      loanAmountNeeded, 
-      plan.loanInterestRate, 
-      plan.loanTermMonths,
-      paymentMethod
-    );
+    // 3. Determine the family loan amount (if any)
+    const familyLoanAmount = (n === plan.yearsToPurchase && plan.familySupport?.familySupportType === 'LOAN' && plan.familySupport?.familySupportAmount)
+      ? plan.familySupport.familySupportAmount
+      : 0;
 
-    // Monthly surplus
+    // 4. Calculate the required bank loan
+    const bankLoanNeeded = Math.max(0, housePriceProjected - equityForPurchase - familyLoanAmount);
+
+    const ltvRatio = housePriceProjected > 0 ? (bankLoanNeeded / housePriceProjected) * 100 : 0;
+
+    // 5. Monthly payment is based ONLY on the bank loan
+    const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate, plan.loanTermYears, paymentMethod);
     const monthlySurplus = annualSavings / 12;
-
-    // Buffer
     const buffer = monthlySurplus - monthlyPayment;
-
-    // FIXED: Buffer must be positive for affordability
     const isAffordable = buffer >= 0;
 
-    console.log(`Year ${currentCalendarYear}:`);
-    console.log(`  pctExpenseGrowth: ${plan.pctExpenseGrowth}`);
-    console.log(`  baseExpenses: ${baseExpenses}`);
-    console.log(`  preInsuranceExpenses: ${preInsuranceExpenses}`);
-    console.log(`  targetEF: ${targetEF}`);
-
-    // Create year data
     const yearData: ProjectionRow = {
-      year: currentCalendarYear,
+      year: currentYear + n,
       n,
       housePriceProjected,
-      primaryIncome,
-      otherIncome,
-      spouseIncome,
-      annualIncome,
-      baseExpenses,
-      preInsuranceExpenses,
-      insurancePremium,
-      annualExpenses,
+      primaryIncome: userAnnualIncome,
+      spouseIncome: coApplicantAnnualIncome,
+      otherIncome: otherAnnualIncome,
+      annualIncome: totalAnnualIncome,
+      annualExpenses: totalAnnualExpenses,
       annualSavings,
-      targetEF,
-      efTopUp,
-      cumulativeSavings,
-      loanAmountNeeded,
-      ltvRatio,
+      cumulativeSavings, // This remains the user's growing savings pot
+      loanAmountNeeded: bankLoanNeeded, // This now correctly represents the bank loan
       monthlyPayment,
       monthlySurplus,
       buffer,
       isAffordable,
+      loanTermYears: plan.loanTermYears,
+      familyLoanRepayment: annualFamilyLoanRepayment, // Pass repayment to frontend
+
+      // Contextual fields
+      baseExpenses: livingExpensesAnnual,
+      preInsuranceExpenses: livingExpensesAnnual + nonHousingDebtAnnual,
+      insurancePremium: insuranceAnnual,
+      targetEF: ((livingExpensesAnnual + nonHousingDebtAnnual) / 12) * 6,
+      efTopUp: 0,
+      ltvRatio,
       pctHouseGrowth: plan.pctHouseGrowth,
       pctSalaryGrowth: plan.pctSalaryGrowth,
       pctExpenseGrowth: plan.pctExpenseGrowth,
       pctInvestmentReturn: plan.pctInvestmentReturn,
-      factorMarriage: currentFactorMarriage,
-      factorChild: currentFactorChild
+      factorMarriage: 0,
+      factorChild: 0,
     };
-
-    // Add to projection data
     projectionData.push(yearData);
   }
 

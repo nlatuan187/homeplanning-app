@@ -1,8 +1,9 @@
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { Plan as PrismaPlan } from "@prisma/client";
+import { LoanSummary } from "@/lib/calculations/projections/calculateLoanSummary";
 
 // Define types for Amortization Schedule
-interface MonthlyAmortizationItem {
+export interface MonthlyAmortizationItem {
   month: number;
   payment: number;
   principal: number;
@@ -10,7 +11,7 @@ interface MonthlyAmortizationItem {
   remainingBalance: number;
 }
 
-interface YearlyAmortizationItem {
+export interface YearlyAmortizationItem {
   year: number;
   totalPayment: number;
   totalPrincipal: number;
@@ -18,7 +19,7 @@ interface YearlyAmortizationItem {
   remainingBalance: number;
 }
 
-interface AmortizationSummary {
+export interface AmortizationSummary {
   totalPayment: number;
   totalInterest: number;
   monthlyPayment: number;
@@ -32,135 +33,85 @@ export interface AmortizationScheduleData {
 }
 
 /**
- * Generate amortization schedule for a loan
+ * Generate amortization schedule for a loan. (RESTORED LOGIC)
+ * Supports both fixed and decreasing payment methods.
  */
 export function generateAmortizationSchedule(
   loanAmount: number,
   annualInterestRate: number,
-  termMonths: number,
-  paymentMethod: "fixed" | "decreasing" = "fixed"
+  termYears: number,
+  paymentMethod: string = "fixed"
 ): AmortizationScheduleData {
-  // Handle edge cases
   if (loanAmount <= 0) {
     return {
       monthlySchedule: [],
       yearlySchedule: [],
-      summary: {
-        totalPayment: 0,
-        totalInterest: 0,
-        monthlyPayment: 0
-      }
+      summary: { totalPayment: 0, totalInterest: 0, monthlyPayment: 0 },
     };
   }
 
-  // Calculate monthly interest rate
+  const termMonths = termYears * 12;
   const monthlyRate = annualInterestRate / 12 / 100;
-
-  // Initialize variables
   let remainingBalance = loanAmount;
-  const monthlySchedule = [];
-  const yearlySchedule = [];
+  const monthlySchedule: MonthlyAmortizationItem[] = [];
+  const yearlySchedule: YearlyAmortizationItem[] = [];
   
-  let yearlyPayment = 0;
-  let yearlyPrincipal = 0;
-  let yearlyInterest = 0;
-  let totalPayment = 0;
-  let totalInterest = 0;
-  let firstMonthPayment = 0;
-  let lastMonthPayment = 0;
+  let yearlyPayment = 0, yearlyPrincipal = 0, yearlyInterest = 0;
+  let totalPayment = 0, totalInterest = 0;
+  let firstMonthPayment = 0, lastMonthPayment = 0;
 
-  // Fixed principal payment for decreasing method
-  const fixedPrincipal = paymentMethod === "decreasing" ? loanAmount / termMonths : 0;
+  if (termMonths <= 0) {
+    return { monthlySchedule, yearlySchedule, summary: { totalPayment, totalInterest, monthlyPayment: 0 } };
+  }
 
-  // Calculate payment for each month
+  const principalPerMonth = loanAmount / termMonths;
+
   for (let month = 1; month <= termMonths; month++) {
-    let payment: number;
-    let interest: number;
-    let principal: number;
+    const interest = remainingBalance * monthlyRate;
+    let principal, payment;
 
-    if (paymentMethod === "fixed") {
-      // Fixed payment method (standard amortization)
-      if (monthlyRate === 0) {
-        payment = loanAmount / termMonths;
-        interest = 0;
-        principal = payment;
-      } else {
-        payment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / 
-                 (Math.pow(1 + monthlyRate, termMonths) - 1);
-        interest = remainingBalance * monthlyRate;
+    if (paymentMethod === 'fixed') {
+      payment = (loanAmount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -termMonths));
         principal = payment - interest;
-      }
-    } else {
-      // Decreasing payment method
-      principal = fixedPrincipal;
-      interest = remainingBalance * monthlyRate;
+    } else { // decreasing
+      principal = principalPerMonth;
       payment = principal + interest;
     }
 
-    // Update remaining balance
+    if (month === 1) firstMonthPayment = payment;
+    if (month === termMonths) lastMonthPayment = payment;
+
     remainingBalance -= principal;
     
-    // Ensure remaining balance doesn't go below zero due to rounding errors
-    if (remainingBalance < 0) {
+    if (remainingBalance < 0) { // Final month adjustment
       principal += remainingBalance;
       payment = principal + interest;
       remainingBalance = 0;
     }
 
-    // Store first and last month payment for summary
-    if (month === 1) {
-      firstMonthPayment = payment;
-    }
-    if (month === termMonths) {
-      lastMonthPayment = payment;
-    }
+    monthlySchedule.push({ month, payment, principal, interest, remainingBalance });
 
-    // Add to monthly schedule
-    monthlySchedule.push({
-      month,
-      payment,
-      principal,
-      interest,
-      remainingBalance
-    });
-
-    // Update yearly totals
     yearlyPayment += payment;
     yearlyPrincipal += principal;
     yearlyInterest += interest;
     totalPayment += payment;
     totalInterest += interest;
 
-    // If end of year or last month, add to yearly schedule
     if (month % 12 === 0 || month === termMonths) {
-      const year = Math.ceil(month / 12);
-      yearlySchedule.push({
-        year,
-        totalPayment: yearlyPayment,
-        totalPrincipal: yearlyPrincipal,
-        totalInterest: yearlyInterest,
-        remainingBalance
-      });
-
-      // Reset yearly totals
-      yearlyPayment = 0;
-      yearlyPrincipal = 0;
-      yearlyInterest = 0;
+      yearlySchedule.push({ year: Math.ceil(month / 12), totalPayment: yearlyPayment, totalPrincipal: yearlyPrincipal, totalInterest: yearlyInterest, remainingBalance });
+      yearlyPayment = 0; yearlyPrincipal = 0; yearlyInterest = 0;
     }
   }
-
-  // Create summary
-  const summary = {
-    totalPayment,
-    totalInterest,
-    monthlyPayment: firstMonthPayment,
-    lastMonthPayment: paymentMethod === "decreasing" ? lastMonthPayment : undefined
-  };
 
   return {
     monthlySchedule,
     yearlySchedule,
-    summary
+    summary: { 
+      totalPayment, 
+      totalInterest, 
+      monthlyPayment: firstMonthPayment, // For 'fixed', this is the constant payment. For 'decreasing', it's the highest.
+      lastMonthPayment: paymentMethod === 'decreasing' ? lastMonthPayment : undefined,
+    },
   };
 }
 
@@ -174,14 +125,36 @@ interface AnnotationItemCS {
   description: string;
 }
 
-export interface CapitalStructureReportData { // Export for use in generateFinalReport.ts
+// Define a clear error type
+export interface CapitalStructureError {
+  error: true;
+  message: string;
+  details: string;
+}
+
+// New type for family loan details
+export interface FamilyLoanDetails {
+  amount: number;
+  repaymentType: string;
+  interestRate?: number;
+  termYears?: number;
+  monthlyPayment: number;
+}
+
+export interface CapitalStructureReportData {
+  plan: PrismaPlan;
+  confirmedYearData: ProjectionRow;
+  loanSummary: LoanSummary;
   currentSituation: {
     introText: string;
     donutChart: DonutChartItemCS[];
     housePrice: number;
-    loanAmount: number;
+    totalLoanAmount: number;
+    bankLoanAmount: number;
+    familyLoanAmount: number;
     equityAmount: number;
-    loanPercentage: number;
+    bankLoanPercentage: number;
+    familyLoanPercentage: number;
     equityPercentage: number;
     annotations: AnnotationItemCS[];
   };
@@ -190,161 +163,195 @@ export interface CapitalStructureReportData { // Export for use in generateFinal
     intro: string;
     explanationPoints: string[];
     warning: string;
-    reasoningForHouseGrowth?: string; // Added field
-    reasoningForInterestRate?: string; // Added field
+    reasoningForHouseGrowth?: string;
+    reasoningForInterestRate?: string;
   };
   recommendations: {
     loanTerm: {
       years: number;
-      months: number;
     };
     interestRate: number;
     note: string;
   };
   amortizationSchedule: AmortizationScheduleData;
-  paymentMethod: "fixed" | "decreasing";
-}
-
-interface CapitalStructureError {
-  error: true;
-  message: string;
-  details: string;
+  familyLoanDetails?: FamilyLoanDetails;
 }
 
 /**
- * Generate the Capital Structure section of the report
+ * Generate the Capital Structure section of the report (UPDATED with Payment Method & Family Loan)
  */
 export async function generateCapitalStructureSection(
-  plan: PrismaPlan, // Use PrismaPlan type
+  plan: PrismaPlan, // Use the PrismaPlan type directly
   confirmedYearData: ProjectionRow,
-  userContext: { // This is a subset of UserContext from generateFinalReport.ts
-    confirmedPurchaseYear: number;
-  }
+  loanSummary: LoanSummary
 ): Promise<CapitalStructureReportData | CapitalStructureError> {
   try {
-    // Calculate loan and equity values
-    const housePrice = Math.round(confirmedYearData.housePriceProjected);
-    const equityAmount = Math.round(confirmedYearData.cumulativeSavings);
-    const loanAmount = Math.round(housePrice - equityAmount);
-    const loanPercentage = Math.round((loanAmount / housePrice) * 100);
-    const equityPercentage = 100 - loanPercentage;
+    if (plan.confirmedPurchaseYear === null) {
+      throw new Error("Confirmed purchase year is not set.");
+    }
+
+    const familySupport = plan.familySupport;
+    const isFamilyLoan = familySupport?.familySupportType === 'LOAN' && (familySupport.familySupportAmount ?? 0) > 0;
+    // Specifically check for gifts designated to be received AT THE TIME OF PURCHASE.
+    const isFamilyGiftAtPurchase = familySupport?.familySupportType === 'GIFT' && familySupport.familyGiftTiming === 'AT_PURCHASE' && (familySupport.familySupportAmount ?? 0) > 0;
+
+    // --- Calculate Funding Breakdown ---
+    const bankLoanAmount = Math.round(confirmedYearData.loanAmountNeeded);
     
-    // Calculate loan term in years
-    const loanTermYears = Math.round(plan.loanTermMonths / 12);
+    // This represents the user's own accumulated savings. The projection engine has already correctly
+    // included any "gift-now" amounts in this `cumulativeSavings` figure.
+    const userEquityAmount = Math.round(confirmedYearData.cumulativeSavings);
+
+    // This is the loan from family, treated as a distinct source of capital.
+    const familyLoanAmount = isFamilyLoan ? (familySupport?.familySupportAmount ?? 0) : 0;
     
-    // Current year and confirmed year
-    const confirmedYear = userContext.confirmedPurchaseYear;
-    const currentYear = new Date().getFullYear();
-    const yearsToPurchase = confirmedYear - currentYear;
+    // This is the gift from family received AT THE TIME OF PURCHASE, also a distinct source.
+    const familyGiftAtPurchaseAmount = isFamilyGiftAtPurchase ? (familySupport?.familySupportAmount ?? 0) : 0;
+
+    const totalHousePrice = confirmedYearData.housePriceProjected;
+
+    // --- Data Structuring for Donut Chart ---
+    const donutChartData: DonutChartItemCS[] = [
+      { name: 'Vốn tự có', value: userEquityAmount },
+      { name: 'Vay ngân hàng', value: bankLoanAmount },
+    ];
+    if (isFamilyLoan) {
+      donutChartData.push({ name: 'Vay gia đình', value: familyLoanAmount });
+    }
+    // Only add the "Gift" slice to the chart if it's received AT PURCHASE.
+    if (isFamilyGiftAtPurchase) {
+      donutChartData.push({ name: 'Hỗ trợ từ gia đình', value: familyGiftAtPurchaseAmount });
+    }
     
-    // Create introduction text
-    const introText = `Dựa trên mục tiêu và tình hình tài chính của bạn, chúng tôi khuyến nghị bạn mua nhà vào năm ${confirmedYear}, tức ${yearsToPurchase} năm nữa tính từ thời điểm hiện tại, và vay ${loanPercentage}% giá trị căn nhà.`;
+    const totalLoanAmount = bankLoanAmount + familyLoanAmount;
     
-    // Create explanation based on marital status and dependents
+    const calculatedHousePrice = userEquityAmount + bankLoanAmount + familyLoanAmount + familyGiftAtPurchaseAmount;
+    
+    const introText = `Để mua căn nhà trị giá ${formatAsCurrency(calculatedHousePrice)} vào năm ${plan.confirmedPurchaseYear}, cơ cấu vốn của bạn được phân bổ như sau.`;
+
+    // --- Build Family Loan Details Object ---
+    let familyLoanDetails: FamilyLoanDetails | undefined = undefined;
+    if (isFamilyLoan && familySupport) { // Check for familySupport existence
+        let monthlyPayment = 0;
+        // Use familyLoanTermYears from the nested object
+        const termYears = familySupport.familyLoanTermYears; 
+        
+        if (familySupport.familyLoanRepaymentType === 'MONTHLY' && termYears && termYears > 0) {
+            // A simple calculation for monthly payment without interest, can be enhanced
+            monthlyPayment = familyLoanAmount / (termYears * 12);
+        }
+
+        familyLoanDetails = {
+            amount: familyLoanAmount,
+            repaymentType: familySupport.familyLoanRepaymentType || 'LUMP_SUM',
+            interestRate: familySupport.familyLoanInterestRate || 0,
+            termYears: termYears,
+            monthlyPayment: Math.round(monthlyPayment)
+        };
+    }
+
+    // --- Data Structuring ---
+    const annotations: AnnotationItemCS[] = [
+        {
+            text: `${formatAsCurrency(userEquityAmount)}`,
+            description: `(${Math.round((userEquityAmount / calculatedHousePrice) * 100)}%) là số vốn tự có của bạn.`
+        },
+        {
+            text: `${formatAsCurrency(bankLoanAmount)}`,
+            description: `(${Math.round((bankLoanAmount / calculatedHousePrice) * 100)}%) là số tiền bạn cần vay ngân hàng.`
+        }
+    ];
+    if (isFamilyLoan) {
+        annotations.push({
+            text: `${formatAsCurrency(familyLoanAmount)}`,
+            description: `(${Math.round((familyLoanAmount / calculatedHousePrice) * 100)}%) là số tiền bạn vay từ gia đình.`
+        });
+    }
+    if (isFamilyGiftAtPurchase) {
+        annotations.push({
+            text: `${formatAsCurrency(familyGiftAtPurchaseAmount)}`,
+            description: `(${Math.round((familyGiftAtPurchaseAmount / calculatedHousePrice) * 100)}%) là số tiền hỗ trợ từ gia đình được nhận tại thời điểm mua nhà.`
+        });
+    }
+
+    const paymentMethod = plan.paymentMethod || 'fixed';
     const explanationPoints = [];
-    
-    // Add income explanation
-    if (plan.maritalStatus === "Married" || plan.maritalStatus === "Partnered") {
-      explanationPoints.push("Thu nhập hiện tại của hai vợ chồng, đã điều chỉnh tăng thu nhập mỗi năm (Xem thêm về thu nhập ở mục 4).");
+    if (plan.hasCoApplicant) {
+      explanationPoints.push("Thu nhập hiện tại của hai vợ chồng, đã điều chỉnh tăng thu nhập mỗi năm.");
     } else {
-      explanationPoints.push("Thu nhập hiện tại của bạn, đã điều chỉnh tăng thu nhập mỗi năm (Xem thêm về thu nhập ở mục 4).");
+      explanationPoints.push("Thu nhập hiện tại của bạn, đã điều chỉnh tăng thu nhập mỗi năm.");
     }
     
-    // Add future plans explanation
-    const futurePlans = [];
-    // Handle nullable fields from PrismaPlan
-    if (plan.plansMarriageBeforeTarget && (plan.targetMarriageYear ?? Infinity) <= confirmedYear) {
-      futurePlans.push("kết hôn");
+    explanationPoints.push("Tích lũy từ tiền tiết kiệm và đầu tư hàng tháng.");
+
+    if (isFamilyLoan) {
+      const familyLoanTerms = plan.familyLoanTermYears 
+        ? `, trả trong ${plan.familyLoanTermYears} năm` 
+        : '';
+      explanationPoints.push(`Vay gia đình ${formatAsCurrency(familyLoanAmount)} trong ${familyLoanTerms}.`);
+    } else if (familyGiftAtPurchaseAmount > 0) {
+      explanationPoints.push(`Gia đình tặng ${formatAsCurrency(familyGiftAtPurchaseAmount)}.`);
     }
-    if (plan.plansChildBeforeTarget && (plan.targetChildYear ?? Infinity) <= confirmedYear) {
-      futurePlans.push("có thêm thành viên mới");
-    }
-    
-    if (futurePlans.length > 0) {
-      explanationPoints.push(`Kế hoạch ${futurePlans.join(" và ")}, dẫn tới chi phí sẽ tăng theo (Xem thêm về chi phí ở mục 4).`);
-    } else {
-      explanationPoints.push("Kế hoạch ổn định, không có thay đổi lớn về chi phí (Xem thêm về chi phí ở mục 4).");
-    }
-    
-    // Generate amortization schedule
-    // Explicitly cast plan to a type that includes optional paymentMethod to satisfy TS
-    const paymentMethodValue = (plan as { paymentMethod?: string | null }).paymentMethod;
-    let effectivePaymentMethod: "fixed" | "decreasing" = "fixed"; // Default to fixed
-    if (paymentMethodValue === "decreasing") {
-      effectivePaymentMethod = "decreasing";
-    }
-    // If plan.paymentMethod is null, undefined, "fixed", or anything else, it defaults to "fixed"
+
+    explanationPoints.push(`Khoản vay ngân hàng được tính toán dựa trên phương thức trả nợ ${paymentMethod === 'fixed' ? 'Cố định' : 'Giảm dần'}.`);
 
     const amortizationSchedule = generateAmortizationSchedule(
-      loanAmount,
+      bankLoanAmount,
       plan.loanInterestRate,
-      plan.loanTermMonths,
-      effectivePaymentMethod
+      plan.loanTermYears,
+      paymentMethod
     );
     
-    // Return structured data for UI rendering
+    // Final Data Structure
     return {
-      // Section 1: Current Situation
+      plan,
+      confirmedYearData,
+      loanSummary,
       currentSituation: {
         introText: introText,
-        donutChart: [
-          { name: 'Vay', value: loanPercentage },
-          { name: 'Vốn tự có', value: equityPercentage }
-        ],
-        housePrice: housePrice,
-        loanAmount: loanAmount,
-        equityAmount: equityAmount,
-        loanPercentage: loanPercentage,
-        equityPercentage: equityPercentage,
-        annotations: [
-          {
-            text: `${loanPercentage}% ~ ${loanAmount} tỷ VND`,
-            description: "Số tiền bạn cần vay"
-          },
-          {
-            text: `${equityPercentage}% ~ ${equityAmount} tỷ VND`,
-            description: "Số tiền bạn cần tích lũy"
-          },
-          {
-            text: `${housePrice} tỷ VND`,
-            description: "Dự kiến giá trị căn nhà vào thời điểm mua"
-          }
-        ]
+        donutChart: donutChartData,
+        housePrice: Math.round(calculatedHousePrice),
+        totalLoanAmount: Math.round(totalLoanAmount),
+        bankLoanAmount: bankLoanAmount,
+        familyLoanAmount: familyLoanAmount,
+        equityAmount: Math.round(userEquityAmount),
+        bankLoanPercentage: Math.round((bankLoanAmount / calculatedHousePrice) * 100),
+        familyLoanPercentage: Math.round((familyLoanAmount / calculatedHousePrice) * 100),
+        equityPercentage: Math.round((userEquityAmount / calculatedHousePrice) * 100),
+        annotations: annotations,
       },
-      
-      // Section 2: Expert Explanation
       expertExplanation: {
-        heading: `Tại sao chúng tôi gợi ý bạn vay ${loanPercentage}%?`,
-        intro: "Đây là mức vay hợp lý, nằm trong khoảng bạn có thể trả nợ được. Con số này tính toán dựa trên:",
-        explanationPoints: explanationPoints,
-        warning: "Nếu tăng tỷ lệ vay 60-70% giá trị căn nhà thì sẽ không nằm trong vùng khả năng trả nợ an toàn của bạn, trừ khi bạn có thu nhập đột biến gấp 2, 3 lần. Tỷ lệ nợ này có thể giảm nếu bạn có sự hỗ trợ tài chính thêm từ gia đình.",
-        // Populate static explanations, matching current UI fallbacks
-        reasoningForHouseGrowth: "Do nhu cầu ở cao, đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hàng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
-        reasoningForInterestRate: "Con số này này dựa trên chi phí huy động vốn, rủi ro tín dụng, chi phí vận hành của ngân hàng, cùng với chính sách tiền tệ và lạm phát hiện tại ở Việt Nam. Đây là mức lãi suất cân bằng dựa trên thị trường và kinh tế thực tế."
+        heading: "Giải thích của chuyên gia",
+        intro: "Số tiền bạn có thể vay được tính toán dựa trên:",
+        explanationPoints,
+        warning: "Đây là phương án được tính toán với điều kiện rủi ro thấp nhất và có khả năng thực hiện cao nhất. Mọi thay đổi về lãi suất vay và các yếu tố khác có thể ảnh hưởng đến kết quả này.",
+        reasoningForHouseGrowth: `Giá nhà được dự báo tăng trưởng ở mức ${plan.pctHouseGrowth}% mỗi năm, dựa trên dữ liệu lịch sử và các yếu tố kinh tế vĩ mô. Điều này có nghĩa là căn nhà mục tiêu của bạn sẽ có giá cao hơn trong tương lai.`,
+        reasoningForInterestRate: `Mức lãi suất vay ${plan.loanInterestRate}% được đưa ra dựa trên mức lãi suất trung bình của các ngân hàng hiện tại cho các khoản vay mua nhà. Mức lãi suất này có thể thay đổi tùy thuộc vào chính sách của từng ngân hàng và điều kiện thị trường tại thời điểm vay.`
       },
-      
-      // Section 3: Recommendations
       recommendations: {
         loanTerm: {
-          years: loanTermYears,
-          months: plan.loanTermMonths
+          years: plan.loanTermYears,
         },
         interestRate: plan.loanInterestRate,
-        note: "con số này có vẻ cao nhưng là phép tính an toàn để dự phòng biến động của thị trường và lãi suất cho vay"
+        note: "Duy trì công việc ổn định và điểm tín dụng tốt để được duyệt khoản vay với lãi suất ưu đãi."
       },
-      
-      // Section 4: Amortization Schedule
-      amortizationSchedule,
-      
-      // Payment method
-      paymentMethod: effectivePaymentMethod
+      amortizationSchedule: amortizationSchedule,
+      familyLoanDetails: familyLoanDetails
     };
   } catch (error) {
-    console.error(`Error generating Capital Structure section:`, error);
+    console.error(`Error in generateCapitalStructureSection:`, error);
     return {
       error: true,
-      message: `Chúng tôi gặp sự cố khi tạo phần này. Vui lòng làm mới trang để thử lại.`,
-      details: error instanceof Error ? error.message : 'Lỗi không xác định'
+      message: error instanceof Error ? error.message : "An unknown error occurred",
+      details: error instanceof Error ? error.stack ?? "" : "",
     };
   }
+}
+
+// Helper function to format currency for display
+function formatAsCurrency(amount: number): string {
+    if (amount >= 1000) {
+        return `${(amount / 1000).toFixed(2)} tỷ VND`;
+  }
+    return `${amount.toLocaleString()} triệu VND`;
 }

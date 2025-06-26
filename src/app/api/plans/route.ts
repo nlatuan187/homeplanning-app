@@ -81,6 +81,9 @@ export async function GET(req: NextRequest) {
       where: {
         userId,
       },
+      include: {
+        familySupport: true,
+      },
       orderBy: {
         createdAt: "desc",
       },

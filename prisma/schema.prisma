@@ -42,42 +42,36 @@ model Plan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // --- Store the INPUTS used for this specific plan ---
-  // Goal Inputs
-  yearsToPurchase    Int
-  targetHousePriceN0 Float // Store as Float/Decimal for precision
-  targetHouseType    String? // Or Enum if defined
+  // Page 1: Goal Inputs
+  yearsToPurchase    Int     @default(3)
+  targetHousePriceN0 Float   // Current price of the target house
+  targetHouseType    String? // "Chung cư", "Nhà đất", "Khác"
   targetLocation     String?
+  pctHouseGrowth     Float   @default(10.0) // Assumption: Annual house price growth rate (%)
 
-  // User Data Inputs (Snapshot at time of plan creation/update)
-  maritalStatus String // "Single", "Married/Partnered"
-  hasDependents Boolean
-  numberOfDependents Int?
-  // Store future plans info if provided
-  plansMarriageBeforeTarget Boolean?
-  targetMarriageYear        Int?
-  plansChildBeforeTarget    Boolean?
-  targetChildYear           Int?
+  // Page 2: Income Inputs
+  userMonthlyIncome         Float    @default(0)
+  hasCoApplicant            Boolean  @default(false)
+  coApplicantMonthlyIncome  Float?   // Co-applicant's monthly salary
+  monthlyOtherIncome        Float    @default(0) // Other monthly income for the family/user
+  pctSalaryGrowth           Float    @default(7.0)  // Assumption: User's annual salary growth rate (%)
+  coApplicantSalaryGrowth   Float?   // Assumption: Co-applicant's annual salary growth rate (%), defaults to user's if null
 
-  // Financial Inputs
-  initialSavingsGoal           Float
-  incomeLastYear               Float
-  monthlyOtherIncome           Float
-  monthlyLivingExpenses        Float
-  monthlyNonHousingDebt        Float
-  currentAnnualInsurancePremium Float
-  spouseMonthlyIncome          Float? // Nullable if not applicable/provided
+  // Page 3: Spending & Savings Inputs
+  monthlyLivingExpenses         Float
+  monthlyNonHousingDebt         Float   @default(0) // Monthly payments for other debts
+  currentAnnualInsurancePremium Float   @default(0) // Annual life insurance premium
+  initialSavings                Float    @default(0)
+  pctExpenseGrowth              Float   @default(4.0)  // Assumption: Annual expense growth rate / inflation (%)
+  pctInvestmentReturn           Float   @default(9.0)  // Assumption: Annual return rate on investments (%)
 
-  // Assumptions/Overrides Used for this plan
-  pctHouseGrowth       Float    @default(10.0) // Store the value used
-  pctSalaryGrowth      Float    @default(7.0)
-  pctExpenseGrowth     Float    @default(4.0)
-  pctInvestmentReturn  Float    @default(11.0)
-  factorMarriage       Float    @default(60.0)
-  factorChild          Float    @default(40.0)
-  loanInterestRate     Float    @default(11.0)
-  loanTermMonths       Int      @default(300)
-  paymentMethod        String?  @default("fixed") // "fixed" or "decreasing"
+  // Page 4: Loan & Support Inputs
+  loanInterestRate              Float?    @default(11.0) // Assumption: Mortgage interest rate (%)
+  loanTermYears                 Int?      @default(25)
+  paymentMethod                 String   @default("fixed")
+  
+  // Relation to the detailed FamilySupport model
+  familySupport                 FamilySupport?
 
   // --- Store the RESULT of the plan ---
   affordabilityOutcome String? // "ScenarioA", "ScenarioB"
@@ -88,11 +82,9 @@ model Plan {
   reportGeneratedAt      DateTime? 
   reportAssetEfficiency  String?   @db.Text
   reportCapitalStructure String?   @db.Text
-  // reportRiskManagement   String?   @db.Text // Removed
   reportSpendingPlan     String?   @db.Text
-  reportInsurance        String?   @db.Text // Kept for refactored insurance action
-  reportBackupPlans      String?   @db.Text // Kept for refactored backupPlans action
-  // reportFuturePlanning   String?   @db.Text // Removed
+  reportInsurance        String?   @db.Text
+  reportBackupPlans      String?   @db.Text
 
   // --- Fields for plan editing and tracking ---
   revisionCount          Int       @default(0)
@@ -102,4 +94,35 @@ model Plan {
 
   // Note: We are NOT storing the full ProjectionDataTable here for MVP to save space.
   // It will be recalculated when the plan is viewed.
+}
+
+// Model to hold detailed information about family support
+model FamilySupport {
+  id                      String                   @id @default(cuid())
+  planId                  String                   @unique
+  plan                    Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  hasFamilySupport        Boolean                  @default(false)
+  familySupportType       FamilySupportType?
+  familySupportAmount     Float?
+  familyGiftTiming        FamilyGiftTiming?
+  familyLoanRepaymentType FamilyLoanRepaymentType?
+  familyLoanInterestRate  Float?
+  familyLoanTermYears     Int?      // The term in years for repaying the family loan
+}
+
+// Enums for strongly-typed categories
+enum FamilySupportType {
+  GIFT
+  LOAN
+}
+
+enum FamilyGiftTiming {
+  NOW
+  AT_PURCHASE
+}
+
+enum FamilyLoanRepaymentType {
+  MONTHLY
+  LUMP_SUM
 }

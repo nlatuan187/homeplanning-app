@@ -4,29 +4,27 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectionRow } from "@/lib/calculations/affordability";
-import { useRouter } from "next/navigation";
 import { confirmPurchaseYear } from "@/actions";
-// Accordion components removed
 import { CheckIcon } from "lucide-react";
+import { Plan } from "@prisma/client";
 
 interface ResultsScenarioBProps {
-  planId: string;
+  plan: Plan;
   targetYear: number; // This is the user's original target year from the plan
   firstViableYear: number;
   projectionData: ProjectionRow[];
   planLoanInterestRate: number;
-  planLoanTermMonths: number;
+  planLoanTermYears: number;
 }
 
 export default function ResultsScenarioB({
-  planId,
+  plan,
   targetYear,
   firstViableYear,
   projectionData,
   planLoanInterestRate,
-  planLoanTermMonths
+  planLoanTermYears
 }: ResultsScenarioBProps) {
-  const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [selectedYearState, setSelectedYearState] = useState<number>(firstViableYear);
   const [error, setError] = useState<string | null>(null);
@@ -42,16 +40,19 @@ export default function ResultsScenarioB({
     setIsConfirming(true);
     setError(null);
     try {
-      const result = await confirmPurchaseYear(planId, selectedYearState);
-      if (!result.success) {
+      const result = await confirmPurchaseYear(plan.id, selectedYearState);
+      if (result.success) {
+        // Use window.location.assign for a full page navigation to solve
+        // issues with client-side routing to server components.
+        window.location.assign(`/plan/${plan.id}/financial-peace`);
+      } else {
         throw new Error(result.error || "Failed to confirm purchase year");
       }
-      // Redirect to financial-peace page upon successful confirmation
-      router.push(`/plan/${planId}/financial-peace`);
     } catch (error) {
       console.error("Error confirming purchase year:", error);
       setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
+      // This will now correctly execute even on failure.
       setIsConfirming(false);
     }
   };
@@ -104,9 +105,24 @@ export default function ResultsScenarioB({
     const mucTangChiPhi = selectedYearProjection.pctExpenseGrowth;
     const chiPhiSinhHoatNamMucTieu = formatToNumberOneDecimal(selectedYearProjection.annualExpenses / 12);
 
-    const soTienVay = Math.round(selectedYearProjection.loanAmountNeeded); // Keep as integer for "triệu"
+    const soTienVayNganHang = Math.round(selectedYearProjection.loanAmountNeeded);
+
+    // Updated logic to correctly access nested familySupport object
+    const familySupport = plan.familySupport;
+    const soTienVayGiaDinh =
+      (familySupport?.familySupportType === 'LOAN' && (familySupport.familySupportAmount ?? 0) > 0)
+        ? Math.round(familySupport.familySupportAmount!)
+        : 0;
+
+    const familyGiftAtPurchase =
+      (familySupport?.familySupportType === 'GIFT' && familySupport.familyGiftTiming === 'AT_PURCHASE' && (familySupport.familySupportAmount ?? 0) > 0)
+        ? Math.round(familySupport.familySupportAmount!)
+        : 0;
+    
     const tienTraGopHangThang = formatToNumberOneDecimal(selectedYearProjection.monthlyPayment);
-    const tongChiThang = formatToNumberOneDecimal(chiPhiSinhHoatNamMucTieu + tienTraGopHangThang); // Recalculate sum with one decimal
+    // Update total monthly expenses to include family loan repayment for the detailed explanation
+    const traNoGiaDinhHangThang = selectedYearProjection.familyLoanRepayment / 12;
+    const tongChiThang = formatToNumberOneDecimal(chiPhiSinhHoatNamMucTieu + tienTraGopHangThang + traNoGiaDinhHangThang);
     const ketLuanBuffer = formatToNumberOneDecimal(selectedYearProjection.buffer);
 
     return (
@@ -157,20 +173,29 @@ export default function ResultsScenarioB({
 
         {/* Tổng chi */}
         <div className="space-y-3 p-1 md:p-2">
-          <h2 className="text-lg md:text-xl font-semibold">Tổng chi <span className="text-sm md:text-base font-normal text-slate-400">(chi phí sinh hoạt + tiền trả góp vay mua nhà)</span></h2>
+          <h2 className="text-lg md:text-xl font-semibold">Tổng chi <span className="text-sm md:text-base font-normal text-slate-400">(chi phí sinh hoạt + trả góp NH + trả nợ GĐ)</span></h2>
           <div className="text-sm md:text-base space-y-1 text-slate-300">
             <div className="flex justify-between"><span>Chi phí hiện tại:</span> <span className="text-slate-100">{formatToLocaleOneDecimal(chiPhiHienTaiThang)} triệu/tháng → {chiPhiHienTaiNam.toLocaleString()} triệu/năm</span></div>
             <div className="flex justify-between"><span>Mức tăng chi phí:</span> <span className="text-slate-100">{mucTangChiPhi}%/năm</span></div>
             <div className="flex justify-between"><span>Chi phí năm {displayYear}:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(chiPhiSinhHoatNamMucTieu)} triệu/tháng</span></div>
             <hr className="border-slate-700 my-1" />
-            <div className="flex justify-between"><span>Số tiền vay để mua nhà:</span> <span className="text-slate-100">{soTienVay.toLocaleString()} triệu</span></div>
+            <div className="flex justify-between"><span>Số tiền vay ngân hàng:</span> <span className="text-slate-100">{soTienVayNganHang.toLocaleString()} triệu</span></div>
+            {familyGiftAtPurchase > 0 && (
+              <div className="flex justify-between">
+                <span>Hỗ trợ từ gia đình (Quà tặng):</span>
+                <span className="text-slate-100">{familyGiftAtPurchase.toLocaleString()} triệu</span>
+              </div>
+            )}
+            {soTienVayGiaDinh > 0 && (
+                <div className="flex justify-between"><span>Số tiền vay gia đình:</span> <span className="text-slate-100">{soTienVayGiaDinh.toLocaleString()} triệu</span></div>
+            )}
             {/* Values for interest rate and term now come from plan props */}
             <div className="flex justify-between"><span>Lãi suất vay:</span> <span className="text-slate-100">{planLoanInterestRate}%/năm</span></div>
-            <div className="flex justify-between"><span>Thời hạn vay:</span> <span className="text-slate-100">{planLoanTermMonths / 12} năm</span></div>
+            <div className="flex justify-between"><span>Thời hạn vay:</span> <span className="text-slate-100">{planLoanTermYears} năm</span></div>
             <div className="flex justify-between"><span>Tiền trả góp hàng tháng:</span> <span style={{color: '#00ACB8'}} className="font-semibold">{formatToLocaleOneDecimal(tienTraGopHangThang)} triệu/tháng</span></div>
           </div>
           <div className="bg-slate-800 p-3 rounded-md text-center"> {/* Changed to bg-slate-800 */}
-            <p className="font-medium">Tổng chi = {formatToLocaleOneDecimal(chiPhiSinhHoatNamMucTieu)} + {formatToLocaleOneDecimal(tienTraGopHangThang)} = {formatToLocaleOneDecimal(tongChiThang)} triệu/tháng</p>
+            <p className="font-medium">Tổng chi = {formatToLocaleOneDecimal(chiPhiSinhHoatNamMucTieu)} + {formatToLocaleOneDecimal(tienTraGopHangThang)} + {formatToLocaleOneDecimal(traNoGiaDinhHangThang)} = {formatToLocaleOneDecimal(tongChiThang)} triệu/tháng</p>
           </div>
         </div>
         
@@ -192,22 +217,23 @@ export default function ResultsScenarioB({
                 <thead className="bg-slate-800"><tr>{/* Changed to bg-slate-800 */}
                     <th className="py-2 px-2 text-left font-medium">Năm</th>
                     <th className="py-2 px-2 text-right font-medium">Tổng Thu</th>
-                    <th className="py-2 px-2 text-center font-medium">So sánh</th>
                     <th className="py-2 px-2 text-right font-medium">Tổng Chi</th>
+                    <th className="py-2 px-2 text-right font-medium">Trả nợ GĐ</th>
                     <th className="py-2 px-2 text-center font-medium">Khả năng mua nhà</th>
                   </tr></thead>
                 <tbody className="divide-y divide-slate-700">
                   {projectionData.slice(0, Math.max(5, viableYears.length, projectionData.findIndex(p => p.year === displayYear) + 2)).map((row) => {
                     const rowTongThu = Math.round(row.annualIncome / 12);
-                    const rowTongChi = Math.round(row.annualExpenses / 12 + row.monthlyPayment);
-                    const soSanh = rowTongThu > rowTongChi ? ">" : rowTongThu < rowTongChi ? "<" : "=";
+                    // Also update the total expenses in the summary table
+                    const rowTongChi = Math.round(row.annualExpenses / 12 + row.monthlyPayment + (row.familyLoanRepayment / 12));
+                    const rowTraNoGD = Math.round(row.familyLoanRepayment / 12);
                     const khaNang = row.isAffordable;
                     return (
                       <tr key={row.year} className={`${row.year === displayYear ? "bg-slate-700/50" : ""}`}>
                         <td className="py-2 px-2">{row.year}</td>
                         <td className="py-2 px-2 text-right">{rowTongThu.toLocaleString()}</td>
-                        <td className={`py-2 px-2 text-center font-semibold ${soSanh === ">" ? "text-green-400" : soSanh === "<" ? "text-red-400" : ""}`}>{soSanh}</td>
                         <td className="py-2 px-2 text-right">{rowTongChi.toLocaleString()}</td>
+                        <td className="py-2 px-2 text-right">{rowTraNoGD > 0 ? rowTraNoGD.toLocaleString() : "-"}</td>
                         <td className={`py-2 px-2 text-center font-semibold ${khaNang ? "text-green-400" : "text-red-400"}`}>{khaNang ? '✓' : '✗'}</td>
                       </tr>
                     );

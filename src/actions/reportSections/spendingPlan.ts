@@ -1,8 +1,8 @@
 import { ProjectionRow } from "@/lib/calculations/affordability";
-import { type LoanSummary } from "@/lib/calculations/projections/calculateLoanSummary"; // Import only LoanSummary type
 import { Plan as PrismaPlan } from "@prisma/client";
 
-interface IncomeProjectionItem {
+// Define the interfaces for the report data structure
+export interface IncomeProjectionItem {
   year: number;
   totalIncome: number;
   personalIncome: number;
@@ -10,13 +10,13 @@ interface IncomeProjectionItem {
   otherIncome: number;
 }
 
-interface ExpenseProjectionItem {
+export interface ExpenseProjectionItem {
   year: number;
   totalExpense: number;
   growthPct: number;
 }
 
-interface SpendingRatioProjectionItem {
+export interface SpendingRatioProjectionItem {
   year: number;
   totalIncome: number;
   totalExpense: number;
@@ -24,191 +24,125 @@ interface SpendingRatioProjectionItem {
 }
 
 export interface SpendingPlanReportData {
+  plan: PrismaPlan;
+  projectionData: ProjectionRow[];
   currentSituation: {
     income: {
       monthlyIncome: number;
       annualIncome: number;
       growthRate: number;
-      maritalStatus: string;
-      hasSpouseIncome: boolean;
+      hasCoApplicant: boolean;
       projections: IncomeProjectionItem[];
     };
     expenses: {
       monthlyExpenses: number;
       annualExpenses: number;
       growthRate: number;
-      hasDependents: boolean | null;
-      factorMarriage: number;
-      factorChild: number;
       projections: ExpenseProjectionItem[];
     };
     monthlySurplus: number;
-    paymentToIncomeRatio: number;
-    plansMarriageBeforeTarget: boolean | null;
-    targetMarriageYear: number | null;
-    plansChildBeforeTarget: boolean | null;
-    targetChildYear: number | null;
+    mortgageToIncomeRatio: number;
   };
   expertExplanation: {
-    expenseFactors: {
-      factorMarriage: number;
-      factorChild: number;
       expenseGrowthRate: number;
       salaryGrowthRate: number;
-    };
-    requiredSalaryGrowth: {
-      rate: number;
-      houseGrowthRate: number;
-      investmentReturnRate: number;
-    };
-    expenseGrowthExplanation?: string; // Added field
+    expenseGrowthExplanation?: string;
   };
   recommendations: {
     spendingRatio: {
-      current: number;
-      confirmedYear: number;
+      confirmedYearRatio: number;
       mortgageRatio: number;
       projections: SpendingRatioProjectionItem[];
     };
   };
 }
 
-interface SpendingPlanError {
+export interface SpendingPlanError {
   error: true;
   message: string;
   details: string;
 }
 
-
 /**
- * Generate the Spending Plan section of the report
+ * Generate the Spending Plan section of the report (UPDATED & REWRITTEN)
  */
 export async function generateSpendingPlanSection(
   plan: PrismaPlan,
   confirmedYearData: ProjectionRow,
-  // userContext: any, // Not used
-  loanSummary: LoanSummary, // Use imported LoanSummary type
-  // projectionData: ProjectionRow[] // Not used
+  projectionData: ProjectionRow[]
 ): Promise<SpendingPlanReportData | SpendingPlanError> {
   try {
-    // Calculate monthly values
-    const monthlyIncome = Math.round(confirmedYearData.annualIncome / 12);
-    const monthlyExpenses = Math.round(confirmedYearData.annualExpenses / 12);
-    const monthlySurplus = Math.round(confirmedYearData.monthlySurplus);
-    const paymentToIncomeRatio = Math.round(loanSummary.paymentToIncomeRatio);
+    // const { loanTermYears } = plan; // Removed as it's not used in this function
+    const monthlyIncomeConfirmedYear = confirmedYearData.annualIncome / 12;
+    const mortgageToIncomeRatio = monthlyIncomeConfirmedYear > 0 
+      ? (confirmedYearData.monthlyPayment / monthlyIncomeConfirmedYear) * 100 
+      : 0;
     
-    // Years for projections
-    const years = [2025, 2026, 2027];
-    const growthRate = 1 + (plan.pctSalaryGrowth / 100);
-    const expenseGrowthRate = 1 + (plan.pctExpenseGrowth / 100);
+    // Filter projections up to the confirmed year for the report charts
+    const relevantProjections = projectionData.filter(p => p.year <= plan.confirmedPurchaseYear!);
+
+    const incomeProjections = relevantProjections.map(p => ({
+      year: p.year,
+      totalIncome: Math.round(p.annualIncome),
+      personalIncome: Math.round(p.primaryIncome),
+      spouseIncome: Math.round(p.spouseIncome),
+      otherIncome: Math.round(p.otherIncome),
+    }));
     
-    // Base values for 2025
-    const baseIncome = monthlyIncome * 12;
-    const basePersonalIncome = baseIncome * 0.6; // Assuming 60% is personal income
-    const baseSpouseIncome = baseIncome * 0.4;   // Assuming 40% is spouse income
-    const baseOtherIncome = baseIncome * 0.3;    // Assuming 30% is other income
-    const baseExpense = monthlyExpenses * 12;
+    const expenseProjections = relevantProjections.map((p, index) => ({
+      year: p.year,
+      totalExpense: Math.round(p.annualExpenses),
+      growthPct: index === 0 ? 0 : plan.pctExpenseGrowth,
+    }));
     
-    // Create income projections
-    const incomeProjections = years.map((year, index) => {
-      const yearGrowth = Math.pow(growthRate, index);
-      return {
-        year: year,
-        totalIncome: Math.round(baseIncome * yearGrowth),
-        personalIncome: Math.round(basePersonalIncome * yearGrowth),
-        spouseIncome: Math.round(baseSpouseIncome * yearGrowth),
-        otherIncome: Math.round(baseOtherIncome * yearGrowth)
-      };
-    });
+    const spendingRatioProjections = relevantProjections.map(p => ({
+      year: p.year,
+      totalIncome: Math.round(p.annualIncome),
+      totalExpense: Math.round(p.annualExpenses),
+      spendingRatio: p.annualIncome > 0 ? Math.round((p.annualExpenses / p.annualIncome) * 100) : 0,
+    }));
     
-    // Create expense projections
-    const expenseProjections = years.map((year, index) => {
-      const yearGrowth = Math.pow(expenseGrowthRate, index);
-      return {
-        year: year,
-        totalExpense: Math.round(baseExpense * yearGrowth),
-        growthPct: index === 0 ? 0 : Math.round((expenseGrowthRate - 1) * 100)
-      };
-    });
-    
-    // Create spending ratio projections
-    const spendingRatioProjections = years.map((year, index) => {
-      const incomeProjection = incomeProjections[index];
-      const expenseProjection = expenseProjections[index];
-      return {
-        year: year,
-        totalIncome: incomeProjection.totalIncome,
-        totalExpense: expenseProjection.totalExpense,
-        spendingRatio: Math.round((expenseProjection.totalExpense / incomeProjection.totalIncome) * 100)
-      };
-    });
-    
-    // Return structured data for UI rendering
+    const confirmedYearSpendingRatio = spendingRatioProjections.find(p => p.year === plan.confirmedPurchaseYear)?.spendingRatio ?? 0;
+
     return {
-      // Section 1: Current Situation
+      plan: plan,
+      projectionData: projectionData,
       currentSituation: {
-        // Income summary
         income: {
-          monthlyIncome: monthlyIncome,
-          annualIncome: baseIncome,
+          monthlyIncome: Math.round(confirmedYearData.annualIncome / 12),
+          annualIncome: Math.round(confirmedYearData.annualIncome),
           growthRate: plan.pctSalaryGrowth,
-          maritalStatus: plan.maritalStatus,
-          hasSpouseIncome: plan.maritalStatus === "Married" || plan.maritalStatus === "Partnered",
-          projections: incomeProjections
+          hasCoApplicant: plan.hasCoApplicant,
+          projections: incomeProjections,
         },
-        
-        // Expense summary
         expenses: {
-          monthlyExpenses: monthlyExpenses,
-          annualExpenses: baseExpense,
+          monthlyExpenses: Math.round(confirmedYearData.annualExpenses / 12),
+          annualExpenses: Math.round(confirmedYearData.annualExpenses),
           growthRate: plan.pctExpenseGrowth,
-          hasDependents: plan.hasDependents,
-          factorMarriage: plan.factorMarriage || 30,
-          factorChild: plan.factorChild || 40,
-          projections: expenseProjections
+          projections: expenseProjections,
         },
-        
-        // Additional data
-        monthlySurplus: monthlySurplus,
-        paymentToIncomeRatio: paymentToIncomeRatio,
-        plansMarriageBeforeTarget: plan.plansMarriageBeforeTarget,
-        targetMarriageYear: plan.targetMarriageYear,
-        plansChildBeforeTarget: plan.plansChildBeforeTarget,
-        targetChildYear: plan.targetChildYear
+        monthlySurplus: Math.round(confirmedYearData.monthlySurplus),
+        mortgageToIncomeRatio: Math.round(mortgageToIncomeRatio),
       },
-      
-      // Section 2: Expert Explanation
       expertExplanation: {
-        expenseFactors: {
-          factorMarriage: plan.factorMarriage || 30,
-          factorChild: plan.factorChild || 40,
           expenseGrowthRate: plan.pctExpenseGrowth,
-          salaryGrowthRate: plan.pctSalaryGrowth
-        },
-        requiredSalaryGrowth: {
-          rate: plan.pctSalaryGrowth,
-          houseGrowthRate: plan.pctHouseGrowth,
-          investmentReturnRate: plan.pctInvestmentReturn
-        },
-        expenseGrowthExplanation: "Vì đây là mức gần bằng lạm phát của Việt Nam, giúp bạn giữ vững mức sống mà không tiêu hết phần thu nhập tăng thêm. Nhờ vậy, bạn vẫn còn dư để tiết kiệm và tích lũy cho mục tiêu mua nhà." // Added static text
+        salaryGrowthRate: plan.pctSalaryGrowth,
+        expenseGrowthExplanation: "Vì đây là mức gần bằng lạm phát của Việt Nam, giúp bạn giữ vững mức sống mà không tiêu hết phần thu nhập tăng thêm. Nhờ vậy, bạn vẫn còn dư để tiết kiệm và tích lũy cho mục tiêu mua nhà."
       },
-      
-      // Section 3: Recommendations
       recommendations: {
         spendingRatio: {
-          current: spendingRatioProjections[0].spendingRatio,
-          confirmedYear: spendingRatioProjections[spendingRatioProjections.length - 1].spendingRatio,
-          mortgageRatio: paymentToIncomeRatio,
-          projections: spendingRatioProjections
+          confirmedYearRatio: confirmedYearSpendingRatio,
+          mortgageRatio: Math.round(mortgageToIncomeRatio),
+          projections: spendingRatioProjections,
         }
-      }
+      },
     };
   } catch (error) {
     console.error(`Error generating Spending Plan section:`, error);
     return {
       error: true,
-      message: `Chúng tôi gặp sự cố khi tạo phần này. Vui lòng làm mới trang để thử lại.`,
-      details: error instanceof Error ? error.message : 'Lỗi không xác định'
+      message: `Chúng tôi gặp sự cố khi tạo phần Kế hoạch Chi tiêu.`,
+      details: error instanceof Error ? error.message : String(error),
     };
   }
 }

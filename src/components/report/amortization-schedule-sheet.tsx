@@ -18,28 +18,15 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-
-interface MonthlyScheduleItem {
-  month: number;
-  payment: number;
-  principal: number;
-  interest: number;
-  remainingBalance: number;
-}
-
-interface YearlyScheduleItem {
-  year: number;
-  totalPayment: number;
-  totalPrincipal: number;
-  totalInterest: number;
-  remainingBalance: number;
-}
+import { type AmortizationScheduleData } from "@/actions/reportSections/capitalStructure";
 
 interface AmortizationScheduleSheetProps {
-  monthlySchedule?: MonthlyScheduleItem[];
-  yearlySchedule?: YearlyScheduleItem[];
+  amortizationData?: AmortizationScheduleData;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  loanAmount: number;
+  interestRate: number;
+  loanTerm: number;
 }
 
 const formatMillions = (value: number): string => {
@@ -48,12 +35,17 @@ const formatMillions = (value: number): string => {
 };
 
 const AmortizationScheduleSheet: React.FC<AmortizationScheduleSheetProps> = ({
-  monthlySchedule = [],
-  yearlySchedule = [],
+  amortizationData,
   isOpen,
   onOpenChange,
+  loanAmount,
+  interestRate,
+  loanTerm
 }) => {
   const [viewType, setViewType] = useState<"monthly" | "yearly">("monthly");
+
+  const monthlySchedule = amortizationData?.monthlySchedule || [];
+  const yearlySchedule = amortizationData?.yearlySchedule || [];
 
   const displayMonthlySchedule = () => {
     if (monthlySchedule.length <= 24) { // Show all if 2 years or less
@@ -71,9 +63,9 @@ const AmortizationScheduleSheet: React.FC<AmortizationScheduleSheetProps> = ({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[90vh] flex flex-col bg-slate-900 text-slate-100 border-slate-700">
         <SheetHeader className="p-4 border-b border-slate-700">
-          <SheetTitle className="text-center text-lg font-semibold text-slate-50">Bảng Kế hoạch Trả nợ</SheetTitle>
+          <SheetTitle className="text-center text-lg font-semibold text-slate-50">Bảng Kế hoạch Trả nợ Ngân hàng</SheetTitle>
           <SheetDescription className="text-center text-sm text-slate-400">
-            Chi tiết dòng tiền trả nợ hàng tháng và hàng năm.
+            Khoản vay {formatMillions(loanAmount)} triệu trong {loanTerm} năm với lãi suất {interestRate}%/năm.
           </SheetDescription>
         </SheetHeader>
         <div className="p-4 flex justify-center space-x-2">

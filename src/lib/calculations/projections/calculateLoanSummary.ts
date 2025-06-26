@@ -21,8 +21,8 @@ export function calculateLoanSummary(yearData: ProjectionRow): LoanSummary {
   const downPaymentPercentage = (yearData.cumulativeSavings / yearData.housePriceProjected) * 100;
   const monthlyPayment = yearData.monthlyPayment;
   
-  // Calculate total payments over loan term (assuming standard term)
-  const loanTermYears = yearData.loanAmountNeeded > 0 ? 25 : 0; // Default to 25 years if loan needed
+  // Use the loan term from the projection data. Default to 0 if null/undefined.
+  const loanTermYears = yearData.loanTermYears || 0;
   const totalPayments = monthlyPayment * 12 * loanTermYears;
   
   // Calculate payment to income ratio

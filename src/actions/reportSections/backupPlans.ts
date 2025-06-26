@@ -1,8 +1,9 @@
-// import { ProjectionRow } from "@/lib/calculations/affordability"; // No longer needed
-// import { calculateLoanSummary } from "@/lib/calculations/projections/calculateLoanSummary"; // No longer needed
-// import { Plan as PrismaPlan } from "@prisma/client"; // Not needed if all content is static
+import { ProjectionRow } from "@/lib/calculations/affordability";
+import { type Plan as PrismaPlan } from "@prisma/client";
 
-export interface BackupPlansReportData { // Added export
+export interface BackupPlansReportData {
+  plan: PrismaPlan;
+  projectionData: ProjectionRow[];
   expertExplanation: {
     whyEmergencyFund: string;
   };
@@ -20,11 +21,9 @@ interface BackupPlansError {
  * This version returns static data as the UI component derives dynamic parts from plan/projectionData.
  */
 export async function generateBackupPlansSection(
-  // plan: PrismaPlan, // No longer needed if all returned data is static
-  // confirmedYearData: ProjectionRow, // No longer needed
-  // userContext: any, // No longer needed
-  // loanSummary: ReturnType<typeof calculateLoanSummary>, // No longer needed
-  // projectionData: ProjectionRow[] // No longer needed
+  plan: PrismaPlan,
+  userContext: object, // Kept for future use if needed
+  projectionData: ProjectionRow[]
 ): Promise<BackupPlansReportData | BackupPlansError> {
   try {
     // All calculations for EF chart and list are done in BackupPlansSection.tsx from projectionData.
@@ -50,6 +49,8 @@ export async function generateBackupPlansSection(
     // as BackupPlansSection.tsx derives chart data from plan and projectionData.
     // This action will primarily provide static texts and the list of alternative options.
     return {
+      plan: plan,
+      projectionData: projectionData,
       expertExplanation: {
         whyEmergencyFund: "Quỹ dự phòng giúp bạn đối phó với các rủi ro bất ngờ như ốm đau, mất việc hoặc tai nạn. Nó tạo ra lớp đệm an toàn, giúp bạn không phải vay mượn hay bán tài sản khi gặp khó khăn, qua đó duy trì được sự ổn định tài chính ngay cả trong những tình huống không lường trước."
       },

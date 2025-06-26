@@ -18,19 +18,28 @@ export async function getPlansForUser(userId: string): Promise<ExtendedPlan[]> {
     where: { userId },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, planName: true, createdAt: true, yearsToPurchase: true, targetHouseType: true,
-      targetLocation: true, targetHousePriceN0: true, affordabilityOutcome: true, buffer: true,
-      firstViableYear: true, userId: true, updatedAt: true, maritalStatus: true, hasDependents: true,
-      numberOfDependents: true, plansMarriageBeforeTarget: true, targetMarriageYear: true,
-      plansChildBeforeTarget: true, targetChildYear: true, initialSavingsGoal: true, incomeLastYear: true,
-      monthlyOtherIncome: true, monthlyLivingExpenses: true, monthlyNonHousingDebt: true,
-      currentAnnualInsurancePremium: true, spouseMonthlyIncome: true, pctHouseGrowth: true,
-      pctSalaryGrowth: true, pctExpenseGrowth: true, pctInvestmentReturn: true, factorMarriage: true,
-      factorChild: true, loanInterestRate: true, loanTermMonths: true, confirmedPurchaseYear: true,
-      reportGeneratedAt: true, reportAssetEfficiency: true, reportCapitalStructure: true,
-      reportSpendingPlan: true, reportInsurance: true, reportBackupPlans: true, revisionCount: true, userEmail: true,
-      // revisionHistory is Json?, Prisma select handles it if it exists.
-      // Ensure no client-only types are accidentally returned if ExtendedPlan is more complex.
+      // Keep valid fields
+      id: true,
+      planName: true,
+      createdAt: true,
+      updatedAt: true,
+      userId: true,
+      userEmail: true,
+      
+      // Goal
+      yearsToPurchase: true,
+      targetHouseType: true,
+      targetLocation: true,
+      targetHousePriceN0: true,
+      
+      // Result
+      affordabilityOutcome: true,
+      firstViableYear: true,
+      confirmedPurchaseYear: true,
+      buffer: true,
+
+      // Report Status
+      reportGeneratedAt: true,
     },
   });
   // Important: Ensure that the data returned is serializable if it's passed from server to client.

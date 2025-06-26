@@ -3,66 +3,89 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/actions/utils/formatters";
+import { 
+  AmortizationScheduleData, 
+  FamilyLoanDetails
+} from "@/actions/reportSections/capitalStructure";
 
 interface RepaymentScheduleProps {
-  amortizationSchedule: {
-    monthlySchedule: Array<{
-      month: number;
-      payment: number;
-      principal: number;
-      interest: number;
-      remainingBalance: number;
-    }>;
-    yearlySchedule: Array<{
-      year: number;
-      totalPayment: number;
-      totalPrincipal: number;
-      totalInterest: number;
-      remainingBalance: number;
-    }>;
-    summary: {
-      totalPayment: number;
-      totalInterest: number;
-      monthlyPayment: number;
-      lastMonthPayment?: number;
-    };
-  };
+  amortizationSchedule: AmortizationScheduleData;
+  familyLoanDetails?: FamilyLoanDetails;
+  loanTermYears: number;
   paymentMethod: "fixed" | "decreasing";
-  loanAmount: number;
-  loanTermMonths: number;
-  interestRate: number;
 }
+
+const FamilyLoanSection = ({ details }: { details: FamilyLoanDetails }) => (
+  <div className="mt-8">
+    <h3 className="text-xl font-semibold mb-3">Chi tiết vay gia đình/người thân</h3>
+    <div className="bg-slate-800/50 p-4 rounded-lg">
+      <ul className="space-y-2 text-sm">
+        <li className="flex justify-between">
+          <span className="text-slate-400">Số tiền vay:</span>
+          <span className="font-medium">{formatNumber(details.amount)} triệu</span>
+        </li>
+        <li className="flex justify-between">
+          <span className="text-slate-400">Hình thức trả:</span>
+          <span className="font-medium">{details.repaymentType}</span>
+        </li>
+        {details.interestRate !== undefined && (
+          <li className="flex justify-between">
+            <span className="text-slate-400">Lãi suất:</span>
+            <span className="font-medium">{details.interestRate}%/năm</span>
+          </li>
+        )}
+        {details.termYears !== undefined && (
+          <li className="flex justify-between">
+            <span className="text-slate-400">Thời hạn trả:</span>
+            <span className="font-medium">{details.termYears} năm</span>
+          </li>
+        )}
+        {details.repaymentType === "Trả dần hàng tháng" && (
+           <li className="flex justify-between">
+             <span className="text-slate-400">Trả hàng tháng (dự kiến):</span>
+             <span className="font-medium">{formatNumber(details.monthlyPayment)} triệu</span>
+           </li>
+        )}
+        {details.repaymentType === "Trả một cục khi có đủ khả năng" && (
+          <li className="pt-2 border-t border-slate-700/50">
+            <p className="text-xs text-slate-400 text-center italic">
+              Khoản vay này là một khoản nợ trong tài sản của bạn, không được tính vào dòng tiền trả lãi hàng tháng để tối ưu khả năng vay ngân hàng.
+            </p>
+          </li>
+        )}
+      </ul>
+    </div>
+  </div>
+);
 
 export function RepaymentScheduleSection({
   amortizationSchedule,
+  familyLoanDetails,
+  loanTermYears,
   paymentMethod,
-  loanAmount,
-  loanTermMonths,
-  interestRate
 }: RepaymentScheduleProps) {
   const [isOpen, setIsOpen] = useState(false);
   
-  // Get the first 24 months and last 12 months of the schedule for display
-  const firstTwoYearsSchedule = amortizationSchedule.monthlySchedule.slice(0, 24);
-  const lastYearSchedule = amortizationSchedule.monthlySchedule.slice(-12);
+  const { monthlySchedule, yearlySchedule, summary } = amortizationSchedule;
   
-  // Only show the last year if it's different from the first two years
+  const firstTwoYearsSchedule = monthlySchedule.slice(0, 24);
+  const lastYearSchedule = monthlySchedule.slice(-12);
+  const loanTermMonths = loanTermYears * 12;
   const showLastYear = loanTermMonths > 24;
+  const loanTermDisplay = `${loanTermYears} năm`;
+  const paymentMethodDisplay = paymentMethod === 'fixed' ? "cố định (niên kim)" : "giảm dần";
   
-  // Format the payment method for display
-  const paymentMethodDisplay = paymentMethod === "fixed" 
-    ? "cố định (niên kim)" 
-    : "giảm dần (dư nợ giảm dần)";
-  
-  // Format the loan term for display
-  const loanTermYears = Math.floor(loanTermMonths / 12);
-  const remainingMonths = loanTermMonths % 12;
-  const loanTermDisplay = remainingMonths > 0
-    ? `${loanTermYears} năm ${remainingMonths} tháng`
-    : `${loanTermYears} năm`;
+  const totalPayment = yearlySchedule.reduce((acc, curr) => acc + curr.totalPayment, 0);
+  const totalInterest = yearlySchedule.reduce((acc, curr) => acc + curr.totalInterest, 0);
+  const totalPrincipal = totalPayment - totalInterest;
+  const firstMonthPayment = summary.monthlyPayment;
+  const lastMonthPayment = summary.lastMonthPayment;
   
   return (
     <div className="space-y-4">
+      <div className="mt-6">
+        <h3 className="text-xl font-semibold">Lịch trả nợ Ngân hàng</h3>
+      </div>
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
           <h3 className="text-xl font-semibold">Lịch trả nợ chi tiết</h3>
@@ -78,7 +101,7 @@ export function RepaymentScheduleSection({
             <SheetHeader className="mb-4">
               <SheetTitle>Lịch trả nợ chi tiết</SheetTitle>
               <SheetDescription>
-                Khoản vay: {formatNumber(loanAmount)} tỷ VND • Lãi suất: {interestRate}% • Thời hạn: {loanTermDisplay} • Phương pháp: {paymentMethodDisplay}
+                Khoản vay: {formatNumber(totalPrincipal)} triệu • Thời hạn: {loanTermDisplay} • Phương pháp: {paymentMethodDisplay}
               </SheetDescription>
             </SheetHeader>
             
@@ -169,7 +192,7 @@ export function RepaymentScheduleSection({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-700">
-                        {amortizationSchedule.yearlySchedule.map((row) => (
+                        {yearlySchedule.map((row) => (
                           <tr key={row.year} className="hover:bg-slate-800/50">
                             <td className="py-2 px-3 text-left whitespace-nowrap">{row.year}</td>
                             <td className="py-2 px-3 text-right">{formatNumber(row.totalPayment)}</td>
@@ -191,11 +214,7 @@ export function RepaymentScheduleSection({
                     <ul className="space-y-2">
                       <li className="flex justify-between">
                         <span className="text-slate-400">Số tiền vay:</span>
-                        <span className="font-medium">{formatNumber(loanAmount)} tỷ VND</span>
-                      </li>
-                      <li className="flex justify-between">
-                        <span className="text-slate-400">Lãi suất:</span>
-                        <span className="font-medium">{interestRate}%</span>
+                        <span className="font-medium">{formatNumber(totalPrincipal)} triệu</span>
                       </li>
                       <li className="flex justify-between">
                         <span className="text-slate-400">Thời hạn vay:</span>
@@ -212,26 +231,24 @@ export function RepaymentScheduleSection({
                     <h4 className="text-lg font-medium">Tổng kết chi phí</h4>
                     <ul className="space-y-2">
                       <li className="flex justify-between">
-                        <span className="text-slate-400">Khoản trả góp {paymentMethod === "fixed" ? "hàng tháng" : "tháng đầu"}:</span>
-                        <span className="font-medium">{formatNumber(amortizationSchedule.summary.monthlyPayment)} tỷ VND</span>
+                        <span className="text-slate-400">
+                          {paymentMethod === 'fixed' ? 'Trả góp hàng tháng' : 'Trả góp tháng đầu'}:
+                        </span>
+                        <span className="font-medium">{formatNumber(firstMonthPayment)} triệu</span>
                       </li>
-                      {paymentMethod === "decreasing" && amortizationSchedule.summary.lastMonthPayment && (
+                      {paymentMethod === 'decreasing' && lastMonthPayment !== undefined && (
                         <li className="flex justify-between">
-                          <span className="text-slate-400">Khoản trả góp tháng cuối:</span>
-                          <span className="font-medium">{formatNumber(amortizationSchedule.summary.lastMonthPayment)} tỷ VND</span>
+                          <span className="text-slate-400">Trả góp tháng cuối:</span>
+                          <span className="font-medium">{formatNumber(lastMonthPayment)} triệu</span>
                         </li>
                       )}
                       <li className="flex justify-between">
-                        <span className="text-slate-400">Tổng tiền gốc:</span>
-                        <span className="font-medium">{formatNumber(loanAmount)} tỷ VND</span>
-                      </li>
-                      <li className="flex justify-between">
                         <span className="text-slate-400">Tổng tiền lãi:</span>
-                        <span className="font-medium">{formatNumber(amortizationSchedule.summary.totalInterest)} tỷ VND</span>
+                        <span className="font-medium">{formatNumber(totalInterest)} triệu</span>
                       </li>
                       <li className="flex justify-between border-t border-slate-700 pt-2 mt-2">
                         <span className="text-slate-400">Tổng chi phí:</span>
-                        <span className="font-medium">{formatNumber(amortizationSchedule.summary.totalPayment)} tỷ VND</span>
+                        <span className="font-medium">{formatNumber(totalPayment)} triệu</span>
                       </li>
                     </ul>
                   </div>
@@ -248,47 +265,47 @@ export function RepaymentScheduleSection({
           <ul className="space-y-1 text-sm">
             <li className="flex justify-between">
               <span className="text-slate-400">Số tiền vay:</span>
-              <span>{formatNumber(loanAmount)} tỷ VND</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-slate-400">Lãi suất:</span>
-              <span>{interestRate}%</span>
+              <span className="font-medium">{formatNumber(totalPrincipal)} triệu</span>
             </li>
             <li className="flex justify-between">
               <span className="text-slate-400">Thời hạn vay:</span>
-              <span>{loanTermDisplay}</span>
+              <span className="font-medium">{loanTermDisplay}</span>
             </li>
             <li className="flex justify-between">
               <span className="text-slate-400">Phương pháp trả góp:</span>
-              <span>{paymentMethodDisplay}</span>
+              <span className="font-medium">{paymentMethodDisplay}</span>
             </li>
           </ul>
         </div>
         
         <div className="bg-slate-800/50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Chi phí khoản vay</h4>
+          <h4 className="font-medium mb-2">Tổng kết chi phí</h4>
           <ul className="space-y-1 text-sm">
             <li className="flex justify-between">
-              <span className="text-slate-400">Khoản trả góp {paymentMethod === "fixed" ? "hàng tháng" : "tháng đầu"}:</span>
-              <span>{formatNumber(amortizationSchedule.summary.monthlyPayment)} tỷ VND</span>
+              <span className="text-slate-400">
+                {paymentMethod === 'fixed' ? 'Trả góp hàng tháng' : 'Trả góp tháng đầu'}:
+              </span>
+              <span className="font-medium">{formatNumber(firstMonthPayment)} triệu</span>
             </li>
-            {paymentMethod === "decreasing" && amortizationSchedule.summary.lastMonthPayment && (
+            {paymentMethod === 'decreasing' && lastMonthPayment !== undefined && (
               <li className="flex justify-between">
-                <span className="text-slate-400">Khoản trả góp tháng cuối:</span>
-                <span>{formatNumber(amortizationSchedule.summary.lastMonthPayment)} tỷ VND</span>
+                <span className="text-slate-400">Trả góp tháng cuối:</span>
+                <span className="font-medium">{formatNumber(lastMonthPayment)} triệu</span>
               </li>
             )}
             <li className="flex justify-between">
               <span className="text-slate-400">Tổng tiền lãi:</span>
-              <span>{formatNumber(amortizationSchedule.summary.totalInterest)} tỷ VND</span>
+              <span className="font-medium">{formatNumber(totalInterest)} triệu</span>
             </li>
-            <li className="flex justify-between">
+            <li className="flex justify-between border-t border-slate-700 pt-2 mt-2">
               <span className="text-slate-400">Tổng chi phí:</span>
-              <span>{formatNumber(amortizationSchedule.summary.totalPayment)} tỷ VND</span>
+              <span className="font-medium">{formatNumber(totalPayment)} triệu</span>
             </li>
           </ul>
         </div>
       </div>
+      
+      {familyLoanDetails && <FamilyLoanSection details={familyLoanDetails} />}
     </div>
   );
 }

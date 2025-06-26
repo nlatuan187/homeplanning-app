@@ -17,13 +17,31 @@ export function formatPercentage(value: number): string {
 }
 
 /**
- * Format a number with commas
+ * Format a number with commas and appropriate currency units (million/billion VND).
+ * The input value is assumed to be in millions.
+ * @param value The number in millions.
+ * @param overrideUnit Optional unit to override the default logic.
  */
-export function formatNumber(value: number): string {
-  return value.toLocaleString('vi-VN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 3
-  });
+export function formatNumber(
+  value: number | undefined | null,
+  overrideUnit?: string
+): string {
+  if (value === undefined || value === null || isNaN(value)) {
+    return `0 ${overrideUnit || 'triệu VNĐ'}`;
+  }
+
+  if (overrideUnit) {
+    return `${Math.round(value).toLocaleString('en-US')} ${overrideUnit}`;
+  }
+
+  if (value >= 1000) {
+    const billions = value / 1000;
+    // Format to 3 decimal places if it's not a whole number
+    const formattedValue = billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(3);
+    return `${formattedValue} tỷ VNĐ`;
+  }
+
+  return `${Math.round(value).toLocaleString('en-US')} triệu VNĐ`;
 }
 
 /**

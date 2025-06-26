@@ -1,18 +1,15 @@
 "use client";
 
-import { Plan } from "@prisma/client";
-import { ProjectionRow } from "@/lib/calculations/affordability";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-// Button import removed as it's no longer used
-import { type AssetEfficiencyReportData } from "@/actions/reportSections/assetEfficiency"; // Use path alias
+import { type AssetEfficiencyReportData } from "@/actions/reportSections/assetEfficiency";
+import { ProjectionRow } from "@/lib/calculations/affordability";
 
-// Local AssetEfficiencyData interface removed
+// A generic type for section data that can either be the data or an error
+type SectionData<T> = T | { error: true; message: string; details: string };
 
 interface AccumulationReportTabProps {
-  plan: Plan | null;
-  projectionData: ProjectionRow[] | null;
-  reportData: AssetEfficiencyReportData | null; // Use imported type
+  data: SectionData<AssetEfficiencyReportData>; 
 }
 
 // Helper to format currency for charts and text
@@ -31,34 +28,54 @@ const formatCurrency = (value: number | undefined | null, unit = "triệu VNĐ")
 };
 
 
-const AccumulationReportTab: React.FC<AccumulationReportTabProps> = ({ plan, projectionData, reportData }) => {
+const AccumulationReportTab: React.FC<AccumulationReportTabProps> = ({ data }) => {
+  // Handle error case first
+  if ('error' in data) {
+    return (
+      <div className="text-center p-8 bg-slate-900 rounded-lg">
+        <p className="text-red-500 font-semibold">Lỗi tải dữ liệu</p>
+        <p className="text-slate-400 text-sm mt-2">{data.message}</p>
+      </div>
+    );
+  }
+  
+  // Now we know data is AssetEfficiencyReportData
+  const { 
+    plan, 
+    projectionData, 
+    salaryGrowthExplanation, 
+    investmentReturnExplanation 
+  } = data;
+  
   if (!plan || !projectionData) {
-    return <div className="text-center p-8">Đang tải dữ liệu cho tab Tích lũy...</div>;
+    return <div className="text-center p-8">Dữ liệu không đầy đủ cho tab Tích lũy.</div>;
   }
 
   const confirmedYear = plan.confirmedPurchaseYear || new Date().getFullYear() + plan.yearsToPurchase;
-  const confirmedYearData = projectionData.find(p => p.year === confirmedYear);
+  const confirmedYearData = projectionData.find((p) => p.year === confirmedYear);
 
   // Data for Income Chart (Thu nhập chính vs Thu nhập khác)
-  const incomeChartData = projectionData.slice(0, 5).map(p => ({
-    name: p.year.toString(),
-    "Thu nhập chính": Math.round(p.primaryIncome / 12), // Monthly
-    "Thu nhập khác": Math.round(p.otherIncome / 12), // Monthly
-    "Tổng Thu Nhập": Math.round(p.annualIncome / 12), // Monthly
-  }));
+  const incomeChartData = projectionData
+    .slice(0, 5)
+    .map((p: ProjectionRow) => ({
+      name: p.year.toString(),
+      "Thu nhập chính": Math.round(p.primaryIncome / 12), // Monthly
+      "Thu nhập khác": Math.round(p.otherIncome / 12), // Monthly
+      "Tổng Thu Nhập": Math.round(p.annualIncome / 12), // Monthly
+    }));
 
   // Data for Savings Chart (Tiền tích lũy mỗi năm)
-  const savingsChartData = projectionData.slice(0, 5).map(p => ({
-    name: p.year.toString(),
-    "Tiền tích lũy": Math.round(p.annualSavings), // Annual
-    "Tổng tích lũy": Math.round(p.cumulativeSavings), // Cumulative Annual
-  }));
+  const savingsChartData = projectionData
+    .slice(0, 5)
+    .map((p: ProjectionRow) => ({
+      name: p.year.toString(),
+      "Tiền tích lũy": Math.round(p.annualSavings), // Annual
+      "Tổng tích lũy": Math.round(p.cumulativeSavings), // Cumulative Annual
+    }));
 
   const targetSalaryGrowth = plan.pctSalaryGrowth;
   const targetInvestmentReturn = plan.pctInvestmentReturn;
-  // const hasOtherIncome = projectionData.some(p => p.otherIncome > 0); // Removed as it's no longer used here
-
-
+  
   return (
     <div className="space-y-6">
       {/* "MỤC TIÊU TÍCH LŨY" Card removed, will be handled by ReportHeaderCard in parent */}
@@ -137,11 +154,11 @@ const AccumulationReportTab: React.FC<AccumulationReportTabProps> = ({ plan, pro
           <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">
             <div className="bg-slate-800 p-3 rounded-lg">
               <p className="font-semibold text-slate-100 mb-1">Tại sao cần tăng lương ít nhất 7%/năm?</p>
-              <p className="leading-relaxed">{reportData?.salaryGrowthExplanation || "Tiền lương là khoản thu đóng góp rất lớn vào tích lũy hàng năm, vì vậy cần tăng trưởng lương để giúp sở hữu căn nhà đầu tiên sớm hơn. Con số 7% được tính toán dựa trên mức tăng lương trung bình của người lao động."}</p>
+              <p className="leading-relaxed">{salaryGrowthExplanation || "Tiền lương là khoản thu đóng góp rất lớn vào tích lũy hàng năm, vì vậy cần tăng trưởng lương để giúp sở hữu căn nhà đầu tiên sớm hơn. Con số 7% được tính toán dựa trên mức tăng lương trung bình của người lao động."}</p>
             </div>
             <div className="bg-slate-800 p-3 rounded-lg">
               <p className="font-semibold text-slate-100 mb-1">Tại sao cần tích lũy ít nhất 11%/năm?</p>
-              <p className="leading-relaxed">{reportData?.investmentReturnExplanation || "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá, ít nhất là 11%/năm."}</p>
+              <p className="leading-relaxed">{investmentReturnExplanation || "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá, ít nhất là 11%/năm."}</p>
             </div>
           </AccordionContent>
         </AccordionItem>
