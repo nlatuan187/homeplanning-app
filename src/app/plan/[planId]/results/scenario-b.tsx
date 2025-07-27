@@ -44,7 +44,7 @@ export default function ResultsScenarioB({
       if (result.success) {
         // Use window.location.assign for a full page navigation to solve
         // issues with client-side routing to server components.
-        window.location.assign(`/plan/${plan.id}/financial-peace`);
+        window.location.assign(`/plan/${plan.id}/playground`);
       } else {
         throw new Error(result.error || "Failed to confirm purchase year");
       }

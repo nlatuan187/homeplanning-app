@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"; // Added useEffect
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserButton, useUser } from "@clerk/nextjs"; // useUser for client-side user data
 // import { currentUser } from "@clerk/nextjs/server"; // No longer needed for main component
@@ -154,10 +155,26 @@ export default function Dashboard() {
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
 
+  const addUserToDB = async () => {
+    if (user) {
+      await fetch("/api/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.primaryEmailAddress?.emailAddress,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        }),
+      });
+    }
+  };
+
   useEffect(() => {
     if (isLoaded && !user) {
       redirect("/sign-in");
     }
+    addUserToDB();
     if (user) {
       getPlansForUser(user.id).then(fetchedPlans => {
         setPlans(fetchedPlans);
