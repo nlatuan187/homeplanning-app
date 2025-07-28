@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 
 type Props = {
@@ -28,6 +28,44 @@ const SquareDot = ({ cx, cy, fill }: any) => {
   );
 };
 
+type Milestone = {
+  name: string;
+  tietKiem: number;
+  hangThang: number;
+  tong: number;
+};
+
+export function generateAccumulationMilestones(
+  startOfYearSavings: number,
+  monthlyContribution: number,
+  annualRate: number,
+  years: number,
+  startYear: number
+): Milestone[] {
+  const data: Milestone[] = [];
+  let currentSavings = startOfYearSavings;
+  const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1;
+
+  for (let t = 0; t <= years; t++) {
+    // Tại đầu năm t
+    const base_savings_growth = currentSavings * Math.pow(1 + monthlyRate, 12);
+    const new_savings_growth =
+      monthlyContribution * ((Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate);
+    const total_savings = base_savings_growth + new_savings_growth;
+
+    data.push({
+      name: `${startYear + t}`,
+      tietKiem: Math.round(base_savings_growth),
+      hangThang: Math.round(new_savings_growth),
+      tong: Math.round(total_savings),
+    });
+
+    // Chuẩn bị cho năm tiếp theo
+    currentSavings = total_savings;
+  }
+  return data;
+}
+
 export default function AccumulationChart({ data }: Props) {
   return (
     <div className="bg-slate-900/70 rounded-xl text-white w-full">
@@ -36,7 +74,7 @@ export default function AccumulationChart({ data }: Props) {
       </h2>
       <div className="w-full sm:w-full md:w-[700px] lg:w-[900px] mx-auto h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
             <CartesianGrid stroke="#444" strokeDasharray="3 3" />
             <XAxis dataKey="name" stroke="#ccc" padding={{ left: 25 }} />
             <YAxis stroke="#ccc" />
@@ -49,31 +87,37 @@ export default function AccumulationChart({ data }: Props) {
               iconSize={10}
               wrapperStyle={{ gap: "1.5rem", fontSize: "9px", paddingBottom: 14, display: "flex", justifyContent: "center", width: "100%" }}
             />
-            <Line
+            <Area
               type="linear"
               dataKey="tietKiem"
               name="Khoản tiết kiệm"
               stroke="#a0e8e0"
+              fill="#a0e8e0"
+              fillOpacity={0.3}
               strokeWidth={2}
               dot={<SquareDot />}
             />
-            <Line
+            <Area
               type="linear"
               dataKey="hangThang"
               name="Khoản tích luỹ hàng tháng"
               stroke="#00bcd4"
+              fill="#00bcd4"
+              fillOpacity={0.3}
               strokeWidth={2}
               dot={<SquareDot />}
             />
-            <Line
+            <Area
               type="linear"
               dataKey="tong"
               name="Tổng tích luỹ"
               stroke="#fbc02d"
+              fill="#fbc02d"
+              fillOpacity={0.3}
               strokeWidth={3}
               dot={<SquareDot />}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

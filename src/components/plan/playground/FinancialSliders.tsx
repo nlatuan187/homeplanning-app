@@ -1,17 +1,19 @@
+// ✅ FinancialSliders.tsx không cần chỉnh sửa khi chuyển sang dùng useReducer ở PlaygroundB
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
-type SliderItem = {
+export type SliderItem = {
   label: string;
   value: number;
   setValue: (val: number) => void;
+  onInteraction?: () => void;
   suffix: string;
   max: number;
 };
 
-type FinancialSlidersProps = {
+export type FinancialSlidersProps = {
   items: SliderItem[];
 };
 
@@ -31,24 +33,24 @@ function SliderWithDebounce({ item }: { item: SliderItem }) {
   const [localValue, setLocalValue] = useState(item.value);
   const debouncedValue = useDebounce(localValue, 300);
 
+  const handleInitialInteraction = () => {
+    item.onInteraction?.();
+  };
+
   useEffect(() => {
     if (debouncedValue !== item.value) {
       item.setValue(debouncedValue);
+      handleInitialInteraction();
     }
   }, [debouncedValue]);
 
   return (
     <div className="flex items-center gap-4">
-      {/* Label cố định độ rộng */}
       <div className="w-40 text-left truncate">{item.label}</div>
-
-      {/* Value cố định chiều rộng */}
       <div className="w-14 text-center font-semibold text-white whitespace-nowrap">
         {localValue}
         {item.suffix}
       </div>
-
-      {/* Slider chiếm phần còn lại */}
       <input
         type="range"
         min={0}
