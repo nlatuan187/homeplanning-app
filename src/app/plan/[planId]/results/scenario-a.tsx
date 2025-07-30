@@ -19,7 +19,7 @@ interface ResultsScenarioAProps {
 }
 
 // Helper function to calculate additional savings needed for Scenario A
-function calculateAdditionalSavingsForViability(
+export function calculateAdditionalSavingsForViability(
   targetYearProjection: ProjectionRow,
   loanInterestRateAnnual: number, // e.g., 11 for 11%
   loanTermYears: number // Changed from loanTermMonths

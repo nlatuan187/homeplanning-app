@@ -1,11 +1,9 @@
 "use client";
 
-// Keep client-side imports
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Plan } from "@prisma/client";
 
-// All your other imports like Button, AccumulationChart, etc.
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { ArrowLeft, Edit3 } from "lucide-react";
@@ -13,87 +11,25 @@ import { Button } from "@/components/ui/button";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import FinancialSliders from "@/components/plan/playground/FinancialSliders";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updatePlaygroundValue, updateInteractionLog } from "@/actions/updatePlayground";
+import { updatePlaygroundValue, updatePlaygroundValues } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
+import { generateAccumulationMilestones } from "@/lib/calculations/projections/generateChartData";
+import { calculateAdditionalSavingsForViability } from "@/app/plan/[planId]/results/scenario-a";
+import { editPlan } from "@/actions";
 
-// ... (Keep your generateMilestones function and type definitions)
 type InteractionLogEntry = {
   timestamp: string;
   type: "interaction_start" | "initial_change" | "reset_to_initial" | "final_submit";
   initialValues?: Record<string, any>;
 };
 
-type Milestone = {
-  name: string;
-  tietKiem: number;
-  hangThang: number;
-  tong: number;
-};
-
-function generateMilestones(
-  projectionData: ProjectionRow[],
-  targetYear: number,
-  plan: Plan
-): Milestone[] {
-  const milestones: Milestone[] = [];
-  const now = new Date();
-  let month = now.getMonth() + 1;
-  let year = now.getFullYear();
-
-  const createdAtYear = plan.createdAt
-    ? new Date(plan.createdAt).getFullYear()
-    : year;
-
-  const confirmedYear = plan.confirmedPurchaseYear || targetYear;
-  const milestoneCount = (confirmedYear - createdAtYear) * 2 + 1;
-
-  let currentSavings = plan.initialSavings;
-  const annualReturn = plan.pctInvestmentReturn / 100;
-  const monthlyRate = Math.pow(1 + annualReturn, 1 / 12); // a
-
-  milestones.push({
-    name: "Hiện tại",
-    tietKiem: Math.round(currentSavings),
-    hangThang: 0,
-    tong: Math.round(currentSavings),
-  });
-
-  const S = projectionData.find(p => p.year === confirmedYear)?.buffer ?? 0;
-  let total = 0;
-
-  for (let i = 1; i < milestoneCount; i++) {
-    let totalContribution = total + 0;
-
-    for (let j = 0; j < 6; j++) {
-      totalContribution += S
-      totalContribution *= monthlyRate;
-      total = totalContribution
-
-      month++;
-      if (month > 12) {
-        month = 1;
-        year++;
-      }
-    }
-
-    milestones.push({
-      name: `${month.toString().padStart(2, "0")}/${year}`,
-      tietKiem: Math.round(currentSavings * Math.pow(Math.pow(monthlyRate, 6), i)),
-      hangThang: Math.round(totalContribution),
-      tong: Math.round(currentSavings * Math.pow(Math.pow(monthlyRate, 6), i)) + Math.round(totalContribution),
-    });
-  }
-
-  return milestones;
-}
-
 export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Plan }) {
   const router = useRouter();
   const planId = useParams().planId as string;
 
-  // ----------- State chung ----------- //
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [targetYear, setTargetYear] = useState<number>(0);
+  const confirmedPurchaseYearRef = useRef<number | null>(null);
   const [projection, setProjection] = useState<ProjectionRow | null>(null);
 
   const [salaryGrowth, setSalaryGrowth] = useState(plan.pctSalaryGrowth);
@@ -129,6 +65,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const debouncedInvestmentReturn = useDebounce(investmentReturn, 300);
   const debouncedMonthlyExpense = useDebounce(monthlyExpense, 300);
   const debouncedExtraIncome = useDebounce(extraIncome, 300);
+
   useEffect(() => {
     setPlan(initialPlan);
 
@@ -138,23 +75,23 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     });
     setPlaygroundProjections(projections);
 
-    const tYear = new Date().getFullYear() + initialPlan.yearsToPurchase;
-    setTargetYear(tYear);
-    setProjection(projections[initialPlan.yearsToPurchase]);
+    const defaultTargetYear = new Date().getFullYear() + initialPlan.yearsToPurchase;
+    const confirmedYear = initialPlan.confirmedPurchaseYear || defaultTargetYear;
 
-    // setup initial state
-    setSalaryGrowth(initialPlan.pctSalaryGrowth ?? 7);
-    setInvestmentReturn(initialPlan.pctInvestmentReturn ?? 9);
-    setMonthlyExpense(initialPlan.monthlyLivingExpenses ?? 20);
-    setExtraIncome(initialPlan.monthlyOtherIncome ?? 15);
+    confirmedPurchaseYearRef.current = confirmedYear;
+    setTargetYear(confirmedYear);
 
-    // hasEmergencyFund luôn false
+    const confirmedProjection = projections.find((p) => p.year === confirmedYear) || null;
+    setProjection(confirmedProjection);
+
+    setSalaryGrowth(initialPlan.pctSalaryGrowth ?? 0);
+    setInvestmentReturn(initialPlan.pctInvestmentReturn ?? 0);
+    setMonthlyExpense(initialPlan.monthlyLivingExpenses ?? 0);
+    setExtraIncome(initialPlan.monthlyOtherIncome ?? 0);
+
     setHasEmergencyFund(false);
-
-    // hasInsurance dựa trên currentAnnualInsurancePremium
     setHasInsurance((initialPlan.currentAnnualInsurancePremium ?? 0) > 0);
 
-    // save initial state ref
     initialStateRef.current = {
       pctSalaryGrowth: initialPlan.pctSalaryGrowth,
       pctInvestmentReturn: initialPlan.pctInvestmentReturn,
@@ -164,7 +101,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       hasInsurance: (initialPlan.currentAnnualInsurancePremium ?? 0) > 0,
     };
 
-    // interaction log start
     setInteractionLog([
       {
         timestamp: new Date().toISOString(),
@@ -174,10 +110,8 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     ]);
   }, [initialPlan]);
 
-  useEffect(() => {
-    if (!plan) return;
-
-    const newProjection = generateProjections(
+  const computedProjections = useMemo(() => {
+    return generateProjections(
       {
         ...plan,
         pctSalaryGrowth: debouncedSalaryGrowth,
@@ -188,46 +122,39 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       },
       plan.yearsToPurchase + 5
     );
-
-    setPlaygroundProjections(newProjection);
-
-    const confirmedYear = plan.confirmedPurchaseYear || targetYear;
-    const confirmedProjection = newProjection.find((p) => p.year === confirmedYear);
-    const bufferValue = confirmedProjection?.buffer ?? 0;
-
-    if (bufferValue < 0 && plan.affordabilityOutcome !== "ScenarioA") {
-      setPlan((prev) => ({
-        ...prev,
-        affordabilityOutcome: "ScenarioA",
-      }));
-      updatePlaygroundValue(plan.id, "affordabilityOutcome", "ScenarioA");
-    }
-
-    if (bufferValue >= 0 && plan.affordabilityOutcome !== "ScenarioB") {
-      // Switch sang ScenarioB
-      setPlan((prev) => ({
-        ...prev,
-        affordabilityOutcome: "ScenarioB",
-      }));
-      updatePlaygroundValue(plan.id, "affordabilityOutcome", "ScenarioB");
-    }
   }, [
+    plan,
     debouncedSalaryGrowth,
     debouncedInvestmentReturn,
     debouncedMonthlyExpense,
     debouncedExtraIncome,
-    plan,
-    targetYear,
   ]);
 
-  // 2. Luôn update DB (batch update)
+  useEffect(() => {
+    setPlaygroundProjections(computedProjections);
+
+    const confirmedYear = confirmedPurchaseYearRef.current!;
+    const confirmedProjection = computedProjections.find((p) => p.year === confirmedYear) || null;
+    setProjection(confirmedProjection);
+
+    const bufferValue = confirmedProjection?.buffer ?? 0;
+
+    const shouldBeScenario = bufferValue < 0 ? "ScenarioA" : "ScenarioB";
+    if (plan.affordabilityOutcome !== shouldBeScenario) {
+      setPlan((prev) => ({ ...prev, affordabilityOutcome: shouldBeScenario }));
+      updatePlaygroundValue(plan.id, "affordabilityOutcome", shouldBeScenario);
+    }
+  }, [computedProjections]);
+
   useEffect(() => {
     if (!plan) return;
 
-    updatePlaygroundValue(plan.id, "pctSalaryGrowth", debouncedSalaryGrowth);
-    updatePlaygroundValue(plan.id, "pctInvestmentReturn", debouncedInvestmentReturn);
-    updatePlaygroundValue(plan.id, "monthlyLivingExpenses", debouncedMonthlyExpense);
-    updatePlaygroundValue(plan.id, "monthlyOtherIncome", debouncedExtraIncome);
+    updatePlaygroundValues(plan.id, {
+      pctSalaryGrowth: debouncedSalaryGrowth,
+      pctInvestmentReturn: debouncedInvestmentReturn,
+      monthlyLivingExpenses: debouncedMonthlyExpense,
+      monthlyOtherIncome: debouncedExtraIncome,
+    });
   }, [
     debouncedSalaryGrowth,
     debouncedInvestmentReturn,
@@ -238,7 +165,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
 
   const recordInitialChange = (key: string, newValue: any) => {
     if (hasChangedSinceStart.current) return;
-
     const current = {
       ...initialStateRef.current,
       [key]: newValue,
@@ -262,36 +188,40 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   };
 
   const handleReset = () => {
-    const isSameAsInitial = (
-      salaryGrowth === initialStateRef.current.pctSalaryGrowth &&
-      investmentReturn === initialStateRef.current.pctInvestmentReturn &&
-      monthlyExpense === initialStateRef.current.monthlyLivingExpenses &&
-      extraIncome === initialStateRef.current.monthlyOtherIncome &&
-      hasEmergencyFund === initialStateRef.current.hasEmergencyFund &&
-      hasInsurance === initialStateRef.current.hasInsurance
-    );
+    // Reset sliders
+    setSalaryGrowth(initialStateRef.current.pctSalaryGrowth);
+    setInvestmentReturn(initialStateRef.current.pctInvestmentReturn);
+    setMonthlyExpense(initialStateRef.current.monthlyLivingExpenses);
+    setExtraIncome(initialStateRef.current.monthlyOtherIncome);
 
-    if (!isSameAsInitial) {
-      setSalaryGrowth(initialStateRef.current.pctSalaryGrowth);
-      setInvestmentReturn(initialStateRef.current.pctInvestmentReturn);
-      setMonthlyExpense(initialStateRef.current.monthlyLivingExpenses);
-      setExtraIncome(initialStateRef.current.monthlyOtherIncome);
-      setHasEmergencyFund(initialStateRef.current.hasEmergencyFund);
-      setHasInsurance(initialStateRef.current.hasInsurance);
-      setSliderKey((prev) => prev + 1);
-      hasChangedSinceStart.current = false;
+    // Reset toggle quỹ dự phòng và bảo hiểm
+    setHasEmergencyFund(initialStateRef.current.hasEmergencyFund);
+    setHasInsurance(initialStateRef.current.hasInsurance);
 
-      if (!hasLoggedReset.current) {
-        setInteractionLog((prev) => [
-          ...prev,
-          {
-            timestamp: new Date().toISOString(),
-            type: "reset_to_initial",
-            initialValues: initialStateRef.current,
-          },
-        ]);
-        hasLoggedReset.current = true;
-      }
+    // Reset key sliders
+    setSliderKey((prev) => prev + 1);
+    hasChangedSinceStart.current = false;
+
+    // Ghi interaction log
+    if (!hasLoggedReset.current) {
+      setInteractionLog((prev) => [
+        ...prev,
+        {
+          timestamp: new Date().toISOString(),
+          type: "reset_to_initial",
+          initialValues: initialStateRef.current,
+        },
+      ]);
+      hasLoggedReset.current = true;
+    }
+  };
+
+  const handleEditPlan = async () => {
+    try {
+      await editPlan(plan.id, undefined, "goal"); // Server Action editPlan
+      router.push(`/plan/new?edit=${plan.id}`);
+    } catch (error) {
+      console.error("Error editing plan:", error);
     }
   };
 
@@ -313,30 +243,35 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     );
     router.push(`/plan/${planId}/report`);
   };
- // This can be improved, but is fine for now
 
   const monthPurchase = plan.createdAt ? new Date(plan.createdAt).getMonth() + 1 : '';
-  const confirmedYear = plan.confirmedPurchaseYear || targetYear;
+  const confirmedYear = confirmedPurchaseYearRef.current! || targetYear;
   const confirmedProjection = playgroundProjections.find(p => p.year === confirmedYear);
-  const housePriceProjected = confirmedProjection?.housePriceProjected || plan.targetHousePriceN0;
-  const loanAmountNeeded = confirmedProjection?.loanAmountNeeded || 0;
-  const tiLeTienCanVay = housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
+  const housePriceProjected = projection?.housePriceProjected ?? plan.targetHousePriceN0;
+  const loanAmountNeeded = projection?.loanAmountNeeded ?? 0;
+  const tiLeTienCanVay =
+    housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
   const soTienCanVay = loanAmountNeeded / 1000;
-  const buffer = confirmedProjection?.buffer || 0
-  const chartData = generateMilestones(playgroundProjections, confirmedYear, plan);
+  const buffer = projection?.buffer || 0;
+  const chartData = generateAccumulationMilestones(playgroundProjections, plan);
 
+  // Emergency values
   const emergencyFund = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
-  const insurancePremium = plan?.currentAnnualInsurancePremium || 0;
-
+  const insurancePremium = plan.currentAnnualInsurancePremium || 0;
   if (!plan || !projection) return <div>Loading...</div>;
   
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 mb-8">
       {/* Header */}
       <header className="container mx-auto max-w-5xl px-4 pt-8 py-6 flex justify-between items-center sticky top-0 bg-slate-950 z-40 border-b border-slate-800">
-        <button onClick={() => router.push(`/plan/${planId}/results`)}>
-          <ArrowLeft className="ml-2 h-5 w-5 text-slate-300 hover:text-white" />
-        </button>
+        <Button 
+          onClick={() => router.push(`/plan/${planId}/results`)} 
+          variant="ghost"
+          size="icon"
+          className="text-white left-4"
+        >
+          <ArrowLeft className="h-5 w-5 text-slate-300 hover:text-white" />
+        </Button>
         <div className="flex flex-col items-center">
           <div
             className={`text-2xl font-bold ${
@@ -354,13 +289,19 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
             {plan.confirmedPurchaseYear || targetYear} với giá {Math.round(housePriceProjected).toLocaleString()}
           </div>
         </div>
-        <button className="p-2 -mr-2">
-            <Edit3 className="h-5 w-5 text-slate-300 hover:text-white" />
-        </button>
+        <Button 
+          onClick={handleEditPlan}
+          variant="ghost"
+          size="icon"
+          className="text-white left-4 p-2 -mr-2"
+        >
+          <Edit3 className="h-5 w-5 text-slate-300 hover:text-white" />
+        </Button>
       </header>
 
       {/* Scenario B: 2 ô thống kê */}
       {plan.affordabilityOutcome === "ScenarioB" ? (
+        // SCENARIO B: hiển thị số tiền cần vay & buffer
         <div className="container mx-auto max-w-5xl px-4 pb-2 pt-6 flex flex-row gap-4">
           <div className="bg-white text-black rounded-lg shadow px-6 py-4 flex-1 flex flex-col justify-center">
             <h2 className="text-lg font-semibold whitespace-nowrap text-center">
@@ -376,9 +317,19 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
           </div>
         </div>
       ) : (
+        // SCENARIO A: hiển thị số tiền đang thiếu (sử dụng calculateAdditionalSavingsForViability)
         <div className="max-w-5xl mx-auto px-4 pt-6">
           <div className="w-full h-[140px] sm:h-[180px] bg-white text-black rounded-xl shadow flex flex-col items-center justify-center text-center px-4">
-            <h2 className="text-2xl sm:text-3xl font-bold">{(housePriceProjected - plan.initialSavings)/1000} triệu</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              {projection
+                ? calculateAdditionalSavingsForViability(
+                    projection,
+                    plan.loanInterestRate ?? 0,
+                    plan.loanTermYears ?? 20
+                  ).toLocaleString()
+                : 0}{" "}
+              triệu
+            </h2>
             <p className="text-sm sm:text-xl text-black mt-1">Số tiền bạn đang thiếu</p>
           </div>
         </div>
@@ -518,19 +469,24 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
         <Button type="button" onClick={handleReset}>
           Reset giả định ban đầu
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() =>
-            plan.affordabilityOutcome === "ScenarioB"
-              ? setShowConfirmModal(true)
-              : router.push("/dashboard")
-          }
-        >
-          {plan.affordabilityOutcome === "ScenarioB"
-            ? "Tiếp tục"
-            : "Thay đổi toàn bộ kế hoạch"}
-        </Button>
+
+        {plan.affordabilityOutcome === "ScenarioB" ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowConfirmModal(true)} // Mở modal xác nhận
+          >
+            Tiếp tục
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleEditPlan} // Quay về form nhập liệu
+          >
+            Thay đổi toàn bộ kế hoạch
+          </Button>
+        )}
       </div>
 
       {/* Modal confirm cho ScenarioB */}

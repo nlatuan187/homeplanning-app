@@ -27,8 +27,8 @@ type PlanWithDetails = Plan & {
  * Supports both fixed and decreasing payment methods.
  */
 function calculateMonthlyPayment(
-  loanAmount: number, 
-  annualInterestRate: number, 
+  loanAmount: number,
+  annualInterestRate: number,
   termYears: number,
   paymentMethod: "fixed" | "decreasing" = "fixed"
 ): number {
@@ -63,7 +63,7 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
   const projectionData: ProjectionRow[] = [];
 
   // --- Year 0 (Current State) Initialization ---
-  
+
   // Start with user's own savings
   let initialSavings = plan.initialSavings;
   // If user gets a gift NOW, add it to initial savings to let it grow.
@@ -74,15 +74,15 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
   const userMonthlyIncomeN0 = plan.userMonthlyIncome;
   const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0;
   const otherMonthlyIncomeN0 = plan.monthlyOtherIncome || 0;
-  
+
   const totalMonthlyIncomeN0 = userMonthlyIncomeN0 + coApplicantMonthlyIncomeN0 + otherMonthlyIncomeN0;
   const annualIncomeN0 = totalMonthlyIncomeN0 * 12;
 
   const monthlyExpensesN0 = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0) + ((plan.currentAnnualInsurancePremium || 0) / 12);
   const annualExpensesN0 = monthlyExpensesN0 * 12;
-  
+
   const annualSavingsN0 = annualIncomeN0 - annualExpensesN0;
-  
+
   // Emergency Fund (EF) is not explicitly part of the new flow, but we can calculate it for context.
   // We will assume initialSavings is purely for the house down payment and not double-counted for EF.
   const targetEFN0 = monthlyExpensesN0 * 6;
@@ -106,7 +106,7 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     monthlySurplus: annualSavingsN0 / 12,
     buffer: 0, // Calculated below
     isAffordable: false, // Calculated below
-    
+
     // Other fields for context, simplifying or removing obsolete ones
     baseExpenses: plan.monthlyLivingExpenses * 12, // For tracking growth
     preInsuranceExpenses: (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 12,
@@ -121,6 +121,8 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     factorMarriage: 0, // Obsolete
     factorChild: 0,    // Obsolete
     loanTermYears: plan.loanTermYears,
+    cumulativeSavingsFromInitial: initialSavings,
+    cumulativeSavingsFromMonthly: 0,
   };
 
   year0.loanAmountNeeded = Math.max(0, year0.housePriceProjected - year0.cumulativeSavings);
@@ -132,10 +134,12 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
   projectionData.push(year0);
 
   // --- Projection Loop for Future Years ---
+  let accumulatedFromInitial = initialSavings;
+  let accumulatedFromMonthly = 0;
 
   for (let n = 1; n <= maxYears; n++) {
     const prevYear = projectionData[n - 1];
-    
+
     // Income and expense projections remain the same
     const userAnnualIncome = prevYear.primaryIncome * (1 + (plan.pctSalaryGrowth / 100));
     const coApplicantAnnualIncome = prevYear.spouseIncome * (1 + ((plan.coApplicantSalaryGrowth ?? plan.pctSalaryGrowth) / 100));
@@ -146,40 +150,50 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     const nonHousingDebtAnnual = (plan.monthlyNonHousingDebt || 0) * 12;
     const insuranceAnnual = plan.currentAnnualInsurancePremium || 0;
     const totalAnnualExpenses = livingExpensesAnnual + nonHousingDebtAnnual + insuranceAnnual;
-    
+
     // Initial annual savings before deducting family loan repayments
     let annualSavings = totalAnnualIncome - totalAnnualExpenses;
-    
+
     // --- Family Loan Repayment Calculation ---
     // This now happens for years *after* the house purchase year.
     let annualFamilyLoanRepayment = 0;
     if (n > plan.yearsToPurchase && plan.familySupport?.familySupportType === 'LOAN') {
-        const familyLoanInfo = plan.familySupport;
-        const yearsSincePurchase = n - plan.yearsToPurchase;
-        const familyLoanTerm = familyLoanInfo.familyLoanTermYears ?? 0;
-        const familyLoanAmount = familyLoanInfo.familySupportAmount ?? 0;
+      const familyLoanInfo = plan.familySupport;
+      const yearsSincePurchase = n - plan.yearsToPurchase;
+      const familyLoanTerm = familyLoanInfo.familyLoanTermYears ?? 0;
+      const familyLoanAmount = familyLoanInfo.familySupportAmount ?? 0;
 
-        // Check if we are within the family loan repayment period
-        if (familyLoanAmount > 0 && familyLoanTerm > 0 && yearsSincePurchase <= familyLoanTerm) {
-            if (familyLoanInfo.familyLoanRepaymentType === 'MONTHLY') {
-                // For now, assume a simple interest-free loan repayment schedule
-                annualFamilyLoanRepayment = familyLoanAmount / familyLoanTerm;
-            } else if (familyLoanInfo.familyLoanRepaymentType === 'LUMP_SUM' && yearsSincePurchase === familyLoanTerm) {
-                // For a lump sum, the full amount is due in the final year of the term.
-                annualFamilyLoanRepayment = familyLoanAmount;
-            }
+      // Check if we are within the family loan repayment period
+      if (familyLoanAmount > 0 && familyLoanTerm > 0 && yearsSincePurchase <= familyLoanTerm) {
+        if (familyLoanInfo.familyLoanRepaymentType === 'MONTHLY') {
+          // For now, assume a simple interest-free loan repayment schedule
+          annualFamilyLoanRepayment = familyLoanAmount / familyLoanTerm;
+        } else if (familyLoanInfo.familyLoanRepaymentType === 'LUMP_SUM' && yearsSincePurchase === familyLoanTerm) {
+          // For a lump sum, the full amount is due in the final year of the term.
+          annualFamilyLoanRepayment = familyLoanAmount;
         }
+      }
     }
-    
+
     // Subtract the family loan repayment from the user's annual savings.
     // This correctly impacts how much they can save each year *after* buying the house.
     annualSavings -= annualFamilyLoanRepayment;
-    
+
     // Savings Projection
-    const cumulativeSavings = (prevYear.cumulativeSavings * (1 + (plan.pctInvestmentReturn / 100))) + annualSavings;
+    // Lãi suất hàng năm (dưới dạng thập phân)
+    const annualReturnRate = plan.pctInvestmentReturn / 100;
+
+    // 1. Tăng trưởng phần tiết kiệm ban đầu (lãi kép)
+    accumulatedFromInitial = accumulatedFromInitial * (1 + annualReturnRate);
+
+    // 2. Tăng trưởng phần tích lũy hàng năm (lãi kép gộp từng năm)
+    accumulatedFromMonthly = accumulatedFromMonthly * (1 + annualReturnRate) + annualSavings;
+
+    // 3. Tổng cộng
+    const cumulativeSavings = accumulatedFromInitial + accumulatedFromMonthly;
 
     const housePriceProjected = prevYear.housePriceProjected * (1 + (plan.pctHouseGrowth / 100));
-    
+
     // --- New Loan Calculation Logic ---
 
     // 1. Start with user's own accumulated savings
@@ -216,7 +230,7 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
       annualIncome: totalAnnualIncome,
       annualExpenses: totalAnnualExpenses,
       annualSavings,
-      cumulativeSavings, // This remains the user's growing savings pot
+      cumulativeSavings: cumulativeSavings, // This remains the user's growing savings pot
       loanAmountNeeded: bankLoanNeeded, // This now correctly represents the bank loan
       monthlyPayment,
       monthlySurplus,
@@ -238,6 +252,9 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
       pctInvestmentReturn: plan.pctInvestmentReturn,
       factorMarriage: 0,
       factorChild: 0,
+
+      cumulativeSavingsFromInitial: accumulatedFromInitial,
+      cumulativeSavingsFromMonthly: accumulatedFromMonthly,
     };
     projectionData.push(yearData);
   }

@@ -3,14 +3,10 @@
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
 
 type Props = {
-  data: {
-    name: string;
-    tietKiem: number;
-    hangThang: number;
-    tong: number;
-  }[];
+  data: ChartMilestone[];
 };
 
 const SquareDot = ({ cx, cy, fill }: any) => {
@@ -27,44 +23,6 @@ const SquareDot = ({ cx, cy, fill }: any) => {
     />
   );
 };
-
-type Milestone = {
-  name: string;
-  tietKiem: number;
-  hangThang: number;
-  tong: number;
-};
-
-export function generateAccumulationMilestones(
-  startOfYearSavings: number,
-  monthlyContribution: number,
-  annualRate: number,
-  years: number,
-  startYear: number
-): Milestone[] {
-  const data: Milestone[] = [];
-  let currentSavings = startOfYearSavings;
-  const monthlyRate = Math.pow(1 + annualRate, 1 / 12) - 1;
-
-  for (let t = 0; t <= years; t++) {
-    // Tại đầu năm t
-    const base_savings_growth = currentSavings * Math.pow(1 + monthlyRate, 12);
-    const new_savings_growth =
-      monthlyContribution * ((Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate);
-    const total_savings = base_savings_growth + new_savings_growth;
-
-    data.push({
-      name: `${startYear + t}`,
-      tietKiem: Math.round(base_savings_growth),
-      hangThang: Math.round(new_savings_growth),
-      tong: Math.round(total_savings),
-    });
-
-    // Chuẩn bị cho năm tiếp theo
-    currentSavings = total_savings;
-  }
-  return data;
-}
 
 export default function AccumulationChart({ data }: Props) {
   return (
@@ -89,7 +47,7 @@ export default function AccumulationChart({ data }: Props) {
             />
             <Area
               type="linear"
-              dataKey="tietKiem"
+              dataKey="cumulativeSavingsFromInitial"
               name="Khoản tiết kiệm"
               stroke="#a0e8e0"
               fill="#a0e8e0"
@@ -99,7 +57,7 @@ export default function AccumulationChart({ data }: Props) {
             />
             <Area
               type="linear"
-              dataKey="hangThang"
+              dataKey="cumulativeSavingsFromMonthly"
               name="Khoản tích luỹ hàng tháng"
               stroke="#00bcd4"
               fill="#00bcd4"
@@ -109,7 +67,7 @@ export default function AccumulationChart({ data }: Props) {
             />
             <Area
               type="linear"
-              dataKey="tong"
+              dataKey="cumulativeSavings"
               name="Tổng tích luỹ"
               stroke="#fbc02d"
               fill="#fbc02d"

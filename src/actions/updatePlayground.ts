@@ -23,65 +23,19 @@ export async function updatePlaygroundValue(
   }
 }
 
-type InteractionLogEntry = {
-  timestamp: string;
-  type:
-  | "interaction_start"
-  | "initial_change"
-  | "reset_to_initial"
-  | "final_submit";
-  initialValues?: Record<string, any>;
-};
-
-export async function updateInteractionLog(
+export async function updatePlaygroundValues(
   planId: string,
-  newEntry: InteractionLogEntry
+  updates: Record<string, string | number>
 ) {
   try {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const plan = await db.plan.findUnique({
-      where: { id: planId },
-      select: { userId: true, playgroundInteractionLog: true },
-    });
-
-    if (!plan || plan.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Lấy log hiện tại
-    let currentLog: InteractionLogEntry[] = [];
-    if (Array.isArray(plan.playgroundInteractionLog)) {
-      currentLog = plan.playgroundInteractionLog as InteractionLogEntry[];
-    }
-
-    // Không ghi log trùng liên tiếp
-    if (
-      currentLog.length > 0 &&
-      currentLog[currentLog.length - 1].type === newEntry.type
-    ) {
-      return;
-    }
-
-    // Giới hạn số log (ví dụ giữ 50 entry gần nhất)
-    if (currentLog.length > 50) {
-      currentLog = currentLog.slice(-50);
-    }
-
-    currentLog.push({
-      ...newEntry,
-      timestamp: new Date().toISOString(),
-    });
-
     await db.plan.update({
-      where: { id: planId },
-      data: {
-        playgroundInteractionLog: currentLog as Prisma.InputJsonValue,
-      },
+      where: { id: planId, userId },
+      data: updates, // update nhiều trường
     });
-  } catch (error) {
-    console.error("[INTERACTION_LOG_ERROR]", error);
-    throw error;
+  } catch (err) {
+    console.error("[PLAYGROUND_UPDATE_ERROR]", err);
   }
 }
