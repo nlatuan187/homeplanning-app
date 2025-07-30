@@ -130,7 +130,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const debouncedMonthlyExpense = useDebounce(monthlyExpense, 300);
   const debouncedExtraIncome = useDebounce(extraIncome, 300);
   useEffect(() => {
-    // Tới đây TypeScript đã hiểu planData chắc chắn không null
     setPlan(initialPlan);
 
     const projections = generateProjections({
@@ -143,30 +142,37 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     setTargetYear(tYear);
     setProjection(projections[initialPlan.yearsToPurchase]);
 
-    // set initial state from the prop
+    // setup initial state
     setSalaryGrowth(initialPlan.pctSalaryGrowth ?? 7);
     setInvestmentReturn(initialPlan.pctInvestmentReturn ?? 9);
     setMonthlyExpense(initialPlan.monthlyLivingExpenses ?? 20);
     setExtraIncome(initialPlan.monthlyOtherIncome ?? 15);
 
+    // hasEmergencyFund luôn false
+    setHasEmergencyFund(false);
+
+    // hasInsurance dựa trên currentAnnualInsurancePremium
+    setHasInsurance((initialPlan.currentAnnualInsurancePremium ?? 0) > 0);
+
+    // save initial state ref
     initialStateRef.current = {
-        pctSalaryGrowth: initialPlan.pctSalaryGrowth,
-        pctInvestmentReturn: initialPlan.pctInvestmentReturn,
-        monthlyLivingExpenses: initialPlan.monthlyLivingExpenses,
-        monthlyOtherIncome: initialPlan.monthlyOtherIncome,
-        hasEmergencyFund: false,
-        hasInsurance: true,
+      pctSalaryGrowth: initialPlan.pctSalaryGrowth,
+      pctInvestmentReturn: initialPlan.pctInvestmentReturn,
+      monthlyLivingExpenses: initialPlan.monthlyLivingExpenses,
+      monthlyOtherIncome: initialPlan.monthlyOtherIncome,
+      hasEmergencyFund: false,
+      hasInsurance: (initialPlan.currentAnnualInsurancePremium ?? 0) > 0,
     };
 
     // interaction log start
     setInteractionLog([
-    {
+      {
         timestamp: new Date().toISOString(),
         type: "interaction_start",
         initialValues: initialStateRef.current,
-    },
+      },
     ]);
-  }, [initialPlan]); 
+  }, [initialPlan]);
 
   useEffect(() => {
     if (!plan) return;
@@ -322,34 +328,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const emergencyFund = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
   const insurancePremium = plan?.currentAnnualInsurancePremium || 0;
 
-  // useEffect(() => {
-  //   if (!plan) return;
-
-  //   // Chỉ chạy khi affordabilityOutcome đang khác trạng thái mong muốn
-  //   if (buffer < 0 && plan.affordabilityOutcome !== "ScenarioA") {
-  //     // Cập nhật state local
-  //     setPlan((prev) => ({
-  //       ...prev,
-  //       affordabilityOutcome: "ScenarioA",
-  //     }));
-
-  //     // Cập nhật DB (ScenarioA)
-  //     updatePlaygroundValue(plan.id, "affordabilityOutcome", "ScenarioA");
-  //   }
-
-  //   if (buffer >= 0 && plan.affordabilityOutcome !== "ScenarioB") {
-  //     // Cập nhật state local
-  //     setPlan((prev) => ({
-  //       ...prev,
-  //       affordabilityOutcome: "ScenarioB",
-  //     }));
-
-  //     // Cập nhật DB (ScenarioB)
-  //     updatePlaygroundValue(plan.id, "affordabilityOutcome", "ScenarioB");
-  //   }
-  // }, [buffer, plan]);
-
-
   if (!plan || !projection) return <div>Loading...</div>;
   
   return (
@@ -469,7 +447,25 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 onChange={(e) => {
                   const checked = e.target.checked;
                   if (!checked) setShowEmergencyFundWarning(true);
+
                   setHasEmergencyFund(checked);
+
+                  // chỉ ghi initial_change nếu khác với initial
+                  const current = { ...initialStateRef.current, hasEmergencyFund: checked };
+                  const isChanged = Object.entries(current).some(
+                    ([k, value]) => initialStateRef.current[k] !== value
+                  );
+
+                  if (isChanged) {
+                    setInteractionLog((prev) => [
+                      ...prev,
+                      {
+                        timestamp: new Date().toISOString(),
+                        type: "initial_change",
+                        initialValues: current,
+                      },
+                    ]);
+                  }
                 }}
                 className="sr-only peer"
               />
@@ -489,7 +485,24 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 onChange={(e) => {
                   const checked = e.target.checked;
                   if (!checked) setShowEmergencyInsuranceWarning(true);
+
                   setHasInsurance(checked);
+
+                  const current = { ...initialStateRef.current, hasInsurance: checked };
+                  const isChanged = Object.entries(current).some(
+                    ([k, value]) => initialStateRef.current[k] !== value
+                  );
+
+                  if (isChanged) {
+                    setInteractionLog((prev) => [
+                      ...prev,
+                      {
+                        timestamp: new Date().toISOString(),
+                        type: "initial_change",
+                        initialValues: current,
+                      },
+                    ]);
+                  }
                 }}
                 className="sr-only peer"
               />
