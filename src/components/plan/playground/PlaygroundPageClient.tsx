@@ -321,7 +321,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const housePriceProjected = confirmedProjection?.housePriceProjected || plan.targetHousePriceN0;
   const loanAmountNeeded = confirmedProjection?.loanAmountNeeded || 0;
   const tiLeTienCanVay = housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
-  const soTienCanVay = Math.round(loanAmountNeeded / 1000);
+  const soTienCanVay = loanAmountNeeded / 1000;
   const buffer = confirmedProjection?.buffer || 0
   const chartData = generateMilestones(playgroundProjections, confirmedYear, plan);
 
@@ -364,7 +364,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
         <div className="container mx-auto max-w-5xl px-4 pb-2 pt-6 flex flex-row gap-4">
           <div className="bg-white text-black rounded-lg shadow px-6 py-4 flex-1 flex flex-col justify-center">
             <h2 className="text-lg font-semibold whitespace-nowrap text-center">
-              {soTienCanVay} tỷ ~ {tiLeTienCanVay}%
+              {soTienCanVay.toFixed(2)} tỷ ~ {tiLeTienCanVay}%
             </h2>
             <p className="text-sm text-center mt-1">Số tiền cần vay & Tỷ lệ vay</p>
           </div>
@@ -378,7 +378,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       ) : (
         <div className="max-w-5xl mx-auto px-4 pt-6">
           <div className="w-full h-[140px] sm:h-[180px] bg-white text-black rounded-xl shadow flex flex-col items-center justify-center text-center px-4">
-            <h2 className="text-2xl sm:text-3xl font-bold">500 triệu</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold">{(housePriceProjected - plan.initialSavings)/1000} triệu</h2>
             <p className="text-sm sm:text-xl text-black mt-1">Số tiền bạn đang thiếu</p>
           </div>
         </div>
