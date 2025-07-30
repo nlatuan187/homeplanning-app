@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
-// Định nghĩa schema để validate assumptions gửi lên
+// Schema để validate assumptions
 const assumptionSchema = z.object({
   pctSalaryGrowth: z.number(),
   pctInvestmentReturn: z.number(),
@@ -15,7 +15,7 @@ const assumptionSchema = z.object({
 export async function confirmPlaygroundAssumptions(
   planId: string,
   newAssumptions: z.infer<typeof assumptionSchema>,
-  interactionLog: any[] // đây sẽ là mảng JSON client-side gửi lên
+  interactionLog: any[]
 ) {
   // 1. Xác thực người dùng
   const { userId } = await auth();
@@ -27,18 +27,22 @@ export async function confirmPlaygroundAssumptions(
     select: { userId: true },
   });
 
-  if (!plan || plan.userId !== userId) throw new Error("Forbidden");
+  if (!plan || plan.userId !== userId) {
+    throw new Error("Forbidden");
+  }
 
   // 3. Validate assumptions
   const parsed = assumptionSchema.safeParse(newAssumptions);
-  if (!parsed.success) throw new Error("Invalid assumptions");
+  if (!parsed.success) {
+    throw new Error("Invalid assumptions");
+  }
 
-  // 4. Cập nhật plan
+  // 4. Cập nhật DB (log tương tác + reset report)
   await db.plan.update({
     where: { id: planId },
     data: {
       ...parsed.data,
-      playgroundInteractionLog: interactionLog, // Prisma sẽ tự stringify mảng JSON này
+      playgroundInteractionLog: interactionLog, // ghi lại log đã tổng hợp ở frontend
       reportGeneratedAt: null, // Reset báo cáo cũ
     },
   });

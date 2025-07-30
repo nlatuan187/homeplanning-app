@@ -4,22 +4,32 @@ import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 
-export async function updatePlaygroundValue(planId: string, field: string, value: number) {
+export async function updatePlaygroundValue(
+  planId: string,
+  field: string,
+  value: string | number
+) {
   try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
+
+    // Cập nhật giá trị cụ thể (debounced từ frontend)
     await db.plan.update({
-      where: { id: planId },
-      data: {
-        [field]: value,
-      },
+      where: { id: planId, userId },
+      data: { [field]: value },
     });
   } catch (err) {
-    console.error("Error updating playground:", err);
+    console.error("[PLAYGROUND_UPDATE_ERROR]", err);
   }
 }
 
 type InteractionLogEntry = {
   timestamp: string;
-  type: 'interaction_start' | 'initial_change' | 'reset_to_initial' | 'final_submit';
+  type:
+  | "interaction_start"
+  | "initial_change"
+  | "reset_to_initial"
+  | "final_submit";
   initialValues?: Record<string, any>;
 };
 
@@ -33,10 +43,7 @@ export async function updateInteractionLog(
 
     const plan = await db.plan.findUnique({
       where: { id: planId },
-      select: {
-        userId: true,
-        playgroundInteractionLog: true,
-      },
+      select: { userId: true, playgroundInteractionLog: true },
     });
 
     if (!plan || plan.userId !== userId) {
@@ -45,9 +52,21 @@ export async function updateInteractionLog(
 
     // Lấy log hiện tại
     let currentLog: InteractionLogEntry[] = [];
-
     if (Array.isArray(plan.playgroundInteractionLog)) {
       currentLog = plan.playgroundInteractionLog as InteractionLogEntry[];
+    }
+
+    // Không ghi log trùng liên tiếp
+    if (
+      currentLog.length > 0 &&
+      currentLog[currentLog.length - 1].type === newEntry.type
+    ) {
+      return;
+    }
+
+    // Giới hạn số log (ví dụ giữ 50 entry gần nhất)
+    if (currentLog.length > 50) {
+      currentLog = currentLog.slice(-50);
     }
 
     currentLog.push({
