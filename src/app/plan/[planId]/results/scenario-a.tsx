@@ -7,6 +7,7 @@ import { ProjectionRow } from "@/lib/calculations/affordability";
 import { editPlan } from "@/actions";
 import { AlertTriangle } from "lucide-react"; // CheckIcon removed
 import { Plan } from "@prisma/client";
+import { calculateAdditionalSavingsForViability } from "@/lib/calculations/affordabilityHelpers";
 
 interface ResultsScenarioAProps {
   plan: Plan;
@@ -16,49 +17,6 @@ interface ResultsScenarioAProps {
   projectionData: ProjectionRow[];
   planLoanInterestRate: number;
   planLoanTermYears: number; // Changed from planLoanTermMonths
-}
-
-// Helper function to calculate additional savings needed for Scenario A
-export function calculateAdditionalSavingsForViability(
-  targetYearProjection: ProjectionRow,
-  loanInterestRateAnnual: number, // e.g., 11 for 11%
-  loanTermYears: number // Changed from loanTermMonths
-): number {
-  const monthlyIncomeTargetYear = targetYearProjection.annualIncome / 12;
-  // annualExpenses in ProjectionRow is pre-mortgage living expenses
-  const monthlyLivingExpensesTargetYear = targetYearProjection.annualExpenses / 12;
-
-  const loanTermMonths = loanTermYears * 12; // Calculate months from years
-
-  // Max affordable monthly mortgage payment (with 0 buffer)
-  const maxAffordableMonthlyMortgage = monthlyIncomeTargetYear - monthlyLivingExpensesTargetYear;
-
-  let additionalSavings: number;
-
-  if (maxAffordableMonthlyMortgage <= 0) {
-    // Income doesn't even cover living expenses. User needs to save for the entire house price
-    // relative to their current savings path, or fundamentally change income/expenses.
-    // The "additional savings" here means what's lacking to buy the house if no loan was viable due to cash flow.
-    additionalSavings = targetYearProjection.housePriceProjected - targetYearProjection.cumulativeSavings;
-  } else {
-    const monthlyInterestRate = loanInterestRateAnnual / 100 / 12;
-    let maxLoanAmount = 0;
-    if (monthlyInterestRate > 0) {
-      maxLoanAmount = maxAffordableMonthlyMortgage * 
-                      (1 - Math.pow(1 + monthlyInterestRate, -loanTermMonths)) / 
-                      monthlyInterestRate;
-    } else { // Edge case: 0% interest loan
-      maxLoanAmount = maxAffordableMonthlyMortgage * loanTermMonths;
-    }
-    maxLoanAmount = Math.max(0, maxLoanAmount); // Ensure loan amount isn't negative
-
-    const housePrice = targetYearProjection.housePriceProjected;
-    const minDownPaymentNeeded = Math.max(0, housePrice - maxLoanAmount);
-    const currentSavingsAtTargetYear = targetYearProjection.cumulativeSavings;
-    additionalSavings = minDownPaymentNeeded - currentSavingsAtTargetYear;
-  }
-  
-  return Math.round(Math.max(0, additionalSavings)); // Return rounded, non-negative
 }
 
 export default function ResultsScenarioA({

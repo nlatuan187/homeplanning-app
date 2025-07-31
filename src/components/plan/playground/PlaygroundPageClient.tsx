@@ -14,7 +14,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { updatePlaygroundValue, updatePlaygroundValues } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
 import { generateAccumulationMilestones } from "@/lib/calculations/projections/generateChartData";
-import { calculateAdditionalSavingsForViability } from "@/app/plan/[planId]/results/scenario-a";
+import { calculateAdditionalSavingsForViability } from "@/lib/calculations/affordabilityHelpers";
 import { editPlan } from "@/actions";
 
 type InteractionLogEntry = {
@@ -227,20 +227,22 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
 
   const handleConfirm = async () => {
     setShowConfirmModal(false);
-    const newLog: InteractionLogEntry = {
+    const finalLogEntry = {
       timestamp: new Date().toISOString(),
       type: "final_submit",
     };
+
     await confirmPlaygroundAssumptions(
       planId,
       {
         pctSalaryGrowth: salaryGrowth,
         pctInvestmentReturn: investmentReturn,
         monthlyLivingExpenses: monthlyExpense,
-        monthlyOtherIncome: extraIncome
+        monthlyOtherIncome: extraIncome,
       },
-      [...interactionLog, { timestamp: new Date().toISOString(), type: "final_submit" }]
+      [...interactionLog, finalLogEntry]
     );
+
     router.push(`/plan/${planId}/report`);
   };
 
@@ -255,7 +257,14 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const buffer = projection?.buffer || 0;
   const chartData = generateAccumulationMilestones(playgroundProjections, plan);
 
-  // Emergency values
+  const soTienDangThieu = confirmedProjection
+  ? calculateAdditionalSavingsForViability(
+      confirmedProjection,
+      plan.loanInterestRate ?? 0,
+      plan.loanTermYears ?? 0,
+    )
+  : 0;
+
   const emergencyFund = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
   const insurancePremium = plan.currentAnnualInsurancePremium || 0;
   if (!plan || !projection) return <div>Loading...</div>;
@@ -321,15 +330,8 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
         <div className="max-w-5xl mx-auto px-4 pt-6">
           <div className="w-full h-[140px] sm:h-[180px] bg-white text-black rounded-xl shadow flex flex-col items-center justify-center text-center px-4">
             <h2 className="text-2xl sm:text-3xl font-bold">
-              {projection
-                ? calculateAdditionalSavingsForViability(
-                    projection,
-                    plan.loanInterestRate ?? 0,
-                    plan.loanTermYears ?? 20
-                  ).toLocaleString()
-                : 0}{" "}
-              triệu
-            </h2>
+            {soTienDangThieu.toLocaleString()} triệu
+          </h2>
             <p className="text-sm sm:text-xl text-black mt-1">Số tiền bạn đang thiếu</p>
           </div>
         </div>
@@ -474,7 +476,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowConfirmModal(true)} // Mở modal xác nhận
+            onClick={() => setShowConfirmModal(true)} // Mở Modal xác nhận giả định
           >
             Tiếp tục
           </Button>
@@ -482,7 +484,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
           <Button
             type="button"
             variant="outline"
-            onClick={handleEditPlan} // Quay về form nhập liệu
+            onClick={() => editPlan(plan.id, undefined, "goal")}
           >
             Thay đổi toàn bộ kế hoạch
           </Button>
