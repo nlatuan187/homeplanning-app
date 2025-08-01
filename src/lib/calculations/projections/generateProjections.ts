@@ -160,15 +160,12 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
 
     const monthlyNewSavings = annualSavings / 12;
 
-    // 1. Apply compound growth to initial savings
     accumulatedFromInitial *= Math.pow(1 + monthlyRate, 12);
 
-    // 2. Future value of 12 monthly contributions this year
-    const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
-      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 6) - 1) / monthlyRate
+    const fvOfCurrentYearMonthlySavings = (monthlyRate > 12)
+      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
       : monthlyNewSavings * 12;
 
-    // 3. Update accumulatedFromMonthly (previous + growth + new)
     accumulatedFromMonthly *= Math.pow(1 + monthlyRate, 12);
     accumulatedFromMonthly += fvOfCurrentYearMonthlySavings;
 

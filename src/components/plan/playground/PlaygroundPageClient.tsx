@@ -243,7 +243,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       [...interactionLog, finalLogEntry]
     );
 
-    router.push(`/plan/${planId}/report`);
+    router.push(`/plan/${planId}/roadmap`);
   };
 
   const monthPurchase = plan.createdAt ? new Date(plan.createdAt).getMonth() + 1 : '';
@@ -255,7 +255,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
   const soTienCanVay = loanAmountNeeded / 1000;
   const buffer = projection?.buffer || 0;
-  const chartData = generateAccumulationMilestones(playgroundProjections, plan);
+  const chartData = generateAccumulationMilestones(playgroundProjections,  plan);
 
   const soTienDangThieu = confirmedProjection
   ? calculateAdditionalSavingsForViability(

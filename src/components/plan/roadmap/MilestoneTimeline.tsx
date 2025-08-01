@@ -10,12 +10,10 @@ interface Milestone {
 }
 
 export default function MilestoneTimeline({ milestones }: { milestones: Milestone[] }) {
-  // Tăng spacingHeight để kéo giãn khoảng cách mỗi cột mốc
-  const spacingHeight = 150; // trước đây 100
+  const spacingHeight = 150;
 
   return (
     <div className="relative w-full mt-10">
-      {/* Đường nối chung bằng SVG */}
       <svg
         className="absolute left-0 top-0 w-full h-full z-0"
         viewBox={`0 0 100 ${milestones.length * spacingHeight}`}
@@ -33,10 +31,11 @@ export default function MilestoneTimeline({ milestones }: { milestones: Mileston
           return (
             <path
               key={idx}
-              d={`M${x1},${y1} C${x1},${y1 + 50} ${x2},${y2 - 50} ${x2},${y2}`}
-              stroke="#06b6d4"
-              strokeWidth="2"
+              d={`M${x1},${y1} L${x2},${y2}`}
+              stroke={m.status === "done" || m.status === "current" ? "#06b6d4" : "#6b7280"}
+              strokeWidth="1.5"
               fill="none"
+              strokeDasharray="1 1"
             />
           );
         })}
@@ -55,7 +54,7 @@ export default function MilestoneTimeline({ milestones }: { milestones: Mileston
               {!isEven && (
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-20 h-20 rounded-full border-4 flex items-center justify-center
+                    className={`w-30 h-30 rounded-full border-4 flex items-center justify-center
                       ${
                         m.status === "done"
                           ? "border-cyan-500 bg-cyan-800"
@@ -88,7 +87,7 @@ export default function MilestoneTimeline({ milestones }: { milestones: Mileston
               {isEven && (
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-20 h-20 rounded-full border-4 flex items-center justify-center
+                    className={`w-30 h-30 rounded-full border-4 flex items-center justify-center
                       ${
                         m.status === "done"
                           ? "border-cyan-500 bg-cyan-800"
