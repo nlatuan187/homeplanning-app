@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Plan } from "@prisma/client";
 
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { ArrowLeft, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,11 @@ type InteractionLogEntry = {
   initialValues?: Record<string, any>;
 };
 
-export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Plan }) {
+export default function PlaygroundPageClient({ initialPlan }: { initialPlan: PlanWithDetails }) {
   const router = useRouter();
   const planId = useParams().planId as string;
 
-  const [plan, setPlan] = useState<Plan>(initialPlan);
+  const [plan, setPlan] = useState<PlanWithDetails>(initialPlan);
   const [targetYear, setTargetYear] = useState<number>(0);
   const confirmedPurchaseYearRef = useRef<number | null>(null);
   const [projection, setProjection] = useState<ProjectionRow | null>(null);
@@ -255,6 +255,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
   const soTienCanVay = loanAmountNeeded / 1000;
   const buffer = projection?.buffer || 0;
+  console.log("projections", playgroundProjections)
   const chartData = generateAccumulationMilestones(playgroundProjections,  plan);
 
   const soTienDangThieu = confirmedProjection

@@ -10,7 +10,7 @@ type PlanWithPaymentMethod = Plan & {
  * A more specific type for the plan object that includes nested family support.
  * This ensures TypeScript understands the full data structure we're working with.
  */
-type PlanWithDetails = Plan & {
+export type PlanWithDetails = Plan & {
   paymentMethod: "fixed" | "decreasing";
   familySupport?: {
     familySupportType: 'GIFT' | 'LOAN' | null;
@@ -57,7 +57,7 @@ function calculateMonthlyPayment(
  * Generates financial projections based on the new, simplified Plan model.
  * This is the core calculation engine for the application.
  */
-export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: number): ProjectionRow[] {
+export function generateProjections(plan: Plan, maxYearsToProject?: number): ProjectionRow[] {
   const currentYear = new Date().getFullYear();
   const maxYears = maxYearsToProject || (plan.yearsToPurchase + 5);
   const projectionData: ProjectionRow[] = [];
@@ -67,6 +67,10 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     initialSavings += plan.familySupport.familySupportAmount;
   }
 
+  // Monthly rate from annual compound interest
+  const annualReturnRate = plan.pctInvestmentReturn / 100;
+  const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
+
   const userMonthlyIncomeN0 = plan.userMonthlyIncome;
   const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0;
   const otherMonthlyIncomeN0 = plan.monthlyOtherIncome || 0;
@@ -75,28 +79,31 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
 
   const monthlyExpensesN0 = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0) + ((plan.currentAnnualInsurancePremium || 0) / 12);
   const annualExpensesN0 = monthlyExpensesN0 * 12;
-  const annualSavingsN0 = annualIncomeN0 - annualExpensesN0;
+  const annualSavingsN0 = annualIncomeN0 - annualExpensesN0
+  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12)
+  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
 
   const targetEFN0 = monthlyExpensesN0 * 6;
   const paymentMethod = (plan as PlanWithPaymentMethod).paymentMethod || "fixed";
+  const cumulativeSavingsN0 = cumulativeSavingsFromInitialN0 + cumulativeSavingsFromMonthlyN0
 
   const year0: ProjectionRow = {
     year: currentYear,
     n: 0,
-    housePriceProjected: plan.targetHousePriceN0,
-    primaryIncome: userMonthlyIncomeN0 * 12,
-    spouseIncome: coApplicantMonthlyIncomeN0 * 12,
-    otherIncome: otherMonthlyIncomeN0 * 12,
+    housePriceProjected: plan.targetHousePriceN0,//
+    primaryIncome: userMonthlyIncomeN0 * 12, //
+    spouseIncome: coApplicantMonthlyIncomeN0 * 12,//
+    otherIncome: otherMonthlyIncomeN0 * 12,//
     annualIncome: annualIncomeN0,
     annualExpenses: annualExpensesN0,
     annualSavings: annualSavingsN0,
-    cumulativeSavings: initialSavings,
+    cumulativeSavings: cumulativeSavingsN0,
     loanAmountNeeded: Math.max(0, plan.targetHousePriceN0 - initialSavings),
     monthlyPayment: 0,
     monthlySurplus: annualSavingsN0 / 12,
     buffer: 0,
     isAffordable: false,
-    baseExpenses: plan.monthlyLivingExpenses * 12,
+    baseExpenses: plan.monthlyLivingExpenses * 12, //
     preInsuranceExpenses: (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 12,
     insurancePremium: plan.currentAnnualInsurancePremium || 0,
     targetEF: targetEFN0,
@@ -109,8 +116,8 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     factorMarriage: 0,
     factorChild: 0,
     loanTermYears: plan.loanTermYears,
-    cumulativeSavingsFromInitial: initialSavings,
-    cumulativeSavingsFromMonthly: 0,
+    cumulativeSavingsFromInitial: cumulativeSavingsFromInitialN0,
+    cumulativeSavingsFromMonthly: cumulativeSavingsFromMonthlyN0,
   };
 
   year0.loanAmountNeeded = Math.max(0, year0.housePriceProjected - year0.cumulativeSavings);
@@ -121,12 +128,8 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
 
   projectionData.push(year0);
 
-  // Monthly rate from annual compound interest
-  const annualReturnRate = plan.pctInvestmentReturn / 100;
-  const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
-
-  let accumulatedFromInitial = initialSavings;
-  let accumulatedFromMonthly = 0;
+  let accumulatedFromInitial = year0.cumulativeSavingsFromInitial;
+  let accumulatedFromMonthly = year0.cumulativeSavingsFromMonthly;
 
   for (let n = 1; n <= maxYears; n++) {
     const prev = projectionData[n - 1];
@@ -162,7 +165,7 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
 
     accumulatedFromInitial *= Math.pow(1 + monthlyRate, 12);
 
-    const fvOfCurrentYearMonthlySavings = (monthlyRate > 12)
+    const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
       ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
       : monthlyNewSavings * 12;
 
@@ -185,7 +188,7 @@ export function generateProjections(plan: PlanWithDetails, maxYearsToProject?: n
     const bankLoanNeeded = Math.max(0, housePriceProjected - equityForPurchase - familyLoanAmount);
     const ltvRatio = housePriceProjected > 0 ? (bankLoanNeeded / housePriceProjected) * 100 : 0;
 
-    const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate, plan.loanTermYears, paymentMethod);
+    const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate ?? 0, plan.loanTermYears ?? 0, paymentMethod);
     const monthlySurplus = annualSavings / 12;
     const buffer = monthlySurplus - monthlyPayment;
     const isAffordable = buffer >= 0;

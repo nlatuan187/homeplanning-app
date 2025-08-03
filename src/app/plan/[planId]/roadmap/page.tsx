@@ -5,6 +5,13 @@ import Image from "next/image";
 import MilestoneTimeline from "@/components/plan/roadmap/MilestoneTimeline";
 
 export default function RoadmapPage() {
+  const homePrice = 2_200_000_000;
+  const currentSavings = 440_000_000;
+  const confirmPurchaseYear = 2026;
+  const timeStart = 2025;
+
+  const savingsPercentage = Math.round((currentSavings / homePrice) * 100);
+
   return (
     <main className="min-h-screen bg-black text-white md:p-4">
       <div className="container mx-auto max-w-5xl">
@@ -37,36 +44,45 @@ export default function RoadmapPage() {
                 <ul className="list-disc list-inside text-xs mt-1">
                   <li>
                     Thời gian mua:{" "}
-                    <span className="font-semibold">Tháng 9/2026</span>
+                    <span className="font-semibold">
+                      Tháng 9/{confirmPurchaseYear}
+                    </span>
                   </li>
                   <li>
                     Giá trị căn nhà:{" "}
-                    <span className="font-semibold">2,2 tỷ</span>
+                    <span className="font-semibold">
+                      {(homePrice / 1_000_000_000).toFixed(1)} tỷ
+                    </span>
                   </li>
                 </ul>
                 <div className="w-full h-2 bg-slate-700 rounded-full mt-2">
                   <div
                     className="h-full bg-green-500 rounded-full"
-                    style={{ width: "15%" }}
+                    style={{ width: `${savingsPercentage}%` }}
                   ></div>
                 </div>
               </div>
-              <div className="text-sm font-semibold text-black">15%</div>
+              <div className="text-sm font-semibold text-black">
+                {savingsPercentage}%
+              </div>
             </div>
           </div>
 
           <MilestoneTimeline
-            milestones={[
-              { id: 1, title: "Cột mốc số 1", amount: "Tích lũy đạt 550 triệu", status: "done" },
-              { id: 2, title: "Cột mốc số 2", amount: "Tích lũy đạt 600 triệu", status: "current", icon: "/icon-milestone2.png" },
-              { id: 3, title: "Cột mốc số 3", amount: "Tích lũy đạt 700 triệu", status: "upcoming", icon: "/icon-milestone3.png" },
-              { id: 4, title: "Cột mốc số 4", amount: "Tích lũy đạt ...", status: "upcoming", icon: "/icon-milestone4.png" },
-            ]}
+            timeStart={timeStart}
+            confirmPurchaseYear={confirmPurchaseYear}
+            homePrice={homePrice}
+            currentSavings={currentSavings}
           />
 
-          {/* Button */}
-          <div className="mt-8 px-4">
-            <button className="w-full bg-white text-black font-semibold py-2 rounded-xl">Đọc kế hoạch tài chính chuyên sâu</button>
+          <div className="fixed bottom-0 inset-x-0 z-50 bg-slate-950">
+            <div className="container mx-auto max-w-5xl px-4">
+              <Button
+                className="w-full bg-white text-black font-semibold rounded-xl shadow-lg"
+              >
+                Đọc kế hoạch tài chính chuyên sâu
+              </Button>
+            </div>
           </div>
         </div>
       </div>

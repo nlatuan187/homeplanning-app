@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import PlaygroundPageClient from "@/components/plan/playground/PlaygroundPageClient"; // We will create this next
+import PlaygroundPageClient from "@/components/plan/playground/PlaygroundPageClient";
+import { PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 
 export default async function PlaygroundPage({
   params,
@@ -13,15 +14,20 @@ export default async function PlaygroundPage({
     redirect("/sign-in");
   }
 
-  const planData = await db.plan.findUnique({
+  const plan = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
     include: { familySupport: true },
   });
 
-  if (!planData) {
+  if (!plan) {
     redirect("/dashboard");
   }
 
-  // Pass the fetched data as a prop to the client component
+  // Ép kiểu thủ công nếu bạn chắc chắn giá trị paymentMethod là đúng
+  const planData: PlanWithDetails = {
+    ...plan,
+    paymentMethod: plan.paymentMethod as "fixed" | "decreasing",
+  };
+
   return <PlaygroundPageClient initialPlan={planData} />;
 }
