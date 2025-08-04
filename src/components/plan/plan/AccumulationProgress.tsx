@@ -20,7 +20,7 @@ export default function AccumulationProgress({
   return (
     <div className="bg-white rounded-lg p-6 text-center shadow">
       <div className="text-sm text-slate-500 italic">{estimateText}</div>
-      <div className="text-3xl font-bold text-cyan-500 my-2">{current.toLocaleString()}</div>
+      <div className="text-3xl font-bold text-cyan-500 my-2">{current}</div>
 
       {/* Thanh tiến độ với phần trăm nằm giữa */}
       <div className="relative w-full h-6 bg-slate-200 rounded-full overflow-hidden my-2">
@@ -34,8 +34,8 @@ export default function AccumulationProgress({
 
       {/* Min - Max ở dưới thanh */}
       <div className="flex justify-between text-sm text-slate-600 mt-1">
-        <span>{min.toLocaleString()}</span>
-        <span>{max.toLocaleString()}</span>
+        <span>{min}</span>
+        <span>{max}</span>
       </div>
     </div>
   );

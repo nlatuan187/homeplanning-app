@@ -77,25 +77,43 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   const totalMonthlyIncomeN0 = userMonthlyIncomeN0 + coApplicantMonthlyIncomeN0 + otherMonthlyIncomeN0;
   const annualIncomeN0 = totalMonthlyIncomeN0 * 12;
 
-  const monthlyExpensesN0 = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0) + ((plan.currentAnnualInsurancePremium || 0) / 12);
-  const annualExpensesN0 = monthlyExpensesN0 * 12;
-  const annualSavingsN0 = annualIncomeN0 - annualExpensesN0
-  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12)
-  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
+  // === LOGIC MỚI: Tính toán rõ ràng và rành mạch ===
+  // 1. Chi tiêu cơ bản (không bao gồm bảo hiểm)
+  const baseAnnualLivingExpenses = plan.monthlyLivingExpenses * 12;
+  const annualNonHousingDebt = (plan.monthlyNonHousingDebt || 0) * 12;
+  const baseAnnualExpenses = baseAnnualLivingExpenses + annualNonHousingDebt;
 
-  const targetEFN0 = monthlyExpensesN0 * 6;
+  // 2. Tính toán bảo hiểm theo logic mới
+  const recommendedInsuranceAmount = Math.round(baseAnnualExpenses * 0.125);
+  const currentInsuranceAmount = plan.currentAnnualInsurancePremium || 0;
+  
+  // 3. Xác định phí bảo hiểm cuối cùng
+  // Logic này sẽ được xử lý trong PlaygroundPageClient dựa trên toggle
+  // Ở đây chúng ta sẽ sử dụng currentInsuranceAmount làm default
+  const finalInsurancePremium = currentInsuranceAmount;
+
+  // 4. Tổng chi tiêu cuối cùng
+  const totalAnnualExpensesN0 = baseAnnualExpenses + finalInsurancePremium;
+  const annualSavingsN0 = annualIncomeN0 - totalAnnualExpensesN0;
+  
+  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12);
+  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate;
+  const cumulativeSavingsN0 = cumulativeSavingsFromInitialN0 + cumulativeSavingsFromMonthlyN0;
+
+  // 5. Quỹ dự phòng (6 tháng chi tiêu cơ bản)
+  const targetEFN0 = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
+  
   const paymentMethod = (plan as PlanWithPaymentMethod).paymentMethod || "fixed";
-  const cumulativeSavingsN0 = cumulativeSavingsFromInitialN0 + cumulativeSavingsFromMonthlyN0
 
   const year0: ProjectionRow = {
     year: currentYear,
     n: 0,
-    housePriceProjected: plan.targetHousePriceN0,//
-    primaryIncome: userMonthlyIncomeN0 * 12, //
-    spouseIncome: coApplicantMonthlyIncomeN0 * 12,//
-    otherIncome: otherMonthlyIncomeN0 * 12,//
+    housePriceProjected: plan.targetHousePriceN0,
+    primaryIncome: userMonthlyIncomeN0 * 12,
+    spouseIncome: coApplicantMonthlyIncomeN0 * 12,
+    otherIncome: otherMonthlyIncomeN0 * 12,
     annualIncome: annualIncomeN0,
-    annualExpenses: annualExpensesN0,
+    annualExpenses: totalAnnualExpensesN0, // Tổng chi tiêu đã bao gồm bảo hiểm
     annualSavings: annualSavingsN0,
     cumulativeSavings: cumulativeSavingsN0,
     loanAmountNeeded: Math.max(0, plan.targetHousePriceN0 - initialSavings),
@@ -103,9 +121,10 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     monthlySurplus: annualSavingsN0 / 12,
     buffer: 0,
     isAffordable: false,
-    baseExpenses: plan.monthlyLivingExpenses * 12, //
-    preInsuranceExpenses: (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 12,
-    insurancePremium: plan.currentAnnualInsurancePremium || 0,
+    // === CẤU TRÚC DỮ LIỆU MỚI ===
+    baseExpenses: baseAnnualLivingExpenses, // Chi tiêu cơ bản (không bảo hiểm)
+    preInsuranceExpenses: baseAnnualExpenses, // Chi tiêu trước bảo hiểm
+    insurancePremium: finalInsurancePremium, // Phí bảo hiểm cuối cùng
     targetEF: targetEFN0,
     efTopUp: 0,
     ltvRatio: 0,
@@ -139,10 +158,15 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     const otherAnnualIncome = prev.otherIncome;
     const totalAnnualIncome = userAnnualIncome + coApplicantAnnualIncome + otherAnnualIncome;
 
+    // === LOGIC MỚI CHO CÁC NĂM TIẾP THEO ===
     const livingExpensesAnnual = prev.baseExpenses * (1 + plan.pctExpenseGrowth / 100);
     const nonHousingDebtAnnual = (plan.monthlyNonHousingDebt || 0) * 12;
+    const baseAnnualExpensesCurrent = livingExpensesAnnual + nonHousingDebtAnnual;
+    
+    // Bảo hiểm sẽ được xử lý trong PlaygroundPageClient
     const insuranceAnnual = plan.currentAnnualInsurancePremium || 0;
-    const totalAnnualExpenses = livingExpensesAnnual + nonHousingDebtAnnual + insuranceAnnual;
+    
+    const totalAnnualExpenses = baseAnnualExpensesCurrent + insuranceAnnual;
 
     let annualSavings = totalAnnualIncome - totalAnnualExpenses;
 
@@ -162,9 +186,8 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     annualSavings -= annualFamilyLoanRepayment;
 
     const monthlyNewSavings = annualSavings / 12;
-
     accumulatedFromInitial *= Math.pow(1 + monthlyRate, 12);
-
+    
     const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
       ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
       : monthlyNewSavings * 12;
@@ -173,7 +196,6 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     accumulatedFromMonthly += fvOfCurrentYearMonthlySavings;
 
     const cumulativeSavings = accumulatedFromInitial + accumulatedFromMonthly;
-
     const housePriceProjected = prev.housePriceProjected * (1 + plan.pctHouseGrowth / 100);
 
     let equityForPurchase = cumulativeSavings;
@@ -203,7 +225,7 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
       annualIncome: totalAnnualIncome,
       annualExpenses: totalAnnualExpenses,
       annualSavings,
-      cumulativeSavings: cumulativeSavings,
+      cumulativeSavings,
       loanAmountNeeded: bankLoanNeeded,
       monthlyPayment,
       monthlySurplus,
@@ -211,8 +233,9 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
       isAffordable,
       loanTermYears: plan.loanTermYears,
       familyLoanRepayment: annualFamilyLoanRepayment,
+      // === CẤU TRÚC DỮ LIỆU MỚI ===
       baseExpenses: livingExpensesAnnual,
-      preInsuranceExpenses: livingExpensesAnnual + nonHousingDebtAnnual,
+      preInsuranceExpenses: baseAnnualExpensesCurrent,
       insurancePremium: insuranceAnnual,
       targetEF: (livingExpensesAnnual + nonHousingDebtAnnual) / 12 * 6,
       efTopUp: 0,

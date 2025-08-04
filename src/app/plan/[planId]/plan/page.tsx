@@ -6,7 +6,7 @@ import PlanPageClient from "@/components/plan/plan/PlanPageClient";
 export default async function PlanPage({
   params,
 }: {
-  params: {planId: string};
+  params: { planId: string; milestoneId: string };
 }) {
   const user = await currentUser();
   if (!user) {
@@ -21,6 +21,6 @@ export default async function PlanPage({
   if (!planData) {
     redirect("/dashboard");
   }
-
-  return <PlanPageClient initialPlan={planData} />;
-}
+  
+  return <PlanPageClient initialPlan={planData}/>;
+} 

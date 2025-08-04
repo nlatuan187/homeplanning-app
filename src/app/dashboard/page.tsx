@@ -154,28 +154,6 @@ export default function Dashboard() {
   const [plans, setPlans] = useState<ExtendedPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
-  
-  // const addUserCalled = useRef(false);
-
-  // const addUserToDB = async () => {
-  //   if (user && !addUserCalled.current) {
-  //     addUserCalled.current = true; // Đánh dấu đã gọi
-  //     try {
-  //       await fetch("/api/user", {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({
-  //           id: user.id,
-  //           email: user.primaryEmailAddress?.emailAddress,
-  //           createdAt: user.createdAt,
-  //           updatedAt: user.updatedAt,
-  //         }),
-  //       });
-  //     } catch (error) {
-  //       console.error("Lỗi khi thêm user vào DB:", error);
-  //     }
-  //   }
-  // };
 
   useEffect(() => {
     if (isLoaded && !user) {

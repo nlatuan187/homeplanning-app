@@ -37,7 +37,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const [monthlyExpense, setMonthlyExpense] = useState(plan.monthlyLivingExpenses);
   const [extraIncome, setExtraIncome] = useState(plan.monthlyOtherIncome);
 
-  const [hasEmergencyFund, setHasEmergencyFund] = useState(false);
+  const [hasEmergencyFund, setHasEmergencyFund] = useState(true);
   const [hasInsurance, setHasInsurance] = useState(true);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -65,6 +65,66 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const debouncedInvestmentReturn = useDebounce(investmentReturn, 300);
   const debouncedMonthlyExpense = useDebounce(monthlyExpense, 300);
   const debouncedExtraIncome = useDebounce(extraIncome, 300);
+
+  // Tính toán bảo hiểm theo công thức mới
+  const calculateRecommendedInsurance = (monthlyExpense: number) => {
+    const annualExpenses = monthlyExpense * 12 + (plan.monthlyNonHousingDebt || 0) * 12;
+    const recommendedAmount = annualExpenses * 0.125;
+    const currentInsurance = plan.currentAnnualInsurancePremium || 0;
+    return Math.max(0, recommendedAmount - currentInsurance);
+  };
+
+  // Tính toán quỹ dự phòng theo 6 tháng chi tiêu
+  const calculateEmergencyFund = (monthlyExpense: number) => {
+    return monthlyExpense * 6;
+  };
+
+  // Cập nhật projections khi toggle thay đổi
+  const computedProjections = useMemo(() => {
+    const basePlan = {
+      ...plan,
+      pctSalaryGrowth: debouncedSalaryGrowth,
+      pctInvestmentReturn: debouncedInvestmentReturn,
+      monthlyLivingExpenses: debouncedMonthlyExpense,
+      monthlyOtherIncome: debouncedExtraIncome,
+      paymentMethod: plan.paymentMethod === "fixed" ? "fixed" : "decreasing",
+    };
+
+    // Tạo plan với bảo hiểm và quỹ dự phòng được điều chỉnh theo toggle
+    let adjustedPlan = basePlan;
+    
+    // === XỬ LÝ TOGGLE BẢO HIỂM ===
+    if (hasInsurance) {
+      // Nếu toggle ON: thêm recommended insurance vào current insurance
+      const recommendedAmount = calculateRecommendedInsurance(debouncedMonthlyExpense);
+      adjustedPlan = {
+        ...adjustedPlan,
+        currentAnnualInsurancePremium: (plan.currentAnnualInsurancePremium || 0) + recommendedAmount
+      };
+    }
+    // Nếu toggle OFF: giữ nguyên current insurance (có thể = 0)
+
+    // === XỬ LÝ TOGGLE QUỸ DỰ PHÒNG ===
+    if (hasEmergencyFund) {
+      // Nếu toggle ON: trừ quỹ dự phòng khỏi initial savings
+      const emergencyFundAmount = calculateEmergencyFund(debouncedMonthlyExpense);
+      adjustedPlan = {
+        ...adjustedPlan,
+        initialSavings: Math.max(0, basePlan.initialSavings - emergencyFundAmount)
+      };
+    }
+    // Nếu toggle OFF: giữ nguyên initial savings
+
+    return generateProjections(adjustedPlan, plan.yearsToPurchase + 5);
+  }, [
+    plan,
+    debouncedSalaryGrowth,
+    debouncedInvestmentReturn,
+    debouncedMonthlyExpense,
+    debouncedExtraIncome,
+    hasInsurance, // Thêm dependency này
+    hasEmergencyFund, // Thêm dependency này
+  ]);
 
   useEffect(() => {
     setPlan(initialPlan);
@@ -109,26 +169,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       },
     ]);
   }, [initialPlan]);
-
-  const computedProjections = useMemo(() => {
-    return generateProjections(
-      {
-        ...plan,
-        pctSalaryGrowth: debouncedSalaryGrowth,
-        pctInvestmentReturn: debouncedInvestmentReturn,
-        monthlyLivingExpenses: debouncedMonthlyExpense,
-        monthlyOtherIncome: debouncedExtraIncome,
-        paymentMethod: plan.paymentMethod === "fixed" ? "fixed" : "decreasing",
-      },
-      plan.yearsToPurchase + 5
-    );
-  }, [
-    plan,
-    debouncedSalaryGrowth,
-    debouncedInvestmentReturn,
-    debouncedMonthlyExpense,
-    debouncedExtraIncome,
-  ]);
 
   useEffect(() => {
     setPlaygroundProjections(computedProjections);
@@ -256,7 +296,19 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const soTienCanVay = loanAmountNeeded / 1000;
   const buffer = projection?.buffer || 0;
   console.log("projections", playgroundProjections)
-  const chartData = generateAccumulationMilestones(playgroundProjections,  plan);
+
+  // Tạo plan đã được điều chỉnh theo toggle cho chart
+  const adjustedPlanForChart = {
+    ...plan,
+    initialSavings: hasEmergencyFund 
+      ? Math.max(0, plan.initialSavings - calculateEmergencyFund(monthlyExpense))
+      : plan.initialSavings,
+    currentAnnualInsurancePremium: hasInsurance
+      ? (plan.currentAnnualInsurancePremium || 0) + calculateRecommendedInsurance(monthlyExpense)
+      : plan.currentAnnualInsurancePremium
+  };
+
+  const chartData = generateAccumulationMilestones(playgroundProjections, adjustedPlanForChart);
 
   const soTienDangThieu = confirmedProjection
   ? calculateAdditionalSavingsForViability(
@@ -266,8 +318,13 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     )
   : 0;
 
-  const emergencyFund = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
-  const insurancePremium = plan.currentAnnualInsurancePremium || 0;
+  // Tính toán hiển thị theo logic mới
+  const baseAnnualExpenses = monthlyExpense * 12 + (plan.monthlyNonHousingDebt || 0) * 12;
+  const recommendedInsuranceAmount = Math.round(baseAnnualExpenses * 0.125);
+  const currentInsuranceAmount = plan.currentAnnualInsurancePremium || 0;
+  
+  const emergencyFund = calculateEmergencyFund(monthlyExpense);
+  const insurancePremium = hasInsurance ? recommendedInsuranceAmount : currentInsuranceAmount;
   if (!plan || !projection) return <div>Loading...</div>;
   
   return (
@@ -392,7 +449,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
         <div className="grid grid-cols-3 gap-4 items-center">
           {/* Quỹ dự phòng */}
           <label className="text-left">Quỹ dự phòng:</label>
-          <div className="text-left">{emergencyFund} triệu (6 tháng chi tiêu)</div>
+          <div className="text-left">{emergencyFund.toLocaleString()} triệu (6 tháng chi tiêu)</div>
           <div className="flex justify-end">
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -401,25 +458,8 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 onChange={(e) => {
                   const checked = e.target.checked;
                   if (!checked) setShowEmergencyFundWarning(true);
-
                   setHasEmergencyFund(checked);
-
-                  // chỉ ghi initial_change nếu khác với initial
-                  const current = { ...initialStateRef.current, hasEmergencyFund: checked };
-                  const isChanged = Object.entries(current).some(
-                    ([k, value]) => initialStateRef.current[k] !== value
-                  );
-
-                  if (isChanged) {
-                    setInteractionLog((prev) => [
-                      ...prev,
-                      {
-                        timestamp: new Date().toISOString(),
-                        type: "initial_change",
-                        initialValues: current,
-                      },
-                    ]);
-                  }
+                  recordInitialChange("hasEmergencyFund", checked);
                 }}
                 className="sr-only peer"
               />
@@ -439,24 +479,8 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 onChange={(e) => {
                   const checked = e.target.checked;
                   if (!checked) setShowEmergencyInsuranceWarning(true);
-
                   setHasInsurance(checked);
-
-                  const current = { ...initialStateRef.current, hasInsurance: checked };
-                  const isChanged = Object.entries(current).some(
-                    ([k, value]) => initialStateRef.current[k] !== value
-                  );
-
-                  if (isChanged) {
-                    setInteractionLog((prev) => [
-                      ...prev,
-                      {
-                        timestamp: new Date().toISOString(),
-                        type: "initial_change",
-                        initialValues: current,
-                      },
-                    ]);
-                  }
+                  recordInitialChange("hasInsurance", checked);
                 }}
                 className="sr-only peer"
               />

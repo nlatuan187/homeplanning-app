@@ -1,17 +1,45 @@
 import React from "react";
 import { ArrowLeft } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import MilestoneTimeline from "@/components/plan/roadmap/MilestoneTimeline";
+import { Plan } from "@prisma/client";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 
-export default function RoadmapPage() {
-  const homePrice = 2_200_000_000;
-  const currentSavings = 440_000_000;
-  const confirmPurchaseYear = 2026;
-  const timeStart = 2025;
+export default async function RoadmapPage({
+  params,
+}: {
+  params: { planId: string };
+}) {
+  const router = useRouter();
+  const user = await currentUser();
+  if (!user) {
+    redirect("/sign-in");
+  }
 
-  const savingsPercentage = Math.round((currentSavings / homePrice) * 100);
+  const plan = await db.plan.findUnique({
+    where: { id: params.planId, userId: user.id },
+    include: { familySupport: true },
+  });
 
+  if (!plan) {
+    redirect("/dashboard");
+  }
+  
+  const savingsPercentage = Math.round((plan.initialSavings / plan.targetHousePriceN0) * 100)
+
+  const projections = generateProjections(plan);
+  
+  const currentProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
+  const housePriceProjected = currentProjection.housePriceProjected ?? plan.targetHousePriceN0
+
+  console.log("housePriceProjected",housePriceProjected)
+
+  
   return (
     <main className="min-h-screen bg-black text-white md:p-4">
       <div className="container mx-auto max-w-5xl">
@@ -45,13 +73,13 @@ export default function RoadmapPage() {
                   <li>
                     Thời gian mua:{" "}
                     <span className="font-semibold">
-                      Tháng 9/{confirmPurchaseYear}
+                      Tháng 9/{plan.confirmedPurchaseYear}
                     </span>
                   </li>
                   <li>
                     Giá trị căn nhà:{" "}
                     <span className="font-semibold">
-                      {(homePrice / 1_000_000_000).toFixed(1)} tỷ
+                      {(housePriceProjected / 1000).toFixed(1)} tỷ
                     </span>
                   </li>
                 </ul>
@@ -68,17 +96,13 @@ export default function RoadmapPage() {
             </div>
           </div>
 
-          <MilestoneTimeline
-            timeStart={timeStart}
-            confirmPurchaseYear={confirmPurchaseYear}
-            homePrice={homePrice}
-            currentSavings={currentSavings}
-          />
+          <MilestoneTimeline plan={plan}/>
 
           <div className="fixed bottom-0 inset-x-0 z-50 bg-slate-950">
             <div className="container mx-auto max-w-5xl px-4">
               <Button
                 className="w-full bg-white text-black font-semibold rounded-xl shadow-lg"
+                onClick={() => router.push(`/plan/${plan.id}/results`)} 
               >
                 Đọc kế hoạch tài chính chuyên sâu
               </Button>

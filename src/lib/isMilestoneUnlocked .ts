@@ -93,8 +93,37 @@ export function getMilestonesByGroup(
     };
   });
 
+  const sortedWithAmount = withAmount.sort((a, b) => {
+    const getGoalNumber = (title: string) => {
+      const match = title.match(/Goal (\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    };
+
+    const goalA = getGoalNumber(a.title);
+    const goalB = getGoalNumber(b.title);
+
+    if (goalA !== goalB) {
+      return goalA - goalB;
+    }
+
+    if (a.percent !== undefined && b.percent !== undefined) {
+      return a.percent - b.percent;
+    }
+
+    if (a.percent !== undefined && b.percent === undefined) return -1;
+    if (a.percent === undefined && b.percent !== undefined) return 1;
+
+    return 0;
+  });
+
+  const withUpdatedIds = sortedWithAmount.map((m, idx) => ({
+    ...m,
+    id: idx + 1,
+  }));
+
+
   let currentMarked = false;
-  const withStatus = withAmount.map((m) => {
+  const withStatus = withUpdatedIds.map((m) => {
     if (m.amountValue === null) return m;
     if (currentSavings >= m.amountValue) return { ...m, status: "done" as const };
     if (!currentMarked) {
