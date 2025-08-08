@@ -1,7 +1,8 @@
 "use client"; // Required for useState and client-side interactions
 
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect, useRef } from "react"; // Added useEffect
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserButton, useUser } from "@clerk/nextjs"; // useUser for client-side user data
 // import { currentUser } from "@clerk/nextjs/server"; // No longer needed for main component
@@ -153,6 +154,28 @@ export default function Dashboard() {
   const [plans, setPlans] = useState<ExtendedPlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
+  
+  // const addUserCalled = useRef(false);
+
+  // const addUserToDB = async () => {
+  //   if (user && !addUserCalled.current) {
+  //     addUserCalled.current = true; // Đánh dấu đã gọi
+  //     try {
+  //       await fetch("/api/user", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           id: user.id,
+  //           email: user.primaryEmailAddress?.emailAddress,
+  //           createdAt: user.createdAt,
+  //           updatedAt: user.updatedAt,
+  //         }),
+  //       });
+  //     } catch (error) {
+  //       console.error("Lỗi khi thêm user vào DB:", error);
+  //     }
+  //   }
+  // };
 
   useEffect(() => {
     if (isLoaded && !user) {

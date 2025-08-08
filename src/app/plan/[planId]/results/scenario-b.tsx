@@ -7,6 +7,7 @@ import { ProjectionRow } from "@/lib/calculations/affordability";
 import { confirmPurchaseYear } from "@/actions";
 import { CheckIcon } from "lucide-react";
 import { Plan } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 interface ResultsScenarioBProps {
   plan: Plan;
@@ -25,6 +26,7 @@ export default function ResultsScenarioB({
   planLoanInterestRate,
   planLoanTermYears
 }: ResultsScenarioBProps) {
+  const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [selectedYearState, setSelectedYearState] = useState<number>(firstViableYear);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function ResultsScenarioB({
       if (result.success) {
         // Use window.location.assign for a full page navigation to solve
         // issues with client-side routing to server components.
-        window.location.assign(`/plan/${plan.id}/financial-peace`);
+        router.push(`/plan/${plan.id}/playground`)
       } else {
         throw new Error(result.error || "Failed to confirm purchase year");
       }

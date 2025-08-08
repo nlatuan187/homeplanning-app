@@ -91,7 +91,7 @@ model Plan {
   revisionHistory        Json?
   userEmail              String?
   buffer                 Float?
-
+  playgroundInteractionLog Json?
   // Note: We are NOT storing the full ProjectionDataTable here for MVP to save space.
   // It will be recalculated when the plan is viewed.
 }

@@ -47,6 +47,9 @@ export type ProjectionRow = {
 
   // Loan details
   ltvRatio: number;
+
+  cumulativeSavingsFromInitial: number;
+  cumulativeSavingsFromMonthly: number;
 };
 
 export type ProjectionResult = {
