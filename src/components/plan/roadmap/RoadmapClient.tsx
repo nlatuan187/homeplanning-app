@@ -1,0 +1,109 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import MilestoneTimeline from "@/components/plan/roadmap/MilestoneTimeline";
+import { Plan } from "@prisma/client";
+import { UserButton } from "@clerk/nextjs";
+
+interface RoadmapClientProps {
+  plan: Plan;
+  savingsPercentage: number;
+  housePriceProjected: number;
+}
+
+export default function RoadmapClient({
+  plan,
+  savingsPercentage,
+  housePriceProjected,
+}: RoadmapClientProps) {
+  const router = useRouter();
+  
+  // State để theo dõi currentSavings và tính toán phần trăm
+  const [currentSavings, setCurrentSavings] = useState(plan.initialSavings || 0);
+  const [progressPercentage, setProgressPercentage] = useState(savingsPercentage);
+
+  // Cập nhật progressPercentage khi currentSavings thay đổi
+  useEffect(() => {
+    const newPercentage = housePriceProjected > 0 
+      ? Math.min(100, Math.round((currentSavings / housePriceProjected) * 100))
+      : 0;
+    setProgressPercentage(newPercentage);
+  }, [currentSavings, housePriceProjected]);
+
+  // Hàm để cập nhật currentSavings (có thể được gọi từ bên ngoài)
+  const updateCurrentSavings = (newSavings: number) => {
+    setCurrentSavings(newSavings);
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white md:p-4">
+      <div className="container mx-auto max-w-5xl">
+        <div className="font-sans">
+          <div className="sticky top-0 z-50 bg-black pb-2">
+            <header className="px-4 py-3 flex items-center justify-center relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white absolute left-4"
+                onClick={() => router.push(`/plan/${plan.id}/playground`)}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+              <div className="text-base font-bold">KẾ HOẠCH HÀNH ĐỘNG</div>
+            </header>
+          </div>
+
+          <div className="bg-white p-4 flex flex-row gap-4 items-center border-b-white">
+            <div className="scale-200 px-2">
+              <UserButton afterSignOutUrl="/" />
+            </div>
+            <div className="flex-1 text-sm text-black">
+              <div className="font-semibold">Mua {plan.targetHouseType} tại {plan.targetLocation}</div>
+              <ul className="list-disc list-inside text-xs mt-1">
+                <li>
+                  Thời gian mua:{" "}
+                  <span className="font-semibold">
+                    Tháng 9/{plan.confirmedPurchaseYear}
+                  </span>
+                </li>
+                <li>
+                  Giá trị căn nhà:{" "}
+                  <span className="font-semibold">
+                    {(housePriceProjected / 1000).toFixed(1)} tỷ
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <div className="text-sm font-semibold text-black self-end">
+              {progressPercentage}%
+            </div>
+          </div>
+          <div className="bg-white px-2 pb-0.5 items-center">
+            <div className="mb-2 h-2 bg-slate-700 rounded-lg">
+              <div
+                className="h-full bg-green-500 rounded-full"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="bottom-0 inset-x-0 z-50 px-4 mb-2">
+            <MilestoneTimeline plan={plan}/>
+          </div>
+
+          <div className="bottom-0 inset-x-0 z-50 px-4 mb-2">
+            <Button
+              className="w-full bg-white text-black font-semibold rounded-xl shadow-lg"
+              onClick={() => router.push(`/plan/${plan.id}/report`)} 
+            >
+              Đọc kế hoạch tài chính chuyên sâu
+            </Button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

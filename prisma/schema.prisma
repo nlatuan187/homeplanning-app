@@ -94,6 +94,9 @@ model Plan {
   playgroundInteractionLog Json?
   // Note: We are NOT storing the full ProjectionDataTable here for MVP to save space.
   // It will be recalculated when the plan is viewed.
+
+  // Relations to new models
+  milestoneProgress     MilestoneProgress?
 }
 
 // Model to hold detailed information about family support
@@ -125,4 +128,38 @@ enum FamilyGiftTiming {
 enum FamilyLoanRepaymentType {
   MONTHLY
   LUMP_SUM
+}
+
+// Model để lưu trữ milestone progress và roadmap data
+model MilestoneProgress {
+  id                    String   @id @default(cuid())
+  planId                String   // Foreign key linking to the Plan model
+  plan                  Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  // Current progress tracking
+  currentSavings        Float    @default(0) // Số tiền tiết kiệm hiện tại (VND)
+  selectedMilestoneId   Int      @default(1) // ID của milestone đang được chọn
+  totalCompletedMilestones Int   @default(0) // Tổng số milestone đã hoàn thành
+  
+  // Calculated values for roadmap
+  savingsPercentage     Float    @default(0) // Phần trăm tiết kiệm so với mục tiêu
+  housePriceProjected   Float    @default(0) // Giá nhà dự kiến tại thời điểm mua
+  
+  // Milestone data (JSON để lưu trữ linh hoạt)
+  milestoneGroups       Json?    // Cấu trúc milestone groups đã tính toán
+  currentMilestoneData  Json?    // Dữ liệu milestone hiện tại
+  completedMilestones   Json?    // Danh sách các milestone đã hoàn thành
+  
+  // Plan page specific data
+  planPageData          Json?    // Dữ liệu cho trang plan (current step, progress, etc.)
+  
+  // Timestamps for tracking
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastProgressUpdate    DateTime? // Thời điểm cập nhật progress cuối cùng
+  lastMilestoneCalculation DateTime? // Thời điểm tính toán milestone cuối cùng
+  
+  // Index để tối ưu query
+  @@index([planId])
+  @@unique([planId]) // Đảm bảo mỗi plan chỉ có 1 record progress
 }

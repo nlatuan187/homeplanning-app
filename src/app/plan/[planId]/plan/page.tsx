@@ -5,8 +5,10 @@ import PlanPageClient from "@/components/plan/plan/PlanPageClient";
 
 export default async function PlanPage({
   params,
+  searchParams,
 }: {
-  params: { planId: string; milestoneId: string };
+  params: { planId: string };
+  searchParams: { milestoneId?: string };
 }) {
   const user = await currentUser();
   if (!user) {
@@ -15,12 +17,15 @@ export default async function PlanPage({
 
   const planData = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
-    include: { familySupport: true },
+    include: { 
+      familySupport: true,
+      milestoneProgress: true 
+    },
   });
 
   if (!planData) {
     redirect("/dashboard");
   }
   
-  return <PlanPageClient initialPlan={planData}/>;
+  return <PlanPageClient initialPlan={planData} initialMilestoneId={searchParams.milestoneId ? parseInt(searchParams.milestoneId) : undefined}/>;
 } 

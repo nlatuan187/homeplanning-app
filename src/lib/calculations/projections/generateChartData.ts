@@ -18,8 +18,10 @@ export function generateAccumulationMilestones(
   let month = baseDate.getMonth() + 1;
   let year = baseDate.getFullYear();
 
-  const confirmedPurchaseYear = plan.confirmedPurchaseYear ?? year;
-  const length = confirmedPurchaseYear - year;
+  // Tính toán số năm cần projection dựa trên confirmedPurchaseYear
+  const defaultTargetYear = new Date().getFullYear() + plan.yearsToPurchase;
+  const confirmedYear = plan.confirmedPurchaseYear || defaultTargetYear;
+  const length = confirmedYear - new Date().getFullYear();
 
   let initialSavings = plan.initialSavings || 0;
   if (
@@ -43,6 +45,12 @@ export function generateAccumulationMilestones(
 
   for (let i = 0; i < length; i++) {
     const p = projectionData[i];
+    
+    // Kiểm tra nếu projectionData không có đủ dữ liệu
+    if (!p) {
+      console.warn(`Missing projection data for year ${i}`);
+      break;
+    }
 
     // === CỘT MỐC 1: 6 tháng đầu năm ===
     month += 6;

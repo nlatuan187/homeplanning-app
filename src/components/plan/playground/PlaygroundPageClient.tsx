@@ -50,16 +50,20 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const hasChangedSinceStart = useRef(false);
   const hasLoggedReset = useRef(false);
 
-  const [playgroundProjections, setPlaygroundProjections] = useState<ProjectionRow[]>(() =>
-    generateProjections({
+  const [playgroundProjections, setPlaygroundProjections] = useState<ProjectionRow[]>(() => {
+    const defaultTargetYear = new Date().getFullYear() + plan.yearsToPurchase;
+    const confirmedYear = plan.confirmedPurchaseYear || defaultTargetYear;
+    const yearsToProject = confirmedYear - new Date().getFullYear();
+    
+    return generateProjections({
       ...plan,
       pctSalaryGrowth: salaryGrowth,
       pctInvestmentReturn: investmentReturn,
       monthlyLivingExpenses: monthlyExpense,
       monthlyOtherIncome: extraIncome,
       paymentMethod: plan.paymentMethod === "fixed" ? "fixed" : "decreasing",
-    }, plan.yearsToPurchase + 5)
-  );
+    }, yearsToProject);
+  });
 
   const debouncedSalaryGrowth = useDebounce(salaryGrowth, 300);
   const debouncedInvestmentReturn = useDebounce(investmentReturn, 300);
@@ -115,7 +119,11 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
     }
     // Nếu toggle OFF: giữ nguyên initial savings
 
-    return generateProjections(adjustedPlan, plan.yearsToPurchase + 5);
+    const defaultTargetYear = new Date().getFullYear() + plan.yearsToPurchase;
+    const confirmedYear = plan.confirmedPurchaseYear || defaultTargetYear;
+    const yearsToProject = confirmedYear - new Date().getFullYear();
+
+    return generateProjections(adjustedPlan, yearsToProject);
   }, [
     plan,
     debouncedSalaryGrowth,

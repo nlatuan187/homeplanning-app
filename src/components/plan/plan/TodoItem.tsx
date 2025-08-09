@@ -1,13 +1,12 @@
 // components/TodoItem.tsx
 import React from "react";
 
-export type TaskType = "must_do" | "should_do" | "extra";
+export type TaskType = "system" | "user"; // Hệ thống tự động giao vs người dùng tự thêm
 
 export default function TodoItem({ text, type }: { text: string; type: TaskType }) {
   const labelColor = {
-    must_do: "bg-red-500",
-    should_do: "bg-yellow-500",
-    extra: "bg-gray-500",
+    system: "bg-orange-500", // Màu cam cho hệ thống
+    user: "bg-green-500",    // Màu xanh cho người dùng
   };
 
   return (
