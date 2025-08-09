@@ -69,16 +69,16 @@ function calculateEstimateText(
   }
   
   if (estimateTime === 1) {
-    return "Còn khoảng 1 tháng";
+    return "khoảng 1 tháng";
   } else if (estimateTime < 12) {
-    return `Còn khoảng ${estimateTime} tháng`;
+    return `khoảng ${estimateTime} tháng`;
   } else {
     const years = Math.floor(estimateTime / 12);
     const months = estimateTime % 12;
     if (months === 0) {
-      return `Còn khoảng ${years} năm`;
+      return `khoảng ${years} năm`;
     } else {
-      return `Còn khoảng ${years} năm ${months} tháng`;
+      return `khoảng ${years} năm ${months} tháng`;
     }
   }
 }

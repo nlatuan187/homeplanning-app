@@ -1,10 +1,11 @@
 // components/MilestoneTaskSection.tsx
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import TodoList from "./TodoList";
 import { TaskType } from "./TodoItem";
 import { Plan } from "@prisma/client";
+import { getCustomTasks } from "@/actions/milestoneProgress";
 
 interface MilestoneTaskSectionProps {
   milestoneId: number;
@@ -130,12 +131,53 @@ export default function MilestoneTaskSection({
   accumulationMax,
   accumulationMin
 }: MilestoneTaskSectionProps) {
-  const tasks = generateTasksFromPlan(milestoneId, plan, accumulationMax, accumulationMin);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Load tasks khi component mount
+  useEffect(() => {
+    async function loadTasks() {
+      try {
+        // Lấy system tasks
+        const systemTasks = generateTasksFromPlan(milestoneId, plan, accumulationMax, accumulationMin);
+        
+        // Lấy custom tasks từ database
+        const customTasks = await getCustomTasks(planId, milestoneId);
+        
+        // Merge tasks
+        const mergedTasks = [
+          ...systemTasks,
+          ...customTasks.map((task: any) => ({
+            text: task.text,
+            type: task.type,
+            status: task.status,
+            amount: task.amount,
+            id: task.id, // Thêm ID để tracking
+            isCustom: true, // Flag để phân biệt
+          }))
+        ];
+        
+        setAllTasks(mergedTasks);
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+        // Fallback to system tasks only
+        setAllTasks(generateTasksFromPlan(milestoneId, plan, accumulationMax, accumulationMin));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadTasks();
+  }, [milestoneId, planId, plan, accumulationMax, accumulationMin]);
   
   // Nếu milestone đã hoàn thành, tất cả tasks sẽ có status "auto-completed"
   const tasksWithStatus = isMilestoneCompleted 
-    ? tasks.map(task => ({ ...task, status: "auto-completed" as const }))
-    : tasks;
+    ? allTasks.map(task => ({ ...task, status: "auto-completed" as const }))
+    : allTasks;
+  
+  if (isLoading) {
+    return <div className="p-4">Loading tasks...</div>;
+  }
     
   return (
     <div className="p-4">
@@ -146,6 +188,9 @@ export default function MilestoneTaskSection({
         onSavingsUpdate={onSavingsUpdate}
         onMilestoneCompleted={onMilestoneCompleted}
         isMilestoneCompleted={isMilestoneCompleted}
+        plan={plan}
+        currentMilestoneAmount={accumulationMax}
+        previousMilestoneAmount={accumulationMin}
       />
     </div>
   );

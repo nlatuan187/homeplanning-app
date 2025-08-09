@@ -293,3 +293,106 @@ export async function updateMilestoneProgressOnCompletion(planId: string, milest
     throw error;
   }
 } 
+
+// Action để lưu custom user tasks cho milestone
+export async function saveCustomTask(
+  planId: string,
+  milestoneId: number,
+  task: {
+    text: string;
+    type: "user" | "system";
+    status: "incomplete" | "completed" | "auto-completed";
+    amount?: number;
+  }
+) {
+  try {
+    // Lấy milestone progress hiện tại
+    const progress = await getOrCreateMilestoneProgress(planId);
+    
+    // Lấy planPageData hiện tại hoặc tạo mới
+    const planPageData = progress.planPageData as any || {};
+    
+    // Khởi tạo structure cho custom tasks nếu chưa có
+    if (!planPageData.customTasks) {
+      planPageData.customTasks = {};
+    }
+    
+    if (!planPageData.customTasks[milestoneId]) {
+      planPageData.customTasks[milestoneId] = [];
+    }
+    
+    // Thêm task mới với timestamp để tránh duplicate
+    const newTask = {
+      ...task,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
+      createdAt: new Date().toISOString(),
+    };
+    
+    planPageData.customTasks[milestoneId].push(newTask);
+    
+    // Cập nhật database
+    const updatedProgress = await updateMilestoneProgress(planId, {
+      planPageData: planPageData,
+    });
+    
+    console.log("✅ Custom task saved:", newTask);
+    return { success: true, task: newTask, progress: updatedProgress };
+    
+  } catch (error) {
+    console.error("Error saving custom task:", error);
+    throw error;
+  }
+}
+
+// Action để lấy custom tasks cho milestone
+export async function getCustomTasks(planId: string, milestoneId: number) {
+  try {
+    const progress = await getOrCreateMilestoneProgress(planId);
+    const planPageData = progress.planPageData as any || {};
+    
+    return planPageData.customTasks?.[milestoneId] || [];
+  } catch (error) {
+    console.error("Error getting custom tasks:", error);
+    return [];
+  }
+}
+
+// Action để cập nhật status của custom task
+export async function updateCustomTaskStatus(
+  planId: string,
+  milestoneId: number,
+  taskId: string,
+  newStatus: "incomplete" | "completed" | "auto-completed"
+) {
+  try {
+    const progress = await getOrCreateMilestoneProgress(planId);
+    const planPageData = progress.planPageData as any || {};
+    
+    if (!planPageData.customTasks?.[milestoneId]) {
+      throw new Error("No custom tasks found for this milestone");
+    }
+    
+    // Tìm và cập nhật task
+    const tasks = planPageData.customTasks[milestoneId];
+    const taskIndex = tasks.findIndex((t: any) => t.id === taskId);
+    
+    if (taskIndex === -1) {
+      throw new Error("Task not found");
+    }
+    
+    tasks[taskIndex].status = newStatus;
+    tasks[taskIndex].updatedAt = new Date().toISOString();
+    
+    // Cập nhật database
+    const updatedProgress = await updateMilestoneProgress(planId, {
+      planPageData: planPageData,
+    });
+    
+    console.log("✅ Custom task status updated:", { taskId, newStatus });
+    return { success: true, progress: updatedProgress };
+    
+  } catch (error) {
+    console.error("Error updating custom task status:", error);
+    throw error;
+  }
+} 

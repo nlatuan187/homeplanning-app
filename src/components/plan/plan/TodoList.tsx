@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import TodoItem, { TaskType } from "./TodoItem";
 import AddCashflowModal from "./AddCashflowModal";
 import MilestoneCompleted from "./MilestoneCompleted";
+import { saveCustomTask } from "@/actions/milestoneProgress";
 
 export interface TodoListProps {
   milestoneId: number;
@@ -12,6 +13,11 @@ export interface TodoListProps {
   onSavingsUpdate?: (amount: number) => void;
   onMilestoneCompleted?: () => void;
   isMilestoneCompleted?: boolean;
+  // Thêm props để tính toán estimate time
+  plan?: any; // Plan object
+  currentMilestoneAmount?: number;
+  previousMilestoneAmount?: number;
+  planId: string; // Thêm planId để truyền xuống
 }
 
 export default function TodoList({ 
@@ -19,15 +25,54 @@ export default function TodoList({
   defaultItems, 
   onSavingsUpdate, 
   onMilestoneCompleted,
-  isMilestoneCompleted = false 
+  isMilestoneCompleted = false,
+  plan,
+  currentMilestoneAmount,
+  previousMilestoneAmount,
+  planId
 }: TodoListProps) {
   const [items, setItems] = useState(defaultItems);
   const [modalOpen, setModalOpen] = useState(false);
   const [showMilestoneCompleted, setShowMilestoneCompleted] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Thêm state này
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [timeImpactMessage, setTimeImpactMessage] = useState<string | null>(null);
   
   // Theo dõi các task đã được reward
   const rewardedTasksRef = useRef<Set<string>>(new Set());
+
+  // Tính toán monthly surplus
+  const calculateMonthlySurplus = () => {
+    if (!plan) return 0;
+    
+    return (
+      plan.userMonthlyIncome + 
+      (plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0) + 
+      (plan.monthlyOtherIncome || 0) - 
+      plan.monthlyLivingExpenses - 
+      (plan.monthlyNonHousingDebt || 0) - 
+      (plan.currentAnnualInsurancePremium || 0) / 12
+    ) || 0;
+  };
+
+  // Tính toán impact của dòng tiền mới lên thời gian
+  const calculateTimeImpact = (amount: number) => {
+    const monthlySurplus = calculateMonthlySurplus();
+    
+    if (monthlySurplus <= 0) {
+      return "Không thể tính toán do thu nhập không đủ";
+    }
+    
+    // Công thức: (dòng tiền mới) / monthlySurplus * 30
+    const dayImpact = Math.round((amount / monthlySurplus) * 30);
+    
+    if (dayImpact > 0) {
+      return `Giảm ${dayImpact} ngày để đạt mục tiêu`;
+    } else if (dayImpact < 0) {
+      return `Tăng ${Math.abs(dayImpact)} ngày để đạt mục tiêu`;
+    } else {
+      return "Không ảnh hưởng đến thời gian";
+    }
+  };
 
   // Cập nhật items khi defaultItems thay đổi
   useEffect(() => {
@@ -50,17 +95,52 @@ export default function TodoList({
     }
   }, [items, onMilestoneCompleted, showMilestoneCompleted]);
 
-  const handleAddExtraTask = (description: string, amount: number = 0) => {
-    setItems(prev => [...prev, { 
-      text: description, 
-      type: "user",
-      status: "completed",
-      amount: amount
-    }]);
+  const handleAddExtraTask = async (description: string, amount: number = 0) => {
+    console.log("🆕 Adding new task:", { description, amount });
     
-    // Cập nhật savings ngay khi thêm task mới với status completed
-    if (amount !== 0 && onSavingsUpdate) {
-      setTimeout(() => onSavingsUpdate(amount), 0);
+    // Tạo task object
+    const newTask = { 
+      text: description, 
+      type: "user" as const,
+      status: "completed" as const,
+      amount: amount
+    };
+    
+    try {
+      // Lưu vào database trước
+      const result = await saveCustomTask(planId, milestoneId, newTask);
+      
+      if (result.success) {
+        // Thêm vào local state với ID từ database
+        setItems(prev => [...prev, {
+          ...newTask,
+          id: result.task.id,
+          isCustom: true,
+        }]);
+        
+        console.log("✅ Task saved to database and added to UI");
+        
+        // Tính toán và hiển thị impact lên thời gian
+        if (amount !== 0) {
+          const impact = calculateTimeImpact(amount);
+          setTimeImpactMessage(impact);
+          console.log("⏱️ Time impact:", impact);
+          
+          // Ẩn message sau 5 giây
+          setTimeout(() => {
+            setTimeImpactMessage(null);
+          }, 5000);
+        }
+        
+        // Cập nhật savings
+        if (amount !== 0 && onSavingsUpdate) {
+          setTimeout(() => onSavingsUpdate(amount), 0);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error saving task:", error);
+      // Fallback: chỉ thêm vào local state
+      setItems(prev => [...prev, newTask]);
     }
     
     setModalOpen(false);
@@ -153,6 +233,16 @@ export default function TodoList({
 
   return (
     <>
+      {/* Time Impact Message */}
+      {timeImpactMessage && (
+        <div className="mb-4 p-3 bg-blue-900/50 border border-blue-500 rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-400 text-sm">⏱️</span>
+            <span className="text-blue-300 text-sm font-medium">{timeImpactMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Section: Việc cần thực hiện */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4 text-white">Việc cần thực hiện</h3>
