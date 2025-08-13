@@ -21,7 +21,6 @@ export type ProjectionRow = {
   loanTermYears: number; // Add this to ensure it's passed through
   familyLoanRepayment: number; // Annual family loan repayment amount
 
-  // Detailed numbers for context and debugging
   baseExpenses: number;
 
   // Additional fields from the specification

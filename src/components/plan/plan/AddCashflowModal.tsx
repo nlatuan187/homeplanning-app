@@ -12,7 +12,7 @@ export default function AddCashflowModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onSubmit: (description: string, amount: number) => void; // Thêm amount parameter
+  onSubmit: (description: string, amount: number) => void;
 }) {
   const [type, setType] = useState<"in" | "out" | null>(null);
   const [description, setDescription] = useState("");
@@ -31,6 +31,7 @@ export default function AddCashflowModal({
         : `Chi tiêu thêm ${formattedAmount} do ${description}`;
 
     // Tính toán amount với dấu đúng (triệu VND)
+    // Lưu ý: amountValue sẽ là số âm nếu là tiền ra, số dương nếu là tiền vào
     const amountValue = type === "in" ? Number(amount) / 1000000 : -(Number(amount) / 1000000);
 
     if (type === "in") {
@@ -39,7 +40,8 @@ export default function AddCashflowModal({
       setShowWarningModal(true);
     }
 
-    onSubmit(sentence, amountValue); // Truyền cả sentence và amount
+    // Gọi onSubmit với description và amountValue
+    onSubmit(description, amountValue);
   };
 
   const handleCloseAll = () => {

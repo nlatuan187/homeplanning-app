@@ -33,19 +33,10 @@ export default async function RoadmapPage({
   }
   
   // Sử dụng dữ liệu từ milestoneProgress nếu có
-  let savingsPercentage = 0;
-  let housePriceProjected = plan.targetHousePriceN0;
-
-  if (plan.milestoneProgress) {
-    savingsPercentage = plan.milestoneProgress.savingsPercentage;
-    housePriceProjected = plan.milestoneProgress.housePriceProjected;
-  } else {
-    // Fallback: tính toán từ plan nếu chưa có milestoneProgress
-    const projections = generateProjections(plan);
-    const currentProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
-    housePriceProjected = currentProjection.housePriceProjected ?? plan.targetHousePriceN0;
-    savingsPercentage = Math.round((plan.initialSavings / plan.targetHousePriceN0) * 100);
-  }
+  const projections = generateProjections(plan);
+  const currentProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
+  const housePriceProjected = (plan.milestoneProgress?.housePriceProjected || 0) - currentProjection.loanAmountNeeded;
+  const savingsPercentage = Math.round(((plan.milestoneProgress?.currentSavings || 0) / housePriceProjected) * 100);
 
   return (
     <RoadmapClient 

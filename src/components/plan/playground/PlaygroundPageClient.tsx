@@ -291,7 +291,13 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       [...interactionLog, finalLogEntry]
     );
 
-    router.push(`/plan/${planId}/roadmap`);
+    // Logic điều hướng dựa trên số năm
+    const yearsToPurchase = confirmedProjection?.n ?? plan.yearsToPurchase;
+    if (yearsToPurchase <= 3) {
+      router.push(`/plan/${planId}/roadmap`);
+    } else {
+      router.push(`/plan/${planId}/report`);
+    }
   };
 
   const monthPurchase = plan.createdAt ? new Date(plan.createdAt).getMonth() + 1 : '';

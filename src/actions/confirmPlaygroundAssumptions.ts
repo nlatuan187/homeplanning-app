@@ -70,9 +70,9 @@ export async function confirmPlaygroundAssumptions(
     if (currentMilestone) {
       currentMilestoneData = {
         milestoneId: group.id,
-        title: currentMilestone.title,
-        status: currentMilestone.status,
-        percent: currentMilestone.percent,
+        title: group.title,
+        status: group.status,
+        percent: undefined, // Không còn percent trong cấu trúc mới
         amountValue: currentMilestone.amountValue,
         currentSavings: currentSavings,
         lastDoneAmountValue: 0, // Vì đây là milestone đầu tiên

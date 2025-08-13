@@ -76,7 +76,11 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --connector-len: 160px;
 }
+
+@media (min-width: 369px)  { :root { --connector-len: 200px; } } /* sm */
+@media (min-width: 1050px) { :root { --connector-len: 800px; } }
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
@@ -136,7 +140,7 @@
     position: absolute !important;
     top: 50% !important;
     left: 100% !important;
-    width: 560px !important;
+    width: var(--connector-len) !important;
     height: 2px !important;
     background: repeating-linear-gradient(to right,
         #06b6d4 0px,
@@ -153,7 +157,7 @@
     position: absolute !important;
     top: 50% !important;
     right: 100% !important;
-    width: 560px !important;
+    width: var(--connector-len) !important;
     height: 2px !important;
     background: repeating-linear-gradient(to left,
         #06b6d4 0px,

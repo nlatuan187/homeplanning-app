@@ -33,11 +33,10 @@ export default function MilestoneCompleted({
   let subText = "";
   let nextMilestoneText = "";
 
-  
   if (isLastMilestone) {
     // Cột mốc cuối cùng
     mainText = "Chúc mừng!";
-    subText = "Bạn đã đạt được mục tiêu cuối cùng!";
+    subText = "Bạn đã chinh phục căn nhà mơ ước";
     nextMilestoneText = "Quay về trang chủ";
   } else {
     // Các cột mốc khác
@@ -67,9 +66,13 @@ export default function MilestoneCompleted({
         <h2 className="text-2xl font-semibold mb-2">{mainText}</h2>
         <p className="text-slate-300 text-base mb-8">{subText}</p>
         <div className="w-[200px] h-[300px] bg-gray-400 rounded mb-8" />
-        {!isLastMilestone && (
+        {!isLastMilestone ? (
           <p className="text-slate-400 text-sm">
             Còn {remainingMilestones} cột mốc nữa để chạm tay tới căn nhà đầu tiên, hãy tiếp tục cố gắng nhé!
+          </p>
+        ) : (
+          <p className="text-slate-400 text-sm">
+            Một hành trình dài đã kết thúc, cảm ơn bạn vì đã nỗ lực không ngừng nghỉ để chạm tới thành công ngày hôm nay!
           </p>
         )}
       </div>

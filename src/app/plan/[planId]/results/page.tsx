@@ -38,6 +38,8 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   }
 
   const projectionData = generateProjections(plan);
+  console.log("projectionData", projectionData);
+  console.log("plan", plan);
   const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
   const targetYearProjection: ProjectionRow | undefined =
     projectionData[plan.yearsToPurchase];

@@ -70,6 +70,9 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   // Monthly rate from annual compound interest
   const annualReturnRate = plan.pctInvestmentReturn / 100;
   const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
+  console.log("monthlyRate", monthlyRate);
+
+  const createMonth = plan.createdAt.getMonth();
 
   const userMonthlyIncomeN0 = plan.userMonthlyIncome;
   const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0;
@@ -86,7 +89,7 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   // 2. Tính toán bảo hiểm theo logic mới
   const recommendedInsuranceAmount = Math.round(baseAnnualExpenses * 0.125);
   const currentInsuranceAmount = plan.currentAnnualInsurancePremium || 0;
-  
+
   // 3. Xác định phí bảo hiểm cuối cùng
   // Logic này sẽ được xử lý trong PlaygroundPageClient dựa trên toggle
   // Ở đây chúng ta sẽ sử dụng currentInsuranceAmount làm default
@@ -95,14 +98,14 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   // 4. Tổng chi tiêu cuối cùng
   const totalAnnualExpensesN0 = baseAnnualExpenses + finalInsurancePremium;
   const annualSavingsN0 = annualIncomeN0 - totalAnnualExpensesN0;
-  
-  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12);
-  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate;
+
+  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12 - createMonth + 1);
+  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12 - createMonth + 1) - 1) / monthlyRate;
   const cumulativeSavingsN0 = cumulativeSavingsFromInitialN0 + cumulativeSavingsFromMonthlyN0;
 
   // 5. Quỹ dự phòng (6 tháng chi tiêu cơ bản)
   const targetEFN0 = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0)) * 6;
-  
+
   const paymentMethod = (plan as PlanWithPaymentMethod).paymentMethod || "fixed";
 
   const year0: ProjectionRow = {
@@ -162,10 +165,10 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     const livingExpensesAnnual = prev.baseExpenses * (1 + plan.pctExpenseGrowth / 100);
     const nonHousingDebtAnnual = (plan.monthlyNonHousingDebt || 0) * 12;
     const baseAnnualExpensesCurrent = livingExpensesAnnual + nonHousingDebtAnnual;
-    
+
     // Bảo hiểm sẽ được xử lý trong PlaygroundPageClient
     const insuranceAnnual = plan.currentAnnualInsurancePremium || 0;
-    
+
     const totalAnnualExpenses = baseAnnualExpensesCurrent + insuranceAnnual;
 
     let annualSavings = totalAnnualIncome - totalAnnualExpenses;
@@ -186,13 +189,12 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     annualSavings -= annualFamilyLoanRepayment;
 
     const monthlyNewSavings = annualSavings / 12;
-    accumulatedFromInitial *= Math.pow(1 + monthlyRate, 12);
-    
-    const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
-      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
-      : monthlyNewSavings * 12;
+    accumulatedFromInitial *= Math.pow(1 + monthlyRate, createMonth - 1);
 
-    accumulatedFromMonthly *= Math.pow(1 + monthlyRate, 12);
+    const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
+      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, createMonth - 1) - 1) / monthlyRate
+      : monthlyNewSavings * (createMonth - 1);
+
     accumulatedFromMonthly += fvOfCurrentYearMonthlySavings;
 
     const cumulativeSavings = accumulatedFromInitial + accumulatedFromMonthly;

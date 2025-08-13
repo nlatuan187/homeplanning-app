@@ -38,24 +38,8 @@ export async function getOrCreateMilestoneProgress(planId: string) {
         plan // Thêm plan parameter
       );
 
-      // Debug: Log milestoneGroups trước khi lưu
-      console.log("=== DEBUG: MilestoneGroups before saving ===");
-      milestoneGroups.forEach((group, groupIndex) => {
-        console.log(`Group ${group.id}:`);
-        group.milestones.forEach((milestone, milestoneIndex) => {
-          console.log(`  Milestone ${milestoneIndex + 1}: ${milestone.title}`);
-          console.log(`    amountValue: ${milestone.amountValue}`);
-          console.log(`    status: ${milestone.status}`);
-          console.log(`    percent: ${milestone.percent}`);
-        });
-      });
-
       // Đảm bảo dữ liệu được serialize đúng cách
       const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
-      
-      // Debug: Log sau khi serialize
-      console.log("=== DEBUG: After JSON serialization ===");
-      console.log(JSON.stringify(serializedMilestoneGroups, null, 2));
 
       progress = await db.milestoneProgress.create({
         data: {
@@ -67,10 +51,6 @@ export async function getOrCreateMilestoneProgress(planId: string) {
           lastMilestoneCalculation: new Date(),
         },
       });
-
-      // Debug: Log dữ liệu đã lưu
-      console.log("=== DEBUG: Data saved to database ===");
-      console.log("Saved milestoneGroups:", JSON.stringify(progress.milestoneGroups, null, 2));
     }
 
     return progress;
@@ -92,12 +72,6 @@ export async function updateMilestoneProgress(planId: string, data: Partial<{
   planPageData: any;
 }>) {
   try {
-    // Debug: Log dữ liệu đầu vào
-    console.log("=== DEBUG: updateMilestoneProgress input ===");
-    console.log("planId:", planId);
-    console.log("data:", JSON.stringify(data, null, 2));
-
-    // Xử lý milestoneGroups đặc biệt để đảm bảo amountValue được giữ lại
     const processedData = {
       ...data,
       milestoneGroups: data.milestoneGroups ? 
@@ -109,10 +83,6 @@ export async function updateMilestoneProgress(planId: string, data: Partial<{
       planPageData: data.planPageData ? 
         JSON.parse(JSON.stringify(data.planPageData)) : undefined,
     };
-
-    // Debug: Log dữ liệu sau khi xử lý
-    console.log("=== DEBUG: processedData ===");
-    console.log("processedData.milestoneGroups:", JSON.stringify(processedData.milestoneGroups, null, 2));
 
     const progress = await db.milestoneProgress.upsert({
       where: { planId },
@@ -126,10 +96,6 @@ export async function updateMilestoneProgress(planId: string, data: Partial<{
         lastProgressUpdate: new Date(),
       },
     });
-
-    // Debug: Log kết quả sau khi lưu
-    console.log("=== DEBUG: After upsert ===");
-    console.log("Result milestoneGroups:", JSON.stringify(progress.milestoneGroups, null, 2));
 
     return progress;
   } catch (error) {
@@ -163,10 +129,6 @@ export async function recalculateMilestoneProgress(planId: string) {
       currentSavings,
       plan // Thêm plan parameter
     );
-
-    // Debug: Log milestoneGroups trong recalculate
-    console.log("=== DEBUG: recalculateMilestoneProgress ===");
-    console.log("milestoneGroups:", JSON.stringify(milestoneGroups, null, 2));
 
     const progress = await db.milestoneProgress.upsert({
       where: { planId },
@@ -205,25 +167,26 @@ export async function updateCurrentSavings(planId: string, amount: number) {
       throw new Error("Milestone progress not found");
     }
 
-    // Tính toán currentSavings mới
-    const newCurrentSavings = Math.max(0, currentProgress.currentSavings + amount);
+    // Cập nhật currentSavings (amount có thể âm hoặc dương)
+    const newCurrentSavings = currentProgress.currentSavings + amount;
     
-    // Tính toán savingsPercentage mới
+    // Đảm bảo currentSavings không âm
+    const finalCurrentSavings = Math.max(0, newCurrentSavings);
+    
     const newSavingsPercentage = currentProgress.housePriceProjected > 0 
-      ? Math.round((newCurrentSavings / currentProgress.housePriceProjected) * 100)
+      ? Math.round((finalCurrentSavings / currentProgress.housePriceProjected) * 100)
       : 0;
 
-    // Cập nhật milestone progress
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
-        currentSavings: newCurrentSavings,
+        currentSavings: finalCurrentSavings,
         savingsPercentage: newSavingsPercentage,
         lastProgressUpdate: new Date(),
       },
     });
 
-    console.log(`Updated currentSavings: ${currentProgress.currentSavings} -> ${newCurrentSavings} (change: ${amount})`);
+    console.log(`Current savings updated: ${currentProgress.currentSavings} -> ${finalCurrentSavings} (change: ${amount})`);
     
     return updatedProgress;
   } catch (error) {
@@ -250,13 +213,14 @@ export async function updateMilestoneProgressOnCompletion(planId: string, milest
           : currentProgress.milestoneGroups) as MilestoneGroup[]
       : [];
 
-    // Tìm milestone đã hoàn thành và tính toán bonus
+    // Tìm milestone đã hoàn thành dựa trên milestoneId
+    // Thay vì tìm theo title, tìm theo groupId trong milestoneGroups
     const completedMilestone = milestoneGroups
       .flatMap(group => group.milestones)
       .find(milestone => {
-        // Tìm milestone dựa trên milestoneId hoặc amountValue
-        const goalNumber = milestone.title.match(/Goal (\d+)/)?.[1];
-        return goalNumber && parseInt(goalNumber) === milestoneId;
+        // Tìm milestone dựa trên groupId thay vì title
+        // milestoneId tương ứng với group.id
+        return milestone.groupId === milestoneId;
       });
 
     if (completedMilestone && completedMilestone.amountValue) {
