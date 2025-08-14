@@ -214,12 +214,9 @@ export async function updateMilestoneProgressOnCompletion(planId: string, milest
       : [];
 
     // Tìm milestone đã hoàn thành dựa trên milestoneId
-    // Thay vì tìm theo title, tìm theo groupId trong milestoneGroups
     const completedMilestone = milestoneGroups
       .flatMap(group => group.milestones)
       .find(milestone => {
-        // Tìm milestone dựa trên groupId thay vì title
-        // milestoneId tương ứng với group.id
         return milestone.groupId === milestoneId;
       });
 
@@ -236,12 +233,22 @@ export async function updateMilestoneProgressOnCompletion(planId: string, milest
       // Cập nhật totalCompletedMilestones
       const newTotalCompletedMilestones = currentProgress.totalCompletedMilestones + 1;
 
+      // Cập nhật status của milestone và group
+      const updatedMilestoneGroups = milestoneGroups.map(group => {
+        if (group.id === milestoneId) {
+          // Cập nhật status của group hiện tại thành "done"
+          return { ...group, status: "done" as const };
+        }
+        return group;
+      });
+
       const updatedProgress = await db.milestoneProgress.update({
         where: { planId },
         data: {
           currentSavings: newCurrentSavings,
           savingsPercentage: newSavingsPercentage,
           totalCompletedMilestones: newTotalCompletedMilestones,
+          milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
           lastProgressUpdate: new Date(),
         },
       });

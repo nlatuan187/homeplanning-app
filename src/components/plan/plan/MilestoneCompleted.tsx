@@ -54,9 +54,8 @@ export default function MilestoneCompleted({
       // Nếu là milestone cuối cùng, chuyển về roadmap
       router.push(`/plan/${planId}/roadmap`);
     } else {
-      // Nếu không phải milestone cuối cùng, chuyển đến milestone tiếp theo
-      const nextMilestoneId = milestoneId + 1;
-      router.push(`/plan/${planId}/plan?milestoneId=${nextMilestoneId}`);
+      // Gọi onNext để xử lý logic chuyển đến group kế tiếp
+      onNext();
     }
   };
 

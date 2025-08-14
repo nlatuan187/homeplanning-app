@@ -6,12 +6,25 @@ import { z } from "zod";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup } from "@/lib/isMilestoneUnlocked";
 
-// Schema để validate assumptions
+// Schema để validate assumptions - cho phép update từng phần
 const assumptionSchema = z.object({
-  pctSalaryGrowth: z.number(),
-  pctInvestmentReturn: z.number(),
-  monthlyLivingExpenses: z.number(),
-  monthlyOtherIncome: z.number(),
+  yearsToPurchase: z.number().optional(),
+  targetHousePriceN0: z.number().optional(),
+  targetHouseType: z.string().optional(),
+  targetLocation: z.string().optional(),
+  pctHouseGrowth: z.number().optional(),
+  userMonthlyIncome: z.number().optional(),
+  hasCoApplicant: z.boolean().optional(),
+  coApplicantMonthlyIncome: z.number().optional(),
+  monthlyOtherIncome: z.number().optional(),
+  pctSalaryGrowth: z.number().optional(),
+  coApplicantSalaryGrowth: z.number().optional(),
+  monthlyLivingExpenses: z.number().optional(),
+  monthlyNonHousingDebt: z.number().optional(),
+  currentAnnualInsurancePremium: z.number().optional(),
+  initialSavings: z.number().optional(),
+  pctExpenseGrowth: z.number().optional(),
+  pctInvestmentReturn: z.number().optional(),
 });
 
 export async function confirmPlaygroundAssumptions(
@@ -36,16 +49,26 @@ export async function confirmPlaygroundAssumptions(
   // 3. Validate assumptions
   const parsed = assumptionSchema.safeParse(newAssumptions);
   if (!parsed.success) {
+    console.error("Validation error:", parsed.error);
     throw new Error("Invalid assumptions");
   }
 
-  // 4. Cập nhật plan với assumptions mới
+  // 4. Cập nhật plan với assumptions mới - chỉ update những field được cung cấp
+  const updateData: any = {};
+  
+  // Chỉ thêm vào updateData những field có giá trị
+  Object.entries(parsed.data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      updateData[key] = value;
+    }
+  });
+
   const updatedPlan = await db.plan.update({
     where: { id: planId },
     data: {
-      ...parsed.data,
-      playgroundInteractionLog: interactionLog, // ghi lại log đã tổng hợp ở frontend
-      reportGeneratedAt: null, // Reset báo cáo cũ
+      ...updateData,
+      playgroundInteractionLog: interactionLog,
+      reportGeneratedAt: null,
     },
   });
 

@@ -202,18 +202,24 @@ export default function PlanPageClient({
 
   // Update handlePreviousMilestone và handleNextMilestone
   const handlePreviousMilestone = () => {
-    if (currentMilestoneIndex > 0) {
-      const previousMilestone = mainMilestones[currentMilestoneIndex - 1];
-      updateCurrentMilestone(previousMilestone);
+    if (currentStep > 1) {
+      // Nếu không phải milestone đầu tiên trong group, chuyển đến milestone trước đó
+      const previousStep = currentStep - 1;
+      setCurrentMilestoneStep(previousStep);
+      console.log(`✅ Chuyển từ milestone con ${currentStep} sang ${previousStep} trong cùng group`);
+    } else if (currentMilestoneIndex > 0) {
+      // Nếu là milestone đầu tiên của group hiện tại, chuyển đến milestone cuối cùng của group trước đó
+      const previousGroup = mainMilestones[currentMilestoneIndex - 1];
+      const previousGroupMilestones = previousGroup.milestones;
+      const lastMilestoneInPreviousGroup = previousGroupMilestones.length;
       
-      // Reset milestone con về bước đầu tiên
-      setCurrentMilestoneStep(1);
+      // Chuyển đến milestone cuối cùng của group trước đó
+      setCurrentMilestoneStep(lastMilestoneInPreviousGroup);
       
       // Cập nhật URL với milestoneId mới
-      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${previousMilestone.id}`);
+      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${previousGroup.id}`);
       
-      // Update status milestones và groups dựa theo currentSavings
-      updateMilestoneStatusesBasedOnCurrentSavings();
+      console.log(`✅ Chuyển từ milestone đầu tiên của group ${currentMilestoneIndex} sang milestone cuối cùng của group ${currentMilestoneIndex - 1}`);
     }
   };
 
@@ -222,28 +228,22 @@ export default function PlanPageClient({
 
   // Modify the handleNextMilestone function
   const handleNextMilestone = () => {
-    if (currentMilestoneIndex < mainMilestones.length - 1) {
-      const nextMilestone = mainMilestones[currentMilestoneIndex + 1];
+    if (currentStep < totalSteps) {
+      // Nếu không phải milestone cuối cùng trong group, chuyển đến milestone tiếp theo
+      const nextStep = currentStep + 1;
+      setCurrentMilestoneStep(nextStep);
+      console.log(`✅ Chuyển từ milestone con ${currentStep} sang ${nextStep} trong cùng group`);
+    } else if (currentMilestoneIndex < mainMilestones.length - 1) {
+      // Nếu là milestone cuối cùng của group hiện tại, chuyển đến milestone đầu tiên của group kế tiếp
+      const nextGroup = mainMilestones[currentMilestoneIndex + 1];
       
-      // Set flag để biết đang transition từ MilestoneCompleted
-      setIsTransitioningFromCompleted(true);
-      setShowMilestoneCompleted(false);
-      
-      updateCurrentMilestone(nextMilestone);
-      
-      // Reset milestone con về bước đầu tiên
+      // Reset milestone step về 1 khi chuyển group
       setCurrentMilestoneStep(1);
       
       // Cập nhật URL với milestoneId mới
-      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextMilestone.id}`);
+      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextGroup.id}`);
       
-      // Update status milestones và groups dựa theo currentSavings
-      updateMilestoneStatusesBasedOnCurrentSavings();
-      
-      // Reset flag sau một khoảng thời gian ngắn
-      setTimeout(() => {
-        setIsTransitioningFromCompleted(false);
-      }, 1000);
+      console.log(`✅ Chuyển từ milestone cuối cùng của group ${currentMilestoneIndex} sang milestone đầu tiên của group ${currentMilestoneIndex + 1}`);
     }
   };
 
@@ -283,7 +283,7 @@ export default function PlanPageClient({
     console.log("🔄 Current milestone updated to:", milestone.id);
   };
 
-  // Handle milestone completion
+  // Sửa logic xử lý milestone completion
   const handleMilestoneCompleted = async (milestoneId: number) => {
     console.log("🎯 handleMilestoneCompleted called with milestoneId:", milestoneId);
     
@@ -297,18 +297,28 @@ export default function PlanPageClient({
       // Cập nhật status của milestones và groups ngay lập tức
       updateMilestoneStatusOnCompletion(milestoneId);
       
-      // Set justCompletedMilestoneId và show MilestoneCompleted
-      setJustCompletedMilestoneId(milestoneId);
-      setShowMilestoneCompleted(true);
+      // Kiểm tra xem có phải milestone cuối cùng của group hiện tại không
+      const currentGroup = milestoneGroups.find(group => group.id === currentMilestone?.id);
+      const isLastMilestoneInGroup = currentGroup && currentStep >= currentGroup.milestones.length;
       
-      // Cập nhật URL để reflect milestone completion
-      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${milestoneId}&completed=true`);
+      if (isLastMilestoneInGroup) {
+        // Nếu là milestone cuối cùng của group, hiển thị MilestoneCompleted
+        setJustCompletedMilestoneId(milestoneId);
+        setShowMilestoneCompleted(true);
+        
+        // Cập nhật URL để reflect milestone completion
+        router.push(`/plan/${initialPlan.id}/plan?milestoneId=${milestoneId}&completed=true`);
+      } else {
+        // Nếu không phải milestone cuối cùng của group, chuyển đến milestone tiếp theo
+        const nextStep = currentStep + 1;
+        setCurrentMilestoneStep(nextStep);
+      }
     } catch (error) {
       console.error("Error handling milestone completion:", error);
     }
   };  
 
-  // Thêm hàm mới để cập nhật status khi milestone hoàn thành
+  // Sửa logic cập nhật status khi milestone hoàn thành
   const updateMilestoneStatusOnCompletion = (completedMilestoneId: number) => {
     const currentSavings = milestoneProgress?.currentSavings || 0;
     
@@ -324,21 +334,6 @@ export default function PlanPageClient({
           return { ...milestone, status: "upcoming" as const };
         }
       });
-      
-      // Tìm milestone vừa hoàn thành và milestone tiếp theo
-      const completedIndex = updatedMilestones.findIndex(milestone => milestone.groupId === completedMilestoneId);
-      const isLastMilestone = completedIndex === updatedMilestones.length - 1;
-      
-      if (completedIndex !== -1 && !isLastMilestone) {
-        // Nếu không phải milestone cuối cùng, tự động chuyển milestone tiếp theo thành "current"
-        const nextMilestoneIndex = completedIndex + 1;
-        if (nextMilestoneIndex < updatedMilestones.length) {
-          updatedMilestones[nextMilestoneIndex] = {
-            ...updatedMilestones[nextMilestoneIndex],
-            status: "current" as any
-          };
-        }
-      }
       
       // Cập nhật status tổng thể của group
       let groupStatus: "done" | "current" | "upcoming" = "upcoming";
@@ -463,12 +458,34 @@ export default function PlanPageClient({
               setShowMilestoneCompleted(false);
               setJustCompletedMilestoneId(null);
               
-              // Chuyển đến milestone tiếp theo
-              const nextMilestoneId = (justCompletedMilestoneId || 0) + 1;
-              if (nextMilestoneId <= mainMilestones.length) {
-                // Đảm bảo chuyển đến trang plan, không phải completed
-                router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextMilestoneId}`);
+              // Tìm group hiện tại và group kế tiếp
+              const currentGroupIndex = milestoneGroups.findIndex(group => group.id === justCompletedMilestoneId);
+              const nextGroupIndex = currentGroupIndex + 1;
+              
+              if (nextGroupIndex < milestoneGroups.length) {
+                // Chuyển đến milestone đầu tiên của group kế tiếp
+                const nextGroup = milestoneGroups[nextGroupIndex];
+                
+                // Cập nhật status của group hiện tại thành "done" và group kế tiếp thành "current"
+                const updatedMilestoneGroups = milestoneGroups.map((group, index) => {
+                  if (index === currentGroupIndex) {
+                    return { ...group, status: "done" as const };
+                  } else if (index === nextGroupIndex) {
+                    return { ...group, status: "current" as const };
+                  }
+                  return group;
+                });
+                
+                // Cập nhật local state
+                setMilestoneProgress(prev => prev ? {
+                  ...prev,
+                  milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+                } : null);
+                
+                // Chuyển đến milestone đầu tiên của group kế tiếp
+                router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextGroup.id}`);
               } else {
+                // Nếu không còn group nào, chuyển về roadmap
                 router.push(`/plan/${initialPlan.id}/roadmap`);
               }
             }}

@@ -322,7 +322,10 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       : plan.currentAnnualInsurancePremium
   };
 
-  const chartData = generateAccumulationMilestones(playgroundProjections, adjustedPlanForChart);
+  // Wrap chartData trong useMemo để đảm bảo re-calculate khi playgroundProjections thay đổi
+  const chartData = useMemo(() => {
+    return generateAccumulationMilestones(playgroundProjections, adjustedPlanForChart);
+  }, [playgroundProjections, adjustedPlanForChart]);
 
   const soTienDangThieu = confirmedProjection
   ? calculateAdditionalSavingsForViability(

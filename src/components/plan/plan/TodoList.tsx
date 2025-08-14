@@ -99,7 +99,7 @@ export default function TodoList({
     console.log("🔄 TodoList: Reset rewardedTasksRef for milestone:", milestoneId);
   }, [defaultItems, milestoneId]);
 
-  // Sửa logic tự động chuyển sang MilestoneCompleted - chỉ với milestone cuối cùng
+  // Sửa logic tự động chuyển sang MilestoneCompleted - chỉ với milestone cuối cùng của group
   useEffect(() => {
     const allCompleted = items.length > 0 && items.every(item => 
       item.status === "completed" || item.status === "auto-completed"
@@ -107,11 +107,11 @@ export default function TodoList({
     
     const hasManualCompleted = items.some(item => item.status === "completed");
     
-    // Chỉ tự động chuyển nếu là milestone cuối cùng
-    if (allCompleted && hasManualCompleted && onMilestoneCompleted && !showMilestoneCompleted && isLastMilestone) {
+    // Chỉ tự động chuyển nếu là milestone cuối cùng của group hiện tại
+    if (allCompleted && hasManualCompleted && onMilestoneCompleted && !showMilestoneCompleted) {
       onMilestoneCompleted();
     }
-  }, [items, onMilestoneCompleted, showMilestoneCompleted, isLastMilestone]);
+  }, [items, onMilestoneCompleted, showMilestoneCompleted]);
 
   // Thêm lại logic hiển thị MilestoneCompleted
   if (showMilestoneCompleted) {
@@ -288,7 +288,7 @@ export default function TodoList({
                 onClick={onNextMilestone}
                 className="rounded-lg font-semibold transition-colors text-black cursor-pointer text-xl"
               >
-                Chuyển sang mục tiêu tiếp theo
+                Xác nhận hoàn thành cột mốc
               </button>
             ) : (
               // Fallback
