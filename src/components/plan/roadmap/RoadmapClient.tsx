@@ -12,31 +12,18 @@ interface RoadmapClientProps {
   plan: Plan;
   savingsPercentage: number;
   housePriceProjected: number;
+  cumulativeGoal: number;
 }
 
 export default function RoadmapClient({
   plan,
   savingsPercentage,
   housePriceProjected,
+  cumulativeGoal,
 }: RoadmapClientProps) {
   const router = useRouter();
   
-  // State để theo dõi currentSavings và tính toán phần trăm
-  const [currentSavings, setCurrentSavings] = useState(plan.initialSavings || 0);
   const [progressPercentage, setProgressPercentage] = useState(savingsPercentage);
-
-  // Cập nhật progressPercentage khi currentSavings thay đổi
-  useEffect(() => {
-    const newPercentage = housePriceProjected > 0 
-      ? Math.min(100, Math.round((currentSavings / housePriceProjected) * 100))
-      : 0;
-    setProgressPercentage(newPercentage);
-  }, [currentSavings, housePriceProjected]);
-
-  // Hàm để cập nhật currentSavings (có thể được gọi từ bên ngoài)
-  const updateCurrentSavings = (newSavings: number) => {
-    setCurrentSavings(newSavings);
-  };
 
   return (
     <main className="min-h-screen bg-black text-white md:p-4">
@@ -66,13 +53,31 @@ export default function RoadmapClient({
                 <li>
                   Thời gian mua:{" "}
                   <span className="font-semibold">
-                    Tháng 9/{plan.confirmedPurchaseYear}
+                    Tháng {plan.createdAt.getMonth() + 1}/{plan.confirmedPurchaseYear}
                   </span>
                 </li>
                 <li>
                   Giá trị căn nhà:{" "}
                   <span className="font-semibold">
-                    {(housePriceProjected / 1000).toFixed(1)} tỷ
+                    {
+                      housePriceProjected >= 1000 ? (
+                        `${(housePriceProjected / 1000).toFixed(2)} tỷ`
+                      ) : (
+                        `${housePriceProjected} triệu`
+                      )
+                    }
+                  </span>
+                </li>
+                <li>
+                  Giá trị cần tiết kiệm:{" "}
+                  <span className="font-semibold">
+                    {
+                      cumulativeGoal >= 1000 ? (
+                        `${(cumulativeGoal / 1000).toFixed(2)} tỷ`
+                      ) : (
+                        `${cumulativeGoal.toFixed(2)} triệu`
+                      )
+                    }
                   </span>
                 </li>
               </ul>

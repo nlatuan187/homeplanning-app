@@ -11,18 +11,14 @@ export interface TodoListProps {
   milestoneId: number;
   defaultItems: { text: string; type: TaskType; status: "incomplete" | "completed" | "auto-completed"; amount?: number }[];
   onSavingsUpdate?: (amount: number) => void;
-  onMilestoneCompleted?: () => void; // Có thể giữ lại để sử dụng sau
+  onMilestoneCompleted?: () => void;
   isMilestoneCompleted?: boolean;
   plan?: any; // Plan object
   currentMilestoneAmount?: number;
   previousMilestoneAmount?: number;
-  planId: string; // Thêm planId để truyền xuống
-  // Thêm props mới để xác định milestone kế tiếp
-  onNextMilestone?: () => void;
+  planId: string;
   hasNextMilestone?: boolean;
-  // Thêm prop mới để chuyển về roadmap
   onGoToRoadmap?: () => void;
-  // Thêm prop mới để xác định milestone cuối cùng
   isLastMilestone?: boolean;
 }
 
@@ -36,7 +32,6 @@ export default function TodoList({
   currentMilestoneAmount,
   previousMilestoneAmount,
   planId,
-  onNextMilestone,
   hasNextMilestone = false,
   isLastMilestone = false // Thêm prop mới
 }: TodoListProps) {
@@ -47,11 +42,12 @@ export default function TodoList({
   
   const rewardedTasksRef = useRef<Set<string>>(new Set());
 
-  // Thêm useEffect để reset rewardedTasksRef khi milestoneId thay đổi
+  // SỬA LỖI NỀN TẢNG: Chỉ reset lại toàn bộ state khi người dùng chuyển sang milestone LỚN khác.
+  // Bỏ `defaultItems` khỏi dependency để ngăn việc re-render của component cha 
+  // ghi đè lên trạng thái do người dùng vừa tương tác.
   useEffect(() => {
-    // Reset rewardedTasksRef khi chuyển milestone
+    setItems(defaultItems);
     rewardedTasksRef.current.clear();
-    console.log("🔄 Reset rewardedTasksRef for milestone:", milestoneId);
   }, [milestoneId]);
 
   const calculateMonthlySurplus = () => {
@@ -67,7 +63,6 @@ export default function TodoList({
     ) || 0;
   };
 
-  // Tính toán impact của dòng tiền mới lên thời gian
   const calculateTimeImpact = (amount: number) => {
     const monthlySurplus = calculateMonthlySurplus();
     
@@ -87,33 +82,14 @@ export default function TodoList({
   };
 
   useEffect(() => {
-    console.log("🔄 TodoList: defaultItems changed for milestoneId:", milestoneId);
-    console.log("🔄 TodoList: defaultItems length:", defaultItems.length);
-    console.log("🔄 TodoList: defaultItems:", defaultItems);
-    
-    // QUAN TRỌNG: Luôn cập nhật items khi milestoneId thay đổi
+    // Chỉ cập nhật lại state items khi milestoneId thay đổi.
+    // Việc này ngăn không cho prop `defaultItems` từ component cha
+    // ghi đè lên trạng thái mà người dùng vừa tương tác.
     setItems(defaultItems);
-    
-    // Reset rewardedTasksRef khi milestoneId thay đổi
     rewardedTasksRef.current.clear();
-    console.log("🔄 TodoList: Reset rewardedTasksRef for milestone:", milestoneId);
-  }, [defaultItems, milestoneId]);
+  }, [milestoneId]); // Bỏ `defaultItems` khỏi danh sách dependency
 
-  // Sửa logic tự động chuyển sang MilestoneCompleted - chỉ với milestone cuối cùng của group
-  useEffect(() => {
-    const allCompleted = items.length > 0 && items.every(item => 
-      item.status === "completed" || item.status === "auto-completed"
-    );
-    
-    const hasManualCompleted = items.some(item => item.status === "completed");
-    
-    // Chỉ tự động chuyển nếu là milestone cuối cùng của group hiện tại
-    if (allCompleted && hasManualCompleted && onMilestoneCompleted && !showMilestoneCompleted) {
-      onMilestoneCompleted();
-    }
-  }, [items, onMilestoneCompleted, showMilestoneCompleted]);
 
-  // Thêm lại logic hiển thị MilestoneCompleted
   if (showMilestoneCompleted) {
     return (
       <MilestoneCompleted 
@@ -139,7 +115,6 @@ export default function TodoList({
       const result = await saveCustomTask(planId, milestoneId, newTask);
       
       if (result.success) {
-        // Thêm vào local state với ID từ database
         setItems(prev => [...prev, {
           ...newTask,
           id: result.task.id,
@@ -161,49 +136,43 @@ export default function TodoList({
   };
 
   const handleToggleTask = async (taskIndex: number, isCompleted: boolean) => {
-    if (isProcessing) {
-      return;
-    }
-    
-    setIsProcessing(true); // Disable clicks tạm thời
-    
+    // 1. Ngăn chặn click liên tục
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    const item = items[taskIndex];
+    const amountToUpdate = isCompleted ? -(item.amount || 0) : (item.amount || 0);
+
     try {
+      // 2. Gọi và chờ server xác nhận
+      if (onSavingsUpdate && item.amount !== undefined) {
+        await onSavingsUpdate(amountToUpdate);
+      }
+
+      // 3. Nếu thành công, cập nhật UI một cách chính thức
       setItems(prev => {
         const newItems = [...prev];
-        const item = newItems[taskIndex];
-        // Sửa: Thêm milestoneId vào taskKey để tránh duplicate giữa các milestones
         const taskKey = `${milestoneId}-${item.text}-${item.type}`;
         
         if (isCompleted) {
-          // Khi bỏ chọn task (chuyển về incomplete)
           newItems[taskIndex] = { ...item, status: "incomplete" };
-          
-          // Sửa: Khi bỏ chọn task, cũng cần cập nhật currentSavings
-          if (item.amount !== undefined && onSavingsUpdate) {
-            // Trừ đi amount khi bỏ chọn task
-            setTimeout(() => {
-              onSavingsUpdate(-(item.amount || 0));
-            }, 0);
-          }
-          
         } else {
-          // Khi chọn task (hoàn thành)
           newItems[taskIndex] = { ...item, status: "completed" };
-          
-          if (item.amount !== undefined && !rewardedTasksRef.current.has(taskKey) && onSavingsUpdate) {
+          if (item.amount !== undefined) {
             rewardedTasksRef.current.add(taskKey);
-            setTimeout(() => {
-              onSavingsUpdate(item.amount as number);
-            }, 0);
           }
         }
-        
         return newItems;
       });
+
+    } catch (error) {
+      // 4. Nếu có lỗi, thông báo cho người dùng
+      console.error("Failed to update task:", error);
+      // **Gợi ý:** Ở đây bạn có thể dùng một thư viện thông báo (toast)
+      // để hiện lỗi cho người dùng, ví dụ: alert("Cập nhật thất bại, vui lòng thử lại.");
     } finally {
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 300);
+      // 5. Cho phép người dùng tương tác lại
+      setIsProcessing(false);
     }
   };
 
@@ -222,17 +191,26 @@ export default function TodoList({
   const allItemsCompleted = items.length > 0 && items.every(item => 
     item.status === "completed" || item.status === "auto-completed"
   );
+  const isPendingConfirmation = items.some(item => item.status === 'completed');
 
   const getBackgroundColor = (status: "incomplete" | "completed" | "auto-completed") => {
     switch (status) {
       case "auto-completed":
-        return "bg-gray-700"; // Màu xám đậm hơn cho auto-completed
+        return "bg-gray-700";
       case "completed":
-        return "bg-gray-800"; // Màu xám bình thường cho completed
+        return "bg-gray-800";
       default:
         return "bg-gray-800";
     }
   };
+
+  // Gợi ý: bạn có thể đặt hàm này trong `src/lib/utils.ts`
+  function formatCurrency(value: number): string {
+    if (Math.abs(value) >= 1000) {
+      return `${(value / 1000).toFixed(1).replace('.0', '')} tỷ`;
+    }
+    return `${value} triệu`;
+  }
 
   return (
     <>
@@ -245,13 +223,16 @@ export default function TodoList({
               if (item.status !== "incomplete") return null;
               
               return (
-                <div key={`item-${index}`} className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 ${getBorderColor(item.type)} ${getBackgroundColor("incomplete")}`}>
+                <div 
+                  key={`item-${index}`} 
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 transition-opacity ${getBorderColor(item.type)} ${getBackgroundColor("incomplete")} ${isProcessing ? 'opacity-50' : 'opacity-100'}`}
+                >
                   <div 
                     className={`w-5 h-5 border-2 border-gray-400 rounded-full cursor-pointer hover:border-gray-300 transition-colors ${
-                      isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                      isProcessing ? 'cursor-not-allowed' : ''
                     }`}
                     onClick={() => {
-                      handleToggleTask(index, false);
+                      if (!isProcessing) handleToggleTask(index, false);
                     }}
                   ></div>
                   <span className="text-white flex-1">{item.text}</span>
@@ -260,7 +241,7 @@ export default function TodoList({
                       item.amount < 0 ? 'text-red-400' : 'text-green-400'
                     }`}>
                       {item.amount < 0 ? '' : '+'}
-                      {item.amount.toLocaleString()} triệu
+                      {formatCurrency(item.amount)}
                     </span>
                   )}
                 </div>
@@ -272,35 +253,33 @@ export default function TodoList({
         // Khi tất cả items đã hoàn thành
         <div className="mb-8">
           <div className="bg-white rounded-lg p-6 text-center">
-            {isLastMilestone ? (
-              // Nếu là milestone cuối cùng của group cuối cùng, hiển thị thông báo hoàn thành
-              <div className="space-y-4">
-                <div className="text-black text-lg font-medium">
-                  🎉 Chúc mừng! Bạn đã hoàn thành tất cả milestones!
-                </div>
-                <div className="text-black text-sm">
-                  Hãy chờ một chút để chuyển đến trang hoàn thành...
-                </div>
-              </div>
-            ) : hasNextMilestone && onNextMilestone ? (
-              // Nếu có milestone con kế tiếp hoặc group kế tiếp, hiển thị button chuyển tiếp
+            {onMilestoneCompleted && isPendingConfirmation ? (
               <button
-                onClick={onNextMilestone}
+                onClick={onMilestoneCompleted}
                 className="rounded-lg font-semibold transition-colors text-black cursor-pointer text-xl"
               >
                 Xác nhận hoàn thành cột mốc
               </button>
             ) : (
-              // Fallback
-              <div className="text-black text-sm">
-                Bạn đã hoàn thành milestone này!
-              </div>
+              isLastMilestone ? (
+                <div className="space-y-4">
+                  <div className="text-black text-lg font-medium">
+                    🎉 Chúc mừng! Bạn đã hoàn thành tất cả milestones!
+                  </div>
+                  <div className="text-black text-sm">
+                    Bạn đã đi một chặng đường dài và đạt được mục tiêu của mình.
+                  </div>
+                </div>
+              ) : (
+                <div className="text-black text-sm">
+                  Bạn đã hoàn thành cột mốc này!
+                </div>
+              )
             )}
           </div>
         </div>
       )}
 
-      {/* Section: Việc đã hoàn thành */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4 text-white">Việc đã hoàn thành</h3>
         <div className="space-y-3">
@@ -329,7 +308,7 @@ export default function TodoList({
                     item.amount < 0 ? 'text-red-400' : 'text-green-400'
                   }`}>
                     {item.amount < 0 ? '' : '+'}
-                    {item.amount.toLocaleString()} triệu
+                    {formatCurrency(item.amount)}
                   </span>
                 )}
               </div>

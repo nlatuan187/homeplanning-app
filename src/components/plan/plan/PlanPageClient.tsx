@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plan, MilestoneProgress } from "@prisma/client";
-import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
+import { MilestoneGroup as OriginalMilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, ChevronsUpDown, Lock, Check } from "lucide-react";
 import MilestoneSteps from "./MilestoneSteps";
@@ -13,26 +13,37 @@ import MilestoneCompleted from "./MilestoneCompleted";
 import AddCashflowModal from "./AddCashflowModal";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { updatePlanProgress } from "@/actions/updatePlanProgress";
-import { updateCurrentSavings, updateMilestoneProgressOnCompletion } from "@/actions/milestoneProgress";
+// SỬA LỖI: Sử dụng đúng server action và import
+import { updateCurrentSavings, updateMilestoneProgress } from "@/actions/milestoneProgress";
+
+
+// =================================================================
+// SỬA LỖI 1: HOÀN THIỆN TYPE DEFINITION
+// Bổ sung các kiểu dữ liệu chi tiết hơn để code hiểu rõ cấu trúc
+// =================================================================
+interface SubMilestoneItem {
+  text: string;
+  type: string;
+  status: "incomplete" | "completed" | "auto-completed";
+  amount?: number;
+}
+
+interface SubMilestone {
+  groupId: number;
+  status: "done" | "current" | "upcoming";
+  amountValue: number;
+  items: SubMilestoneItem[]; // <-- Bổ sung thuộc tính 'items' bị thiếu
+}
+
+// Kế thừa và mở rộng type gốc
+interface MilestoneGroup extends OriginalMilestoneGroup {
+  milestones: SubMilestone[];
+}
+
 
 type PlanWithMilestoneProgress = Plan & {
   milestoneProgress?: MilestoneProgress | null;
 };
-
-// Interface mới phù hợp với cấu trúc milestoneGroups
-interface MilestoneData {
-  id: number;
-  title: string;
-  status: "done" | "current" | "upcoming";
-  milestones: {
-    groupId: number;
-    status: "done" | "current" | "upcoming";
-    amountValue: number;
-  }[];
-  currentSavings: number;
-  lastDoneAmountValue: number;
-  progress: number;
-}
 
 export default function PlanPageClient({ 
   initialPlan, 
@@ -46,7 +57,82 @@ export default function PlanPageClient({
   const [showMilestoneCompleted, setShowMilestoneCompleted] = useState(false);
   const [justCompletedMilestoneId, setJustCompletedMilestoneId] = useState<number | null>(null);
 
-  // Kiểm tra URL parameter để xem có phải vừa hoàn thành milestone không
+  const [milestoneProgress, setMilestoneProgress] = useState<MilestoneProgress | null>(
+    initialPlan.milestoneProgress || null 
+  );
+  
+  // =================================================================
+  // SỬA LỖI 2: SẮP XẾP LẠI THỨ TỰ KHAI BÁO
+  // Khai báo state `currentMilestoneStep` ở đây để các `useMemo` sau có thể sử dụng
+  // =================================================================
+  const [currentMilestoneStep, setCurrentMilestoneStep] = useState(1);
+
+  // SỬA: THÊM STATE MỚI ĐỂ LÀM "TÍN HIỆU"
+  // const [justCompletedIdentifier, setJustCompletedIdentifier] = useState<string | null>(null);
+
+  const milestoneGroups: MilestoneGroup[] = useMemo(() => {
+    return milestoneProgress?.milestoneGroups
+      ? (typeof milestoneProgress?.milestoneGroups === 'string'
+        ? JSON.parse(milestoneProgress.milestoneGroups)
+        : milestoneProgress.milestoneGroups)
+      : [];
+  }, [milestoneProgress?.milestoneGroups]);
+  // Các `useMemo` giờ sẽ được tính toán theo đúng thứ tự phụ thuộc
+  const mainMilestones = useMemo(() => {
+    return milestoneGroups.map(group => ({
+      id: group.id,
+      title: group.title,
+      status: group.status,
+      milestones: group.milestones,
+    })).sort((a, b) => a.id - b.id);
+  }, [milestoneGroups]);
+
+  
+
+  const currentMilestone = useMemo(() => {
+    if (initialMilestoneId) {
+      return mainMilestones.find(m => m.id === initialMilestoneId);
+    }
+    return mainMilestones.find(m => m.status === "current") || mainMilestones[0];
+  }, [initialMilestoneId, mainMilestones]);
+
+  const currentMilestoneIndex = useMemo(() => {
+    return mainMilestones.findIndex(m => m.id === currentMilestone?.id);
+  }, [mainMilestones, currentMilestone]);
+  
+  const totalSteps = currentMilestone?.milestones.length || 0;
+
+  // `currentStep` là một biến cục bộ để đảm bảo giá trị nằm trong khoảng hợp lệ
+  const currentStep = useMemo(() => {
+    return Math.max(1, Math.min(currentMilestoneStep, totalSteps));
+  }, [currentMilestoneStep, totalSteps]);
+
+  const currentMilestoneData = useMemo(() => {
+    if (!currentMilestone) return null;
+    const lastDoneAmountValue = currentMilestoneIndex === 0 
+      ? (initialPlan.initialSavings || 0)
+      : Math.max(...(mainMilestones[currentMilestoneIndex - 1]?.milestones.map(m => m.amountValue) || [0]));
+
+    const progress = milestoneProgress?.currentSavings || 0;
+    const min = lastDoneAmountValue;
+    const max = Math.max(...currentMilestone.milestones.map(m => m.amountValue));
+    const progressPercent = max > min ? Math.round(((progress - min) / (max - min)) * 100) : 0;
+
+    return {
+      ...currentMilestone,
+      lastDoneAmountValue,
+      progress: Math.max(0, Math.min(100, progressPercent)),
+    };
+  }, [currentMilestone, currentMilestoneIndex, mainMilestones, initialPlan.initialSavings, milestoneProgress?.currentSavings]);
+
+  const currentMilestoneInGroup = useMemo(() => {
+    if (!currentMilestoneData?.milestones) return null;
+    return currentMilestoneData.milestones[currentStep - 1] || null;
+  }, [currentMilestoneData, currentStep]);
+
+
+  const isCurrentMilestoneDone = false; // Placeholder
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -58,192 +144,40 @@ export default function PlanPageClient({
     }
   }, [initialMilestoneId]);
 
-  // Thêm useEffect để reset showMilestoneCompleted khi URL thay đổi và không có completed=true
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const completed = urlParams.get('completed');
       
       if (completed !== 'true') {
-        // Nếu URL không có completed=true, reset showMilestoneCompleted
         setShowMilestoneCompleted(false);
         setJustCompletedMilestoneId(null);
       } else if (completed === 'true' && initialMilestoneId) {
-        // Nếu có completed=true, hiển thị MilestoneCompleted
         setJustCompletedMilestoneId(initialMilestoneId);
         setShowMilestoneCompleted(true);
       }
     }
   }, [initialMilestoneId]);
 
-  // State để lưu dữ liệu MilestoneProgress
-  const [milestoneProgress, setMilestoneProgress] = useState<MilestoneProgress | null>(
-    initialPlan.milestoneProgress || null 
-  );
-
-  // Thêm state để theo dõi milestone con hiện tại
-  const [currentMilestoneStep, setCurrentMilestoneStep] = useState(1);
-
-  // Parse milestoneGroups để lấy danh sách tất cả milestones
-  const milestoneGroups = milestoneProgress?.milestoneGroups 
-    ? (typeof milestoneProgress.milestoneGroups === 'string' 
-        ? JSON.parse(milestoneProgress.milestoneGroups) 
-        : milestoneProgress.milestoneGroups) as MilestoneGroup[]
-    : [];
-  console.log("milestoneGroups", milestoneGroups);
-
-  // Tạo danh sách milestones chính từ milestoneGroups
-  // Mỗi milestone sẽ có amountValue lớn nhất trong group đó
-  const mainMilestones = useMemo(() => {
-    return milestoneGroups.map(group => {
-      // Tìm amountValue lớn nhất trong group
-      const maxAmountValue = Math.max(...group.milestones.map(m => m.amountValue));
-      
-      return {
-        id: group.id,
-        title: group.title,
-        status: group.status,
-        milestones: group.milestones, // Giữ nguyên toàn bộ milestones trong group
-        currentSavings: milestoneProgress?.currentSavings || 0,
-        lastDoneAmountValue: 0, // Sẽ được tính toán sau
-        progress: 0, // Sẽ được tính toán sau
-      };
-    }).sort((a, b) => a.id - b.id); // Sắp xếp theo ID
-  }, [milestoneGroups]); // Xóa dependency vào milestoneProgress?.currentSavings
-
-  // Tìm milestone hiện tại dựa trên initialMilestoneId hoặc milestone có status "current"
-  const currentMilestone = useMemo(() => {
-    if (initialMilestoneId) {
-      return mainMilestones.find(m => m.id === initialMilestoneId);
-    }
-    return mainMilestones.find(m => m.status === "current") || mainMilestones[0];
-  }, [initialMilestoneId, mainMilestones]);
-
-  // Tìm index của milestone hiện tại
-  const currentMilestoneIndex = useMemo(() => {
-    return mainMilestones.findIndex(m => m.id === currentMilestone?.id);
-  }, [mainMilestones, currentMilestone]);
-
-  // Tìm milestone trước đó để lấy lastDoneAmountValue
-  const previousMilestone = useMemo(() => {
-    if (currentMilestoneIndex > 0) {
-      return mainMilestones[currentMilestoneIndex - 1];
-    }
-    return null;
-  }, [currentMilestoneIndex, mainMilestones]);
-
-  // Tạo currentMilestoneData với thông tin đầy đủ
-  const currentMilestoneData = useMemo(() => {
-    if (!currentMilestone) return null;
-
-    // Điểm bắt đầu của group hiện tại
-    let lastDoneAmountValue: number;
-    
-    if (currentMilestoneIndex === 0) {
-      // Group đầu tiên: dùng initialSavings
-      lastDoneAmountValue = initialPlan.initialSavings || 0;
-    } else {
-      // Group khác: dùng amountValue lớn nhất của group trước đó
-      const prevGroup = mainMilestones[currentMilestoneIndex - 1];
-      lastDoneAmountValue = Math.max(...prevGroup.milestones.map(m => m.amountValue));
-    }
-
-    // Tính progress dựa trên currentSavings
-    const progress = milestoneProgress?.currentSavings || 0;
-    const min = lastDoneAmountValue;
-    // Lấy amountValue lớn nhất trong milestones của group hiện tại
-    const max = Math.max(...currentMilestone.milestones.map(m => m.amountValue));
-    const progressPercent = max > min ? Math.round(((progress - min) / (max - min)) * 100) : 0;
-
-    return {
-      ...currentMilestone,
-      lastDoneAmountValue,
-      progress: Math.max(0, Math.min(100, progressPercent)),
-    };
-  }, [currentMilestone, currentMilestoneIndex, previousMilestone, initialPlan.initialSavings, milestoneProgress?.currentSavings]);
-
-  // Cập nhật totalSteps và currentStep để phản ánh milestone con hiện tại
-  const totalSteps = currentMilestoneData?.milestones.length || 0;
-
-  // Sửa: currentStep chỉ phụ thuộc vào state local, không phụ thuộc vào currentSavings
-  const currentStep = useMemo(() => {
-    // Luôn sử dụng state local để tránh bị reset
-    return currentMilestoneStep;
-  }, [currentMilestoneStep]);
-
-  // Tìm milestone con hiện tại dựa trên currentStep
-  const currentMilestoneInGroup = useMemo(() => {
-    if (!currentMilestoneData?.milestones) return null;
-    
-    // Hiển thị milestone con dựa trên currentStep
-    const currentIndex = currentStep - 1; // currentStep bắt đầu từ 1
-    const milestone = currentMilestoneData.milestones[currentIndex];
-    
-    if (!milestone) return null;
-    
-    // Sửa: Không phụ thuộc vào currentSavings để set status
-    // Status sẽ được quản lý hoàn toàn bởi TodoList component
-    return { ...milestone, status: "upcoming" as const };
-  }, [currentMilestoneData?.milestones, currentStep, currentMilestoneData?.id]);
-
-  // Sửa: Không phụ thuộc vào currentSavings để xác định milestone hoàn thành
-  // Milestone chỉ hoàn thành khi tất cả tasks được hoàn thành
-  const isCurrentMilestoneDone = false; // Luôn false để hiển thị TodoList
-
-  // Nếu có initialMilestoneId, tìm và set milestone tương ứng
-  useEffect(() => {
-    if (initialMilestoneId && mainMilestones.length > 0) {
-      const targetMilestone = mainMilestones.find(m => m.id === initialMilestoneId);
-      if (targetMilestone) {
-        updateCurrentMilestone(targetMilestone);
-      }
-    }
-  }, [initialMilestoneId, mainMilestones]);
-
-  // Update handlePreviousMilestone và handleNextMilestone
   const handlePreviousMilestone = () => {
     if (currentStep > 1) {
-      // Nếu không phải milestone đầu tiên trong group, chuyển đến milestone trước đó
-      const previousStep = currentStep - 1;
-      setCurrentMilestoneStep(previousStep);
-      console.log(`✅ Chuyển từ milestone con ${currentStep} sang ${previousStep} trong cùng group`);
+      setCurrentMilestoneStep(currentStep - 1);
     } else if (currentMilestoneIndex > 0) {
-      // Nếu là milestone đầu tiên của group hiện tại, chuyển đến milestone cuối cùng của group trước đó
       const previousGroup = mainMilestones[currentMilestoneIndex - 1];
-      const previousGroupMilestones = previousGroup.milestones;
-      const lastMilestoneInPreviousGroup = previousGroupMilestones.length;
-      
-      // Chuyển đến milestone cuối cùng của group trước đó
-      setCurrentMilestoneStep(lastMilestoneInPreviousGroup);
-      
-      // Cập nhật URL với milestoneId mới
       router.push(`/plan/${initialPlan.id}/plan?milestoneId=${previousGroup.id}`);
-      
-      console.log(`✅ Chuyển từ milestone đầu tiên của group ${currentMilestoneIndex} sang milestone cuối cùng của group ${currentMilestoneIndex - 1}`);
+      setCurrentMilestoneStep(previousGroup.milestones.length);
     }
   };
 
   // Thêm state để track xem có phải đang chuyển từ MilestoneCompleted không
   const [isTransitioningFromCompleted, setIsTransitioningFromCompleted] = useState(false);
 
-  // Modify the handleNextMilestone function
   const handleNextMilestone = () => {
     if (currentStep < totalSteps) {
-      // Nếu không phải milestone cuối cùng trong group, chuyển đến milestone tiếp theo
-      const nextStep = currentStep + 1;
-      setCurrentMilestoneStep(nextStep);
-      console.log(`✅ Chuyển từ milestone con ${currentStep} sang ${nextStep} trong cùng group`);
+      setCurrentMilestoneStep(currentStep + 1);
     } else if (currentMilestoneIndex < mainMilestones.length - 1) {
-      // Nếu là milestone cuối cùng của group hiện tại, chuyển đến milestone đầu tiên của group kế tiếp
       const nextGroup = mainMilestones[currentMilestoneIndex + 1];
-      
-      // Reset milestone step về 1 khi chuyển group
-      setCurrentMilestoneStep(1);
-      
-      // Cập nhật URL với milestoneId mới
       router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextGroup.id}`);
-      
-      console.log(`✅ Chuyển từ milestone cuối cùng của group ${currentMilestoneIndex} sang milestone đầu tiên của group ${currentMilestoneIndex + 1}`);
     }
   };
 
@@ -283,103 +217,166 @@ export default function PlanPageClient({
     console.log("🔄 Current milestone updated to:", milestone.id);
   };
 
-  // Sửa logic xử lý milestone completion
-  const handleMilestoneCompleted = async (milestoneId: number) => {
-    console.log("🎯 handleMilestoneCompleted called with milestoneId:", milestoneId);
-    
-    try {
-      // Cập nhật milestone progress trong database
-      const updatedProgress = await updateMilestoneProgressOnCompletion(initialPlan.id, milestoneId);
-      
-      // Cập nhật local state với dữ liệu từ database
-      setMilestoneProgress(updatedProgress);
-      
-      // Cập nhật status của milestones và groups ngay lập tức
-      updateMilestoneStatusOnCompletion(milestoneId);
-      
-      // Kiểm tra xem có phải milestone cuối cùng của group hiện tại không
-      const currentGroup = milestoneGroups.find(group => group.id === currentMilestone?.id);
-      const isLastMilestoneInGroup = currentGroup && currentStep >= currentGroup.milestones.length;
-      
-      if (isLastMilestoneInGroup) {
-        // Nếu là milestone cuối cùng của group, hiển thị MilestoneCompleted
-        setJustCompletedMilestoneId(milestoneId);
-        setShowMilestoneCompleted(true);
-        
-        // Cập nhật URL để reflect milestone completion
-        router.push(`/plan/${initialPlan.id}/plan?milestoneId=${milestoneId}&completed=true`);
-      } else {
-        // Nếu không phải milestone cuối cùng của group, chuyển đến milestone tiếp theo
-        const nextStep = currentStep + 1;
-        setCurrentMilestoneStep(nextStep);
-      }
-    } catch (error) {
-      console.error("Error handling milestone completion:", error);
-    }
-  };  
+  // =================================================================
+  // BƯỚC 2: ĐỊNH NGHĨA "HÀNH ĐỘNG" - HÀM `handleMilestoneCompleted`
+  // =================================================================
 
-  // Sửa logic cập nhật status khi milestone hoàn thành
-  const updateMilestoneStatusOnCompletion = (completedMilestoneId: number) => {
-    const currentSavings = milestoneProgress?.currentSavings || 0;
-    
-    // Cập nhật status cho tất cả milestones dựa trên currentSavings VÀ completion của tasks
-    const updatedMilestoneGroups = milestoneGroups.map(group => {
-      const updatedMilestones = group.milestones.map(milestone => {
-        const milestoneAmount = milestone.amountValue || 0;
-        
-        // Milestone hoàn thành khi currentSavings >= amountValue
-        if (currentSavings >= milestoneAmount) {
-          return { ...milestone, status: "done" as const };
-        } else {
-          return { ...milestone, status: "upcoming" as const };
-        }
-      });
-      
-      // Cập nhật status tổng thể của group
-      let groupStatus: "done" | "current" | "upcoming" = "upcoming";
-      const allDone = updatedMilestones.every(milestone => milestone.status === "done");
-      
-      if (allDone) {
-        groupStatus = "done";
-      } else {
-        // Nếu không có milestone nào là "current", tìm milestone đầu tiên chưa hoàn thành
-        const hasCurrent = updatedMilestones.some(milestone => milestone.status === "current" as any);
-        if (!hasCurrent) {
-          const firstUpcomingIndex = updatedMilestones.findIndex(milestone => milestone.status === "upcoming");
-          if (firstUpcomingIndex !== -1) {
-            updatedMilestones[firstUpcomingIndex] = { 
-              ...updatedMilestones[firstUpcomingIndex], 
-              status: "current" as any 
-            };
-          }
-        }
-        groupStatus = "current";
-      }
+  // Helper function để tìm milestone con tiếp theo
+  const getNextMilestone = (groups: MilestoneGroup[], currentGroupId: number, currentSubIndex: number) => {
+    const currentGroup = groups.find(g => g.id === currentGroupId);
+    if (!currentGroup) return null;
 
+    if (currentSubIndex < currentGroup.milestones.length - 1) {
+      const nextSubIndex = currentSubIndex + 1;
       return {
-        ...group,
-        milestones: updatedMilestones,
-        status: groupStatus,
+          groupId: currentGroupId,
+          subIndex: nextSubIndex,
+          identifier: `${currentGroupId}-${nextSubIndex}`
       };
-    });
+    }
 
-    // Cập nhật local state
-    setMilestoneProgress(prev => prev ? {
-      ...prev,
-      milestoneGroups: updatedMilestoneGroups,
-    } : null);
+    const currentGroupIndexInAll = groups.findIndex(g => g.id === currentGroupId);
+    if (currentGroupIndexInAll < groups.length - 1 && currentGroupIndexInAll !== -1) {
+      const nextGroup = groups[currentGroupIndexInAll + 1];
+      if (nextGroup?.milestones.length > 0) {
+        return {
+            groupId: nextGroup.id,
+            subIndex: 0,
+            identifier: `${nextGroup.id}-0`
+        };
+      }
+    }
+    return null;
   };
 
-  // Thêm hàm mới để update status milestones và groups dựa theo currentSavings
+  const handleMilestoneCompleted = async () => {
+    const groupOfCurrentMilestone = currentMilestone;
+    const subMilestoneIndexOfCurrent = currentStep - 1;
+    const subMilestoneCurrent = currentMilestoneInGroup;
+    const allMilestoneGroups = milestoneGroups;
+    const currentSavingsValue = milestoneProgress?.currentSavings || 0;
+
+    if (!groupOfCurrentMilestone || subMilestoneIndexOfCurrent < 0 || !subMilestoneCurrent) return;
+
+    const milestoneIdentifier = `${groupOfCurrentMilestone.id}-${subMilestoneIndexOfCurrent}`;
+    
+    const nextMilestone = getNextMilestone(allMilestoneGroups, groupOfCurrentMilestone.id, subMilestoneIndexOfCurrent);
+    
+    let newGroups = allMilestoneGroups.map(group => {
+      let newGroup = { ...group };
+
+      if (group.id === groupOfCurrentMilestone.id) {
+        newGroup.milestones = group.milestones.map((ms: any, index: number) => {
+          if (index === subMilestoneIndexOfCurrent) {
+            const newItems = ms.items.map((item: any) => ({ ...item, status: 'auto-completed' as const }));
+            return { ...ms, status: 'done' as const, items: newItems };
+          }
+          return ms;
+        });
+      }
+      if (nextMilestone && group.id === nextMilestone.groupId) {
+        newGroup.milestones = newGroup.milestones.map((ms: any, index: number) => {
+          if (index === nextMilestone.subIndex) {
+            return { ...ms, status: 'current' as const };
+          }
+          return ms;
+        });
+      }
+
+      const isLastSubMilestoneInGroup = subMilestoneIndexOfCurrent === groupOfCurrentMilestone.milestones.length - 1;
+
+      if (isLastSubMilestoneInGroup) {
+        if (group.id === groupOfCurrentMilestone.id) {
+          newGroup.status = 'done';
+        }
+        if (nextMilestone && group.id === nextMilestone.groupId) {
+          newGroup.status = 'current';
+        }
+      }
+      return newGroup;
+    });
+    
+    try {
+      const updatedProgressFromServer = await updateMilestoneProgress(
+        initialPlan.id,
+        milestoneIdentifier,
+        true,
+        currentSavingsValue,
+        0, 
+        nextMilestone?.identifier || null,
+        newGroups
+      );
+
+      setMilestoneProgress(updatedProgressFromServer);
+
+      if (nextMilestone) {
+        if (nextMilestone.groupId === groupOfCurrentMilestone.id) {
+          setCurrentMilestoneStep(nextMilestone.subIndex + 1);
+        } else {
+          // BƯỚC 2: ĐƠN GIẢN HÓA LOGIC
+          // Chỉ cần điều hướng. useEffect ở trên sẽ lo việc reset step.
+          router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextMilestone.groupId}`);
+        }
+      } else {
+        router.push(`/plan/${initialPlan.id}/roadmap`);
+      }
+
+    } catch (error) {
+      console.error("Failed to complete milestone:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentMilestone) return;
+
+    const currentGroupIdInState = currentMilestone.id;
+    const currentSubMilestoneInState = currentMilestoneInGroup;
+
+    const items = currentSubMilestoneInState?.items || [];
+    const allItemsDone = items.length > 0 && items.every(
+      item => item.status === 'completed' || item.status === 'auto-completed'
+    );
+    
+    const isPendingAutoCompletion = items.some(item => item.status === 'completed');
+
+    if (allItemsDone && isPendingAutoCompletion) {
+      console.log(`Milestone ${currentMilestone?.id}-${currentStep-1} is pending auto-completion. Navigating...`);
+      const nextMilestone = getNextMilestone(milestoneGroups, currentMilestone.id, currentStep - 1);
+      
+      if (nextMilestone) {
+        if (nextMilestone.groupId === currentMilestone.id) {
+          setCurrentMilestoneStep(nextMilestone.subIndex + 1);
+        } else {
+          router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextMilestone.groupId}`);
+        }
+      } else {
+        router.push(`/plan/${initialPlan.id}/roadmap`);
+      }
+    }
+  }, [milestoneGroups, currentStep, currentMilestone, currentMilestoneInGroup, router, initialPlan.id]);
+
+
+  // SỬA: THAY ĐỔI DEPENDENCY ĐỂ CHỈ LẮNG NGHE ID
+  useEffect(() => {
+    // Bất cứ khi nào ID của group trên URL thay đổi,
+    // chúng ta sẽ reset step về 1.
+    setCurrentMilestoneStep(1);
+    // Dependency `currentMilestoneId` là một con số ổn định,
+    // nó chỉ thay đổi khi router.push được gọi để chuyển group.
+  }, [initialMilestoneId]);
+
+
+  const handleGoToRoadmap = () => {
+    router.push(`/plan/${initialPlan.id}/roadmap`);
+  };
+
   const updateMilestoneStatusesBasedOnCurrentSavings = () => {
     const currentSavings = milestoneProgress?.currentSavings || 0;
     
-    // Update status cho tất cả milestones dựa trên currentSavings
     const updatedMilestoneGroups = milestoneGroups.map(group => {
       const updatedMilestones = group.milestones.map(milestone => {
         const milestoneAmount = milestone.amountValue || 0;
         
-        // Milestone hoàn thành khi currentSavings >= amountValue
         if (currentSavings >= milestoneAmount) {
           return { ...milestone, status: "done" as const };
         } else {
@@ -387,14 +384,12 @@ export default function PlanPageClient({
         }
       });
       
-      // Cập nhật status tổng thể của group
       let groupStatus: "done" | "current" | "upcoming" = "upcoming";
       const allDone = updatedMilestones.every(milestone => milestone.status === "done");
       
       if (allDone) {
         groupStatus = "done";
       } else {
-        // Nếu không có milestone nào là "current", tìm milestone đầu tiên chưa hoàn thành
         const hasCurrent = updatedMilestones.some(milestone => milestone.status === "current" as any);
         if (!hasCurrent) {
           const firstUpcomingIndex = updatedMilestones.findIndex(milestone => milestone.status === "upcoming");
@@ -415,7 +410,6 @@ export default function PlanPageClient({
       };
     });
 
-    // Cập nhật local state với milestoneGroups mới
     setMilestoneProgress(prev => prev ? {
       ...prev,
       milestoneGroups: updatedMilestoneGroups,
@@ -424,7 +418,6 @@ export default function PlanPageClient({
     console.log("✅ Updated milestone statuses based on currentSavings:", currentSavings);
   };
 
-  // Khôi phục milestone step từ localStorage khi component mount
   useEffect(() => {
     const savedStep = localStorage.getItem(`milestoneStep_${initialPlan.id}`);
     if (savedStep) {
@@ -436,11 +429,30 @@ export default function PlanPageClient({
     }
   }, [initialPlan.id, totalSteps]);
 
-  // Debug log khi currentStep thay đổi
-  useEffect(() => {
-    console.log(`🔄 currentStep changed to: ${currentStep}`);
-    console.log(`🔄 currentMilestoneStep: ${currentMilestoneStep}`);
-  }, [currentStep, currentMilestoneStep]);
+  // =================================================================
+  // SỬA: TÍNH TOÁN MIN VÀ MAX CHO THANH TIẾN TRÌNH
+  // =================================================================
+  const progressBarValues = useMemo(() => {
+    if (!currentMilestoneData || !currentMilestoneInGroup) {
+      return { min: 0, max: 0 };
+    }
+
+    const currentMax = currentMilestoneInGroup.amountValue;
+    let currentMin = 0;
+
+    // Kiểm tra xem có phải là step đầu tiên trong group không
+    if (currentStep === 1) {
+      // Nếu là step đầu tiên, min là lastDoneAmountValue của cả group
+      currentMin = currentMilestoneData.lastDoneAmountValue;
+    } else {
+      // Nếu không, min là amountValue của step ngay trước đó
+      const previousSubMilestone = currentMilestoneData.milestones[currentStep - 2];
+      currentMin = previousSubMilestone?.amountValue || currentMilestoneData.lastDoneAmountValue;
+    }
+
+    return { min: currentMin, max: currentMax };
+
+  }, [currentMilestoneData, currentMilestoneInGroup, currentStep]);
 
   if (showMilestoneCompleted) {
     return (
@@ -507,25 +519,24 @@ export default function PlanPageClient({
           <ArrowLeft className="h-6 w-6" />
         </Button>
         
-        <div className="flex items-center gap-4">
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
           <Button 
             variant="ghost" 
             size="icon" 
             className="text-white"
             onClick={handlePreviousMilestone}
-            disabled={currentMilestoneIndex === 0}
+            disabled={currentMilestoneIndex === 0 && currentStep === 1}
           >
             <ChevronLeft className="h-6 w-6" />
           </Button>
           
           <div className="flex flex-col items-center">
             <div className="text-2xl font-bold">
-              {currentMilestoneData ? currentMilestoneData.title : "Cột mốc số 1"}
+              {currentMilestoneData ? currentMilestoneData.title : "Cột mốc"}
             </div>
             <div className="text-[14px] text-gray-400">
               {currentMilestoneData ? (
                 (() => {
-                  // Lấy amountValue lớn nhất trong milestones của group hiện tại
                   const maxAmountValue = Math.max(...currentMilestoneData.milestones.map(m => m.amountValue));
                   
                   if (maxAmountValue != null) {
@@ -556,10 +567,6 @@ export default function PlanPageClient({
             <ChevronRight className="h-6 w-6" />
           </Button>
         </div>
-        
-        <Button variant="ghost" size="icon" className="text-white">
-          <ChevronsUpDown className="h-6 w-6" />
-        </Button>
       </header>
 
       <div className="container mx-auto max-w-5xl px-4">
@@ -575,8 +582,9 @@ export default function PlanPageClient({
         <div className="mb-4">
           <AccumulationProgress 
             current={milestoneProgress?.currentSavings ?? 0}
-            min={currentMilestoneData?.lastDoneAmountValue ?? 0}
-            max={Math.max(...(currentMilestoneData?.milestones.map(m => m.amountValue) || [0]))}
+            // SỬA: Sử dụng giá trị đã được tính toán chính xác
+            min={progressBarValues.min}
+            max={progressBarValues.max}
           />
         </div>
       </div>
@@ -584,7 +592,10 @@ export default function PlanPageClient({
       <div className="container mx-auto max-w-5xl px-4 py-6">
         <div className="mb-8">
           <MilestoneTaskSection 
+            key={`${currentMilestone?.id}-${currentStep}`}
             milestoneId={currentMilestoneInGroup?.groupId || 1} 
+            currentMilestone={currentMilestone}
+            currentStep={currentStep}
             planId={initialPlan.id}
             plan={initialPlan}
             accumulationMax={currentMilestoneInGroup?.amountValue || 0}
@@ -592,50 +603,21 @@ export default function PlanPageClient({
             milestones={currentMilestoneData?.milestones || []}
             currentMilestoneInGroup={currentMilestoneInGroup}
             onSavingsUpdate={async (amount) => {
-              console.log("🔄 onSavingsUpdate called with amount:", amount);
-              console.log("🔄 Current milestoneId:", currentMilestoneInGroup?.groupId);
-              console.log("🔄 Current currentSavings:", milestoneProgress?.currentSavings);
+              // Hàm này bây giờ sẽ throw lỗi nếu gặp vấn đề,
+              // để component con có thể bắt và xử lý.
+              const updatedProgress = await updateCurrentSavings(initialPlan.id, amount);
               
-              try {
-                // Cập nhật database trước
-                console.log("📤 Calling updateCurrentSavings...");
-                const updatedProgress = await updateCurrentSavings(initialPlan.id, amount);
-                console.log("✅ Database updated, new currentSavings:", updatedProgress.currentSavings);
-                
-                // Cập nhật currentSavings trong local state
-                setMilestoneProgress(prev => {
-                  if (!prev) return updatedProgress;
-                  
-                  return {
-                    ...prev,
-                    currentSavings: updatedProgress.currentSavings,
-                    savingsPercentage: updatedProgress.savingsPercentage,
-                    lastProgressUpdate: updatedProgress.lastProgressUpdate,
-                  };
-                });
-                
-                console.log("✅ Local state updated with new currentSavings:", updatedProgress.currentSavings);
-                
-              } catch (error) {
-                console.error("❌ Error updating current savings:", error);
-                // Fallback: cập nhật local state nếu database fail
-                setMilestoneProgress(prev => {
-                  if (!prev) return null;
-                  
-                  const newCurrentSavings = prev.currentSavings + amount;
-                  console.log(" Fallback: updating local state", prev.currentSavings, "->", newCurrentSavings);
-                  
-                  return {
-                    ...prev,
-                    currentSavings: newCurrentSavings,
-                    savingsPercentage: prev.housePriceProjected > 0 
-                      ? Math.round((newCurrentSavings / prev.housePriceProjected) * 100)
-                      : 0,
-                  };
-                });
-              }
+              setMilestoneProgress(prev => {
+                if (!prev) return updatedProgress;
+                return {
+                  ...prev,
+                  currentSavings: updatedProgress.currentSavings,
+                  savingsPercentage: updatedProgress.savingsPercentage,
+                  lastProgressUpdate: updatedProgress.lastProgressUpdate,
+                };
+              });
             }}
-            onMilestoneCompleted={() => handleMilestoneCompleted(currentMilestoneInGroup?.groupId || 1)}
+            onMilestoneCompleted={handleMilestoneCompleted}
             isMilestoneCompleted={isCurrentMilestoneDone}
             onGoToRoadmap={() => router.push(`/plan/${initialPlan.id}/roadmap`)}
             isLastMilestone={currentMilestoneIndex === mainMilestones.length - 1}
@@ -644,31 +626,6 @@ export default function PlanPageClient({
               currentStep < totalSteps || // Còn milestone con kế tiếp trong group hiện tại
               currentMilestoneIndex < mainMilestones.length - 1 // Còn group kế tiếp
             }
-            onNextMilestone={() => {
-              console.log("🔄 onNextMilestone called");
-              
-              if (currentStep < totalSteps) {
-                // Chuyển đến milestone con kế tiếp trong cùng group
-                const nextStep = currentStep + 1;
-                setCurrentMilestoneStep(nextStep);
-                
-                // Xóa localStorage
-                // localStorage.setItem(`milestoneStep_${initialPlan.id}`, nextStep.toString());
-                
-                console.log(`✅ Chuyển từ milestone con ${currentStep} sang ${nextStep}`);
-              } else if (currentMilestoneIndex < mainMilestones.length - 1) {
-                // Chuyển đến group kế tiếp
-                // Không cần setCurrentMilestoneIndex nữa vì nó được tính toán tự động
-                // setCurrentMilestoneIndex(nextGroupIndex);
-                
-                // Reset milestone step về 1 khi chuyển group
-                setCurrentMilestoneStep(1);
-                // Xóa localStorage
-                // localStorage.setItem(`milestoneStep_${initialPlan.id}`, "1");
-                
-                console.log(`✅ Chuyển từ group ${currentMilestoneIndex} sang ${currentMilestoneIndex + 1}`);
-              }
-            }}
           />
         </div>
       </div>

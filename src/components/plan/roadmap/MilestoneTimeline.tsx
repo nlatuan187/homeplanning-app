@@ -248,11 +248,9 @@ function MilestoneNode({
   const handleClick = () => {
     console.log("MilestoneNode clicked:", group.title, "Goal:", group.id);
     
-    // Chuyển đến trang plan với milestone ID
     router.push(`/plan/${plan.id}/plan?milestoneId=${group.id}`);
   };
 
-  // Get the roadmap image path based on goal number and total milestones
   const totalMilestones = milestoneGroups.length;
   const roadmapImagePath = getRoadmapImagePath(group.id, totalMilestones);
 
@@ -358,11 +356,11 @@ function MilestoneNode({
       <div className="text-slate-300 text-sm text-center">
         {currentGroupMaxAmount != null ? (
           currentGroupMaxAmount >= 1000000000 ? (
-            `Tích lũy đạt ${(currentGroupMaxAmount / 1000000000).toFixed(1)} tỷ`
+            `Tích lũy đạt ${(currentGroupMaxAmount / 1000000000).toFixed()} tỷ`
           ) : currentGroupMaxAmount >= 1000000 ? (
-            `Tích lũy đạt ${(currentGroupMaxAmount / 1000000).toFixed(1)} triệu`
+            `Tích lũy đạt ${(currentGroupMaxAmount / 1000000).toFixed()} triệu`
           ) : (
-            `Tích lũy đạt ${Math.round(currentGroupMaxAmount).toLocaleString()}`
+            `Tích lũy đạt ${Math.round(currentGroupMaxAmount).toFixed().toLocaleString()} triệu`
           )
         ) : (
           "Tích lũy đạt mục tiêu"

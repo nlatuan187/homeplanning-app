@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
+import { revalidatePath } from "next/cache";
 
 export async function getOrCreateMilestoneProgress(planId: string) {
   try {
@@ -60,47 +61,62 @@ export async function getOrCreateMilestoneProgress(planId: string) {
   }
 }
 
-export async function updateMilestoneProgress(planId: string, data: Partial<{
-  currentSavings: number;
-  selectedMilestoneId: number;
-  totalCompletedMilestones: number;
-  savingsPercentage: number;
-  housePriceProjected: number;
-  milestoneGroups: MilestoneGroup[];
-  currentMilestoneData: any;
-  completedMilestones: any;
-  planPageData: any;
-}>) {
+export async function updateMilestoneProgress(
+  planId: string,
+  milestoneIdentifier: string,
+  allTasksCompleted: boolean,
+  currentSavings: number,
+  completedAmount: number,
+  nextMilestoneIdentifier: string | null,
+  // THAM SỐ MỚI: Nhận vào toàn bộ cấu trúc milestone groups đã được cập nhật
+  updatedMilestoneGroups: any[] 
+) {
   try {
-    const processedData = {
-      ...data,
-      milestoneGroups: data.milestoneGroups ? 
-        JSON.parse(JSON.stringify(data.milestoneGroups)) : undefined,
-      currentMilestoneData: data.currentMilestoneData ? 
-        JSON.parse(JSON.stringify(data.currentMilestoneData)) : undefined,
-      completedMilestones: data.completedMilestones ? 
-        JSON.parse(JSON.stringify(data.completedMilestones)) : undefined,
-      planPageData: data.planPageData ? 
-        JSON.parse(JSON.stringify(data.planPageData)) : undefined,
-    };
-
-    const progress = await db.milestoneProgress.upsert({
+    const progress = await db.milestoneProgress.findUnique({
       where: { planId },
-      update: {
-        ...processedData,
-        lastProgressUpdate: new Date(),
-      },
-      create: {
-        planId,
-        ...processedData,
+    });
+
+    if (!progress) {
+      throw new Error("MilestoneProgress not found");
+    }
+
+    const completedMilestones = Array.isArray(progress.completedMilestones)
+      ? progress.completedMilestones
+      : [];
+
+    const existingMilestoneIndex = completedMilestones.findIndex(
+      (m: any) => m.identifier === milestoneIdentifier
+    );
+
+    if (existingMilestoneIndex !== -1) {
+      (completedMilestones[existingMilestoneIndex] as any).allTasksCompleted = allTasksCompleted;
+      (completedMilestones[existingMilestoneIndex] as any).completedAmount = completedAmount;
+      (completedMilestones[existingMilestoneIndex] as any).completedAt = new Date();
+    } else {
+      completedMilestones.push({
+        identifier: milestoneIdentifier,
+        allTasksCompleted,
+        completedAmount,
+        completedAt: new Date(),
+      });
+    }
+
+    const updatedProgress = await db.milestoneProgress.update({
+      where: { planId },
+      data: {
+        // LƯU TRỮ QUAN TRỌNG: Lưu lại toàn bộ milestoneGroups với status mới
+        milestoneGroups: updatedMilestoneGroups, 
+        completedMilestones: completedMilestones,
         lastProgressUpdate: new Date(),
       },
     });
 
-    return progress;
+    revalidatePath(`/plan/${planId}/plan`);
+    return updatedProgress;
+    
   } catch (error) {
-    console.error("Error updating milestone progress:", error);
-    throw error;
+    console.error("Error in updateMilestoneProgress:", error);
+    throw new Error("Could not update milestone progress");
   }
 }
 
@@ -302,8 +318,11 @@ export async function saveCustomTask(
     planPageData.customTasks[milestoneId].push(newTask);
     
     // Cập nhật database
-    const updatedProgress = await updateMilestoneProgress(planId, {
-      planPageData: planPageData,
+    const updatedProgress = await db.milestoneProgress.update({
+      where: { planId },
+      data: {
+        planPageData: planPageData,
+      },
     });
     
     console.log("✅ Custom task saved:", newTask);
@@ -355,8 +374,11 @@ export async function updateCustomTaskStatus(
     tasks[taskIndex].updatedAt = new Date().toISOString();
     
     // Cập nhật database
-    const updatedProgress = await updateMilestoneProgress(planId, {
-      planPageData: planPageData,
+    const updatedProgress = await db.milestoneProgress.update({
+      where: { planId },
+      data: {
+        planPageData: planPageData,
+      },
     });
     
     console.log("✅ Custom task status updated:", { taskId, newStatus });

@@ -1,9 +1,4 @@
 import React from "react";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import MilestoneTimeline from "@/components/plan/roadmap/MilestoneTimeline";
-import { Plan } from "@prisma/client";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -35,14 +30,16 @@ export default async function RoadmapPage({
   // Sử dụng dữ liệu từ milestoneProgress nếu có
   const projections = generateProjections(plan);
   const currentProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
-  const housePriceProjected = (plan.milestoneProgress?.housePriceProjected || 0) - currentProjection.loanAmountNeeded;
-  const savingsPercentage = Math.round(((plan.milestoneProgress?.currentSavings || 0) / housePriceProjected) * 100);
+  const housePriceProjected = (plan.milestoneProgress?.housePriceProjected || 0);
+  const cumulativeGoal = housePriceProjected - currentProjection.loanAmountNeeded;
+  const savingsPercentage = Math.round(((plan.milestoneProgress?.currentSavings || 0) / cumulativeGoal) * 100);
 
   return (
     <RoadmapClient 
       plan={plan}
       savingsPercentage={savingsPercentage}
       housePriceProjected={housePriceProjected}
+      cumulativeGoal={cumulativeGoal}
     />
   );
 }

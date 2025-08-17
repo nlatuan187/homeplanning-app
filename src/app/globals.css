@@ -80,7 +80,7 @@
 }
 
 @media (min-width: 369px)  { :root { --connector-len: 200px; } } /* sm */
-@media (min-width: 1050px) { :root { --connector-len: 800px; } }
+@media (min-width: 1050px) { :root { --connector-len: 780px; } }
 
 .dark {
   --background: oklch(0.129 0.042 264.695);

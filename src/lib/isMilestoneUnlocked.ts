@@ -94,83 +94,313 @@ const groupStructures: Record<
   ],
 };
 
-// Thêm function để lấy items theo groupId
-function getItemsByGroupId(groupId: number, plan: Plan): { text: string; type: string; status: string; amount?: number }[] {
+// SỬA BƯỚC 1: Tái cấu trúc hàm để nhận các giá trị đã được tính toán trước
+function getItemsByGroupId(
+  groupId: number,
+  plan: Plan,
+  monthlyIncome: number,
+  monthlyExpenses: number,
+  monthlyInvestmentReturn: number,
+  monthlyOtherIncome: number
+): { text: string; type: string; status: string; amount?: number }[] {
   if (!plan) return [];
-  
-  // Tính toán các giá trị từ plan (đơn vị: triệu)
-  const monthlyExpenses = (plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0));
-  const monthlyIncome = (plan.userMonthlyIncome + (plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0));
-  const monthlyOtherIncome = (plan.monthlyOtherIncome || 0);
-  const investmentReturn = plan.pctInvestmentReturn || 0;
-  
-  // Tính toán các giá trị phức tạp (đơn vị triệu)
-  const milestoneTimespan = 1; // tháng
+
+  const milestoneTimespan = 1; // Mỗi cột mốc là 1 tháng
   const totalExpensesForPeriod = monthlyExpenses * milestoneTimespan;
-  const emergencyFund = monthlyExpenses * 2;
-  const expectedInvestmentReturn = ((plan.initialSavings || 0)) * investmentReturn * (milestoneTimespan / 12);
-  
-  // Định nghĩa items cho từng groupId
-  const itemsByGroup: Record<number, { text: string; type: string; status: string; amount?: number }[]> = {
+  const emergencyFund = monthlyExpenses;
+
+  const itemsByGroup: Record<
+    number,
+    { text: string; type: string; status: string; amount?: number }[]
+  > = {
     1: [
-      { text: "Chọn phương pháp ghi chép dòng tiền của gia đình để theo dõi trong dài hạn (excel, ứng dụng theo dõi,...)", type: "system", status: "incomplete" },
-      { text: "Ghi chép đầy đủ về các khoản chi tiêu hàng ngày, phân loại theo 3 nhóm Thiết yếu - Giải trí - Khác", type: "system", status: "incomplete" },
-      { text: "Ghi chép đầy đủ về các khoản thu: lương tháng, các nguồn thu nhập khác, tiền lãi đầu tư, tiền tiết kiệm,...", type: "system", status: "incomplete" },
-      { text: "Cuối tháng đối chiếu tổng chi, tổng thu với số tiền đã input lúc đầu", type: "system", status: "incomplete" },
-      { text: `Chi tiêu gia đình không vượt quá ${monthlyExpenses.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -monthlyExpenses },
-      { text: `Thu nhập từ lương của gia đình đạt ${monthlyIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyIncome },
-      ...(monthlyOtherIncome > 0 ? [{ text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyOtherIncome }] : []),
+      {
+        text: "Chọn phương pháp ghi chép dòng tiền của gia đình để theo dõi trong dài hạn (excel, ứng dụng theo dõi,...)",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Ghi chép đầy đủ về các khoản chi tiêu hàng ngày, phân loại theo 3 nhóm Thiết yếu - Giải trí - Khác",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Ghi chép đầy đủ về các khoản thu: lương tháng, các nguồn thu nhập khác, tiền lãi đầu tư, tiền tiết kiệm,...",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Cuối tháng đối chiếu tổng chi, tổng thu với số tiền đã input lúc đầu",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: `Chi tiêu gia đình không vượt quá ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -monthlyExpenses,
+      },
+      {
+        text: `Thu nhập chính của gia đình đạt ${(monthlyIncome - monthlyOtherIncome).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyIncome - monthlyOtherIncome,
+      },
+      ...(monthlyOtherIncome > 0
+        ? [
+            {
+              text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+              type: "system",
+              status: "incomplete",
+              amount: monthlyOtherIncome,
+            },
+          ]
+        : []),
+      {
+        text: `Mang tiền tiết kiệm đi tích lũy với lợi nhuận ${plan.pctInvestmentReturn}%`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
-    
+
     2: [
-      { text: "Rà soát lại các khoản chi bất hợp lý trong từng nhóm hoặc điều chỉnh tỷ lệ chi cho các nhóm nếu có sự không phù hợp", type: "system", status: "incomplete" },
-      { text: "Đối chiếu số liệu thu nhập, chi tiêu với tháng thứ nhất và với thông tin input để đảm bảo không có sai số quá lớn", type: "system", status: "incomplete" },
-      { text: "Mở một tài khoản dự phòng riêng biệt, có tính thanh khoản cao", type: "system", status: "incomplete" },
-      { text: `Trích từ tài khoản tiết kiệm hoặc thu nhập hàng tháng ${monthlyExpenses.toLocaleString()} triệu để gửi vào tài khoản dự phòng`, type: "system", status: "incomplete", amount: -monthlyExpenses },
-      ...(monthlyOtherIncome > 0 ? [{ text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyOtherIncome }] : []),
-      { text: `Chi tiêu gia đình không vượt quá ${monthlyExpenses.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -monthlyExpenses },
-      { text: `Thu nhập từ lương của gia đình đạt ${monthlyIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyIncome },
-      ...(monthlyOtherIncome > 0 ? [{ text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyOtherIncome }] : []),
+      {
+        text: "Rà soát lại các khoản chi bất hợp lý trong từng nhóm hoặc điều chỉnh tỷ lệ chi cho các nhóm nếu có sự không phù hợp",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Đối chiếu số liệu thu nhập, chi tiêu với tháng thứ nhất và với thông tin input để đảm bảo không có sai số quá lớn",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Mở một tài khoản dự phòng riêng biệt, có tính thanh khoản cao",
+        type: "system",
+        status: "incomplete",
+      },
+      ...(plan.hasCoApplicant
+        ? [
+            {
+              text: `Trích từ tài khoản tiết kiệm hoặc thu nhập hàng tháng ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu để gửi vào tài khoản dự phòng`,
+              type: "system",
+              status: "incomplete",
+              amount: -emergencyFund,
+            },
+          ]
+        : []),
+      {
+        text: `Chi tiêu gia đình không vượt quá ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -monthlyExpenses,
+      },
+      {
+        text: `Thu nhập chính của gia đình đạt ${(monthlyIncome - monthlyOtherIncome).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyIncome - monthlyOtherIncome,
+      },
+      ...(monthlyOtherIncome > 0
+        ? [
+            {
+              text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+              type: "system",
+              status: "incomplete",
+              amount: monthlyOtherIncome,
+            },
+          ]
+        : []),
+      {
+        text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
-    
+
     3: [
-      { text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString()} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -totalExpensesForPeriod },
-      { text: `Duy trì mức lương hàng tháng ${monthlyIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyIncome * milestoneTimespan },
-      { text: `Mang tiền tiết kiệm đi đầu tư với tỷ lệ lợi nhuận ${(investmentReturn * 100).toFixed(1)}%, đảm bảo thu nhập từ đầu tư nằm trong khoảng ${expectedInvestmentReturn.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: expectedInvestmentReturn },
-      { text: `Bổ sung thêm ${emergencyFund.toLocaleString()} triệu (tương đương 2 tháng chi tiêu) vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`, type: "system", status: "incomplete", amount: -emergencyFund },
+      {
+        text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -totalExpensesForPeriod,
+      },
+      {
+        text: `Duy trì mức thu nhập hàng tháng ${(monthlyIncome - monthlyOtherIncome).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: (monthlyIncome - monthlyOtherIncome) * milestoneTimespan,
+      },
+       ...(monthlyOtherIncome > 0
+        ? [
+            {
+              text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+              type: "system",
+              status: "incomplete",
+              amount: monthlyOtherIncome,
+            },
+          ]
+        : []),
+      ...(plan.hasCoApplicant
+        ? [
+            {
+              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
+              type: "system",
+              status: "incomplete",
+              amount: -emergencyFund,
+            },
+          ]
+        : []),
+      {
+        text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
-    
+
     4: [
-      { text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString()} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -totalExpensesForPeriod },
-      { text: `Duy trì mức lương hàng tháng ${monthlyIncome.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: monthlyIncome * milestoneTimespan },
-      { text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString()} triệu (freelance, dạy thêm,...)`, type: "system", status: "incomplete", amount: monthlyIncome * 0.1 },
-      { text: `Mang tiền tiết kiệm đi đầu tư với tỷ lệ lợi nhuận ${(investmentReturn * 100).toFixed(1)}%, đảm bảo thu nhập từ đầu tư nằm trong khoảng ${expectedInvestmentReturn.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: expectedInvestmentReturn },
-      { text: `Bổ sung thêm ${emergencyFund.toLocaleString()} triệu (tương đương 2 tháng chi tiêu) vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`, type: "system", status: "incomplete", amount: -emergencyFund },
-      { text: "Tìm hiểu tối thiểu sản phẩm của 3 công ty bảo hiểm và so sánh các gói", type: "system", status: "incomplete" },
-      { text: "Nói chuyện với tư vấn viên để có được mức phí, thời gian đóng và điều khoản hợp lý", type: "system", status: "incomplete" },
-      { text: "Ước tính chi phí dành cho bảo hiểm hàng tháng tương đương 5% thu nhập, nghĩa là khoảng [5% x thu nhập hàng năm] để chọn gói phù hợp", type: "system", status: "incomplete" },
+      {
+        text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -totalExpensesForPeriod,
+      },
+      {
+        text: `Duy trì mức thu nhập hàng tháng ${(monthlyIncome - monthlyOtherIncome).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: (monthlyIncome - monthlyOtherIncome) * milestoneTimespan,
+      },
+       ...(monthlyOtherIncome > 0
+        ? [
+            {
+              text: `Thu nhập từ công việc phụ đạt ${monthlyOtherIncome.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+              type: "system",
+              status: "incomplete",
+              amount: monthlyOtherIncome,
+            },
+          ]
+        : []),
+      {
+        text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu (freelance, dạy thêm,...)`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyIncome * 0.1,
+      },
+      ...(plan.hasCoApplicant
+        ? [
+            {
+              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
+              type: "system",
+              status: "incomplete",
+              amount: -emergencyFund,
+            },
+          ]
+        : []),
+      {
+        text: "Tìm hiểu tối thiểu sản phẩm của 3 công ty bảo hiểm và so sánh các gói",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Nói chuyện với tư vấn viên để có được mức phí, thời gian đóng và điều khoản hợp lý",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Ước tính chi phí dành cho bảo hiểm hàng tháng tương đương 5% thu nhập, nghĩa là khoảng [5% x thu nhập hàng năm] để chọn gói phù hợp",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
-    
+
     5: [
-      { text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString()} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -totalExpensesForPeriod },
-      { text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString()} triệu (freelance, dạy thêm,...)`, type: "system", status: "incomplete", amount: monthlyIncome * 0.1 },
-      { text: `Mang tiền tiết kiệm đi đầu tư với tỷ lệ lợi nhuận ${(investmentReturn * 100).toFixed(1)}%, đảm bảo thu nhập từ đầu tư nằm trong khoảng ${expectedInvestmentReturn.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: expectedInvestmentReturn },
-      { text: "Làm việc với tư vấn bất động sản để lựa chọn căn nhà mong muốn", type: "system", status: "incomplete" },
-      { text: "Chuẩn bị đầy đủ giấy tờ: Hợp đồng lao động, sao kê, sao kê thu nhập phụ", type: "system", status: "incomplete" },
-      { text: "Chốt ngân hàng vay, so sánh các phương án pre-approved", type: "system", status: "incomplete" },
-      { text: "Nhờ tư vấn pháp lý kiểm tra kỹ hồ sơ vay trước khi ký gửi", type: "system", status: "incomplete" },
+      {
+        text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -totalExpensesForPeriod,
+      },
+      {
+        text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu (freelance, dạy thêm,...)`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyIncome * 0.1,
+      },
+      {
+        text: "Làm việc với tư vấn bất động sản để lựa chọn căn nhà mong muốn",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Chuẩn bị đầy đủ giấy tờ: Hợp đồng lao động, sao kê, sao kê thu nhập phụ",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Chốt ngân hàng vay, so sánh các phương án pre-approved",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Nhờ tư vấn pháp lý kiểm tra kỹ hồ sơ vay trước khi ký gửi",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
-    
+
     6: [
-      { text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString()} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: -totalExpensesForPeriod },
-      { text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString()} triệu (freelance, dạy thêm,...)`, type: "system", status: "incomplete", amount: monthlyIncome * 0.1 },
-      { text: `Mang tiền tiết kiệm đi đầu tư với tỷ lệ lợi nhuận ${(investmentReturn * 100).toFixed(1)}%, đảm bảo thu nhập từ đầu tư nằm trong khoảng ${expectedInvestmentReturn.toLocaleString()} triệu`, type: "system", status: "incomplete", amount: expectedInvestmentReturn },
-      { text: "Chuyển đổi toàn bộ tiền tích lũy về tiền mặt hoặc gửi vào tài khoản thanh toán có thể rút ngay", type: "system", status: "incomplete" },
-      { text: "Làm việc với bên ngân hàng để giải ngân, rút tiền vay", type: "system", status: "incomplete" },
-      { text: "Thực hiện giao dịch mua nhà", type: "system", status: "incomplete" },
+      {
+        text: `Duy trì chi tiêu ở mức ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu mỗi tháng. Nghĩa là trong cột mốc này cần đảm bảo chi tiêu dao động ${totalExpensesForPeriod.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
+        type: "system",
+        status: "incomplete",
+        amount: -totalExpensesForPeriod,
+      },
+      {
+        text: `Nếu không thể tăng lương, đề xuất tìm kiếm công việc làm thêm để kiếm thêm ít nhất ${(monthlyIncome * 0.1).toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu (freelance, dạy thêm,...)`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyIncome * 0.1,
+      },
+      {
+        text: "Chuyển đổi toàn bộ tiền tích lũy về tiền mặt hoặc gửi vào tài khoản thanh toán có thể rút ngay",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Làm việc với bên ngân hàng để giải ngân, rút tiền vay",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: "Thực hiện giao dịch mua nhà",
+        type: "system",
+        status: "incomplete",
+      },
+      {
+        text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
+        type: "system",
+        status: "incomplete",
+        amount: monthlyInvestmentReturn,
+      },
     ],
   };
-  
+
   return itemsByGroup[groupId] || [];
 }
 
@@ -190,128 +420,139 @@ export function getMilestonesByGroup(
 
   const definitions = milestoneDefinitions[groupKey];
   const groupStructure = groupStructures[groupKey];
-  console.log("groupStructure", groupStructure);
-  console.log("Definitions:", definitions);
-  console.log("Group structure:", groupStructure);
 
+  // Lấy "Nguồn Chân Lý" từ generateProjections
   const projections = generateProjections(plan);
-  const confirmedProjection = projections.find(p => p.year === confirmPurchaseYear);
 
-  const initialSavings = plan?.initialSavings || 0;
-  console.log("initialSavings from plan:", initialSavings);
+  // Bắt đầu mô phỏng theo tháng
+  let currentSimulatedBalance = plan.initialSavings;
+  const monthlyInvestmentRate =
+    Math.pow(1 + plan.pctInvestmentReturn / 100, 1 / 12) - 1;
 
-  // Tạo cấu trúc mới theo milestone
   const result: MilestoneGroup[] = [];
-  
-  // Tạo milestones theo thứ tự để có thể truy cập milestone trước đó
-  for (let milestoneIndex = 0; milestoneIndex < definitions.length; milestoneIndex++) {
+
+  let cumulativeMonthIndex = 0;
+
+  for (
+    let milestoneIndex = 0;
+    milestoneIndex < definitions.length;
+    milestoneIndex++
+  ) {
     const def = definitions[milestoneIndex];
     const milestoneChecklistNumbers = def.checklist;
-    
-    // Tạo milestones cho milestone này
+
     const milestones = [];
-    
-    for (let milestoneInGroupIndex = 0; milestoneInGroupIndex < milestoneChecklistNumbers.length; milestoneInGroupIndex++) {
+
+    for (
+      let milestoneInGroupIndex = 0;
+      milestoneInGroupIndex < milestoneChecklistNumbers.length;
+      milestoneInGroupIndex++
+    ) {
       const checklistNumber = milestoneChecklistNumbers[milestoneInGroupIndex];
-      
-      // Tìm groupId tương ứng với checklistNumber này
-      const correspondingGroup = groupStructure.find(group => 
+
+      const correspondingGroup = groupStructure.find((group) =>
         group.checklistNumbers.includes(checklistNumber)
       );
       const groupId = correspondingGroup ? correspondingGroup.groupId : checklistNumber;
-      
-      // Lấy items tương ứng với groupId này
-      const items = getItemsByGroupId(groupId, plan);
-      
-      // Tính amountValue dựa trên logic mới
-      let prevAmountValue = 0;
-      
-      if (milestoneIndex === 0 && milestoneInGroupIndex === 0) {
-        // Milestone đầu tiên của group đầu tiên: dùng initialSavings
-        prevAmountValue = (plan.initialSavings || 0);
-      } else if (milestoneInGroupIndex === 0) {
-        // Milestone đầu tiên trong 1 group: dùng amountValue lớn nhất của group trước
-        const previousGroup = result[milestoneIndex - 1];
-        if (previousGroup && previousGroup.milestones.length > 0) {
-          prevAmountValue = Math.max(...previousGroup.milestones.map(m => m.amountValue));
-        }
-      } else {
-        // Milestone sau trong cùng 1 group: dùng amountValue của milestone trước đó trong cùng group
-        // Sử dụng milestones array đang được tạo
-        prevAmountValue = milestones[milestoneInGroupIndex - 1].amountValue;
-      }
-      
-      // Tính tổng amount của các items trong groupId này
-      const totalItemsAmount = items.reduce((sum, item) => {
-        if (item.amount !== undefined) {
-          return sum + item.amount;
-        }
-        return sum;
-      }, 0);
-      
-      // amountValue = prevAmountValue + tổng amount của items hiện tại
-      const amountValue = prevAmountValue + totalItemsAmount;
-      
-      // Xác định status cho milestone này dựa trên currentSavings
-      let status: "done" | "current" | "upcoming" = "upcoming";
-      
-      // Lấy giá trị bắt đầu của milestone (prevAmountValue)
-      const startValue = prevAmountValue;
 
-      // Lấy giá trị cuối của milestone (amountValue hiện tại)
+      // 1. Xác định các tham số của tháng hiện tại
+      const totalMonthsOffset = plan.createdAt.getMonth() + cumulativeMonthIndex;
+      const yearOffset = Math.floor(totalMonthsOffset / 12);
+      const projectionForThisYear =
+        projections[yearOffset] || projections[projections.length - 1];
+
+      if (!projectionForThisYear) {
+        console.error(`Không tìm thấy projection cho yearOffset: ${yearOffset}`);
+        // Fallback an toàn: có thể dừng lại hoặc dùng projection cuối cùng
+        continue;
+      }
+
+      // 2. Tính toán các thành phần tăng trưởng
+      const monthlyTotalIncome = projectionForThisYear.annualIncome / 12;
+      const monthlyExpenses = projectionForThisYear.annualExpenses / 12;
+      const monthlyOtherIncome = projectionForThisYear.otherIncome / 12;
+
+      const monthlyCashflowSavings = monthlyTotalIncome - monthlyExpenses;
+
+      // Lãi được tính trên số dư cuối tháng trước
+      const monthlyInvestmentReturn =
+        currentSimulatedBalance * monthlyInvestmentRate;
+
+      // 3. Tính toán amountValue mới và cập nhật số dư cho tháng sau
+      const prevAmountValue = currentSimulatedBalance;
+      const amountValue =
+        currentSimulatedBalance +
+        monthlyCashflowSavings +
+        monthlyInvestmentReturn;
+      currentSimulatedBalance = amountValue; // Cập nhật cho vòng lặp tiếp theo
+
+      // 4. Lấy danh sách các item với dữ liệu đã được tính toán
+      const items = getItemsByGroupId(
+        groupId,
+        plan,
+        monthlyTotalIncome,
+        monthlyExpenses,
+        monthlyInvestmentReturn,
+        monthlyOtherIncome
+      );
+
+      // 5. Xác định trạng thái của milestone
+      let status: "done" | "current" | "upcoming" = "upcoming";
+      const startValue = prevAmountValue;
       const endValue = amountValue;
 
       if (currentSavings >= endValue) {
-        // Hoàn thành: currentSavings >= giá trị cuối
         status = "done";
       } else if (currentSavings >= startValue) {
-        // Đang thực hiện: currentSavings >= giá trị bắt đầu nhưng < giá trị cuối
         status = "current";
-      } else {
-        // Chưa bắt đầu: currentSavings < giá trị bắt đầu
-        status = "upcoming";
       }
-      
+
       const milestone = {
-        groupId, // ID của group mà milestone này thuộc về
+        groupId,
         status,
-        amountValue, // Sử dụng amountValue được tính theo logic mới
-        items, // Thêm items vào milestone
+        amountValue,
+        items,
       };
-      
-      // Thêm vào milestones array
+
       milestones.push(milestone);
+      cumulativeMonthIndex++;
     }
 
     const milestoneGroup = {
-      id: def.goalNumber, // Sử dụng goalNumber làm ID
+      id: def.goalNumber,
       title: `Cột mốc số ${def.goalNumber}`,
       milestones,
-      status: "upcoming" as const, // Tạm thời set là upcoming, sẽ được update sau
+      status: "upcoming" as const, // Sẽ được cập nhật ở dưới
     };
-    
-    // Thêm vào result array
+
     result.push(milestoneGroup);
   }
 
-  // Sau khi tạo xong tất cả milestones, chỉ set 1 milestone duy nhất thành "current"
-  // và 1 group duy nhất thành "current"
-  let foundCurrent = false;
-  const finalResult = result.map(group => {
-    const updatedMilestones = group.milestones.map(milestone => {
-      if (!foundCurrent && milestone.status === "upcoming") {
-        // Tìm milestone đầu tiên chưa hoàn thành để set thành "current"
-        foundCurrent = true;
-        return { ...milestone, status: "current" as const };
+  // Cập nhật lại trạng thái tổng thể của các group và milestone
+  // Logic này đảm bảo chỉ có 1 milestone là "current"
+  let isCurrentMilestoneFound = false;
+  const finalResult = result.map((group) => {
+    const updatedMilestones = group.milestones.map((milestone) => {
+      let newStatus = milestone.status;
+      if (newStatus === "current") {
+        if (isCurrentMilestoneFound) {
+          newStatus = "upcoming"; // Nếu đã tìm thấy 'current' rồi, tất cả các cái sau là 'upcoming'
+        } else {
+          isCurrentMilestoneFound = true;
+        }
       }
-      return milestone;
+      return { ...milestone, status: newStatus };
     });
 
     // Cập nhật status tổng thể của group
     let groupStatus: "done" | "current" | "upcoming" = "upcoming";
-    const allDone = updatedMilestones.every(milestone => milestone.status === "done");
-    const hasCurrent = updatedMilestones.some(milestone => milestone.status === "current");
-    
+    const allDone = updatedMilestones.every(
+      (milestone) => milestone.status === "done"
+    );
+    const hasCurrent = updatedMilestones.some(
+      (milestone) => milestone.status === "current"
+    );
+
     if (allDone) {
       groupStatus = "done";
     } else if (hasCurrent) {
@@ -323,14 +564,6 @@ export function getMilestonesByGroup(
       milestones: updatedMilestones,
       status: groupStatus,
     };
-  });
-
-  console.log("=== Final grouped result ===");
-  finalResult.forEach((group, groupIndex) => {
-    console.log(`Group ${group.id}:`);
-    console.log(`  Title: ${group.title}`);
-    console.log(`  Status: ${group.status}`);
-    console.log(`  Milestones:`, group.milestones);
   });
 
   return finalResult;
