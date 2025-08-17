@@ -321,6 +321,16 @@ function getItemsByGroupId(
         status: "incomplete",
         amount: monthlyInvestmentReturn,
       },
+      ...(plan.hasCoApplicant
+        ? [
+            {
+              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
+              type: "system",
+              status: "incomplete",
+              amount: -emergencyFund,
+            },
+          ]
+        : []),
     ],
 
     5: [
