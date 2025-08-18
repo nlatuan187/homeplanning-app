@@ -29,8 +29,7 @@ const assumptionSchema = z.object({
 
 export async function confirmPlaygroundAssumptions(
   planId: string,
-  newAssumptions: z.infer<typeof assumptionSchema>,
-  interactionLog: any[]
+  newAssumptions: z.infer<typeof assumptionSchema>
 ) {
   // 1. Xác thực người dùng
   const { userId } = await auth();
@@ -67,7 +66,6 @@ export async function confirmPlaygroundAssumptions(
     where: { id: planId },
     data: {
       ...updateData,
-      playgroundInteractionLog: interactionLog,
       reportGeneratedAt: null,
     },
   });
