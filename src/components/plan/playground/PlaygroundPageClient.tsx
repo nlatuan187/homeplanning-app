@@ -369,7 +369,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
               : "Mục tiêu không khả thi"}
           </div>
           <div className="text-[14px] text-gray-400">
-            Mua nhà vào {monthPurchase.toLocaleString("en-US", { minimumIntegerDigits: 2 })}/
+            Mua nhà vào {plan.createdAt.getMonth().toLocaleString("en-US", { minimumIntegerDigits: 2 })}/
             {plan.confirmedPurchaseYear || targetYear} với giá {Math.round(housePriceProjected).toLocaleString()}
           </div>
         </div>
