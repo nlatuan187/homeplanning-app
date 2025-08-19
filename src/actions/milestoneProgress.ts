@@ -5,6 +5,24 @@ import { generateProjections } from "@/lib/calculations/projections/generateProj
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
 
+// Hàm helper mới để tìm cột mốc con "current"
+function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
+  for (const group of milestoneGroups) {
+    const currentSubMilestone = group.milestones.find(m => m.status === "current");
+    if (currentSubMilestone) {
+      // Trả về đối tượng theo đúng cấu trúc ta mong muốn
+      return {
+        milestoneId: group.id,
+        title: group.title,
+        status: currentSubMilestone.status,
+        amountValue: currentSubMilestone.amountValue,
+        items: currentSubMilestone.items,
+      };
+    }
+  }
+  return null; // Trả về null nếu không tìm thấy
+}
+
 export async function getOrCreateMilestoneProgress(planId: string) {
   try {
     // Tìm existing progress
@@ -101,12 +119,16 @@ export async function updateMilestoneProgress(
       });
     }
 
+    // BƯỚC QUAN TRỌNG: Tính toán lại currentMilestoneData từ milestoneGroups đã được cập nhật
+    const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups as MilestoneGroup[]);
+
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
-        // LƯU TRỮ QUAN TRỌNG: Lưu lại toàn bộ milestoneGroups với status mới
         milestoneGroups: updatedMilestoneGroups, 
         completedMilestones: completedMilestones,
+        // Cập nhật trường currentMilestoneData
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
         lastProgressUpdate: new Date(),
       },
     });
@@ -193,11 +215,50 @@ export async function updateCurrentSavings(planId: string, amount: number) {
       ? Math.round((finalCurrentSavings / currentProgress.housePriceProjected) * 100)
       : 0;
 
+    // BƯỚC 1: Tính toán lại trạng thái các cột mốc dựa trên số tiền mới
+    let milestoneGroups = (currentProgress.milestoneGroups as MilestoneGroup[]) || [];
+    
+    let foundCurrent = false;
+    const updatedMilestoneGroups = milestoneGroups.map(group => {
+      const updatedMilestones = group.milestones.map(milestone => {
+        let status: "done" | "current" | "upcoming" = "upcoming";
+        
+        if (finalCurrentSavings >= milestone.amountValue) {
+          status = "done";
+        }
+
+        return { ...milestone, status };
+      }).sort((a, b) => a.amountValue - b.amountValue); // Sắp xếp lại để tìm "current" cho đúng
+
+      // Tìm "current" đầu tiên trong nhóm này
+      const finalMilestones = updatedMilestones.map(milestone => {
+        if (!foundCurrent && milestone.status === "upcoming") {
+          foundCurrent = true;
+          return { ...milestone, status: "current" as const };
+        }
+        return milestone;
+      });
+
+      const allDone = finalMilestones.every(m => m.status === "done");
+      const hasCurrent = finalMilestones.some(m => m.status === "current");
+
+      return {
+        ...group,
+        milestones: finalMilestones,
+        status: allDone ? "done" : hasCurrent ? "current" : "upcoming",
+      };
+    });
+
+    // BƯỚC 2: Tìm currentMilestoneData mới từ groups đã cập nhật
+    const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups);
+
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
         currentSavings: finalCurrentSavings,
         savingsPercentage: newSavingsPercentage,
+        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
         lastProgressUpdate: new Date(),
       },
     });

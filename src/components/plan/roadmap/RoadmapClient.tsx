@@ -43,7 +43,7 @@ export default function RoadmapClient({
             </header>
           </div>
 
-          <div className="bg-white p-4 flex flex-row gap-4 items-center border-b-white">
+          <div className="bg-white py-4 px-6 flex flex-row gap-4 items-center border-b-white">
             <div className="scale-200 px-2">
               <UserButton afterSignOutUrl="/" />
             </div>
@@ -86,10 +86,10 @@ export default function RoadmapClient({
               {progressPercentage}%
             </div>
           </div>
-          <div className="bg-white px-2 pb-0.5 items-center">
+          <div className="bg-white px-6 pb-0.5 items-center">
             <div className="mb-2 h-2 bg-slate-700 rounded-lg">
               <div
-                className="h-full bg-green-500 rounded-full"
+                className="h-full bg-cyan-400 rounded-full"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>

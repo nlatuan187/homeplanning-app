@@ -128,7 +128,6 @@ function getRoadmapImagePath(goalNumber: number, totalMilestones: number): strin
     } else if (goalNumber === 6) {
       return `/roadmap/11 miles.png`;
     } else {
-      // Các ảnh từ 2-5: nhân với 11/6 và làm tròn
       const imageNumber = Math.round((goalNumber - 1) * (11 / 6) + 1);
       const validImageNumber = Math.min(Math.max(imageNumber, 2), 10);
       return `/roadmap/${validImageNumber} miles.png`;
@@ -248,6 +247,24 @@ function MilestoneNode({
   const handleClick = () => {
     console.log("MilestoneNode clicked:", group.title, "Goal:", group.id);
     
+    // KIỂM TRA NẾU CỘT MỐC ĐANG "CURRENT"
+    if (group.status === "current") {
+      // Tìm chỉ số của cột mốc con đầu tiên cũng có status "current"
+      const currentSubMilestoneIndex = group.milestones.findIndex(
+        (m) => m.status === "current"
+      );
+
+      // Nếu tìm thấy, điều hướng với tham số `step`
+      if (currentSubMilestoneIndex !== -1) {
+        const step = currentSubMilestoneIndex + 1; // Step là index + 1
+        router.push(
+          `/plan/${plan.id}/plan?milestoneId=${group.id}&step=${step}`
+        );
+        return; // Dừng hàm tại đây
+      }
+    }
+
+    // Điều hướng mặc định cho các trường hợp khác
     router.push(`/plan/${plan.id}/plan?milestoneId=${group.id}`);
   };
 

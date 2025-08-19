@@ -21,6 +21,7 @@ interface MilestoneTaskSectionProps {
   onGoToRoadmap?: () => void;
   isLastMilestone?: boolean;
   hasNextMilestone?: boolean;
+  monthlySurplus: number; // <-- THÊM PROP NÀY
 }
 
 export default function MilestoneTaskSection({ 
@@ -38,7 +39,8 @@ export default function MilestoneTaskSection({
   isLastMilestone = false,
   hasNextMilestone = false,
   currentMilestone,
-  currentStep
+  currentStep,
+  monthlySurplus, // <-- NHẬN PROP NÀY
 }: MilestoneTaskSectionProps) {
   const currentMilestoneStatus = currentMilestoneInGroup?.status || "upcoming";
   
@@ -77,6 +79,7 @@ export default function MilestoneTaskSection({
           onGoToRoadmap={onGoToRoadmap}
           isLastMilestone={isLastMilestone}
           hasNextMilestone={hasNextMilestone}
+          monthlySurplus={monthlySurplus} // <-- TRUYỀN XUỐNG TODOLIST
         />
       )}
     </div>

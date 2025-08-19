@@ -79,7 +79,7 @@
   --connector-len: 160px;
 }
 
-@media (min-width: 369px)  { :root { --connector-len: 200px; } } /* sm */
+@media (min-width: 369px)  { :root { --connector-len: 160px; } } /* sm */
 @media (min-width: 1050px) { :root { --connector-len: 780px; } }
 
 .dark {

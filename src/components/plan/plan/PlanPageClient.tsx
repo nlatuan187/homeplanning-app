@@ -13,7 +13,6 @@ import MilestoneCompleted from "./MilestoneCompleted";
 import AddCashflowModal from "./AddCashflowModal";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { updatePlanProgress } from "@/actions/updatePlanProgress";
-// SỬA LỖI: Sử dụng đúng server action và import
 import { updateCurrentSavings, updateMilestoneProgress } from "@/actions/milestoneProgress";
 
 
@@ -365,6 +364,8 @@ export default function PlanPageClient({
     // nó chỉ thay đổi khi router.push được gọi để chuyển group.
   }, [initialMilestoneId]);
 
+  console.log("currentMilestoneInGroup?.monthlySurplus", currentMilestoneInGroup?.monthlySurplus);
+
 
   const handleGoToRoadmap = () => {
     router.push(`/plan/${initialPlan.id}/roadmap`);
@@ -626,11 +627,12 @@ export default function PlanPageClient({
               currentStep < totalSteps || // Còn milestone con kế tiếp trong group hiện tại
               currentMilestoneIndex < mainMilestones.length - 1 // Còn group kế tiếp
             }
+            monthlySurplus={currentMilestoneInGroup?.monthlySurplus || 0}
           />
         </div>
       </div>
 
-      <AddCashflowModal
+      {/* <AddCashflowModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={async (description: string, amount: number) => {
@@ -683,7 +685,7 @@ export default function PlanPageClient({
             setModalOpen(false);
           }
         }}
-      />
+      /> */}
     </main>
   );
 }

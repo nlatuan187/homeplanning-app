@@ -8,7 +8,7 @@ export default async function PlanPage({
   searchParams,
 }: {
   params: { planId: string };
-  searchParams: { milestoneId?: string };
+  searchParams: { milestoneId?: string; step?: string }; // Thêm 'step' vào đây
 }) {
   const user = await currentUser();
   if (!user) {
@@ -26,6 +26,21 @@ export default async function PlanPage({
   if (!planData) {
     redirect("/dashboard");
   }
-  
-  return <PlanPageClient initialPlan={planData} initialMilestoneId={searchParams.milestoneId ? parseInt(searchParams.milestoneId) : undefined}/>;
+   
+  const initialMilestoneId = searchParams.milestoneId 
+    ? parseInt(searchParams.milestoneId) 
+    : undefined;
+
+  // Đọc và chuyển đổi `step` từ URL
+  const initialStep = searchParams.step 
+    ? parseInt(searchParams.step) 
+    : undefined;
+
+  return (
+    <PlanPageClient 
+      initialPlan={planData} 
+      initialMilestoneId={initialMilestoneId}
+      initialStep={initialStep} // Truyền `initialStep` vào props
+    />
+  );
 } 

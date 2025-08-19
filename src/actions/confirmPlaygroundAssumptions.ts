@@ -92,21 +92,18 @@ export async function confirmPlaygroundAssumptions(
       currentMilestoneData = {
         milestoneId: group.id,
         title: group.title,
-        status: group.status,
-        percent: undefined, // Không còn percent trong cấu trúc mới
+        status: currentMilestone.status,
         amountValue: currentMilestone.amountValue,
-        currentSavings: currentSavings,
-        lastDoneAmountValue: 0, // Vì đây là milestone đầu tiên
-        progress: 0,
+        items: currentMilestone.items,
       };
-      break; // Chỉ lấy milestone đầu tiên có status "current"
+      break;
     }
   }
 
   // Tạo hoặc cập nhật milestoneProgress
   await db.milestoneProgress.upsert({
     where: { planId },
-    update: {
+    update: { 
       currentSavings,
       housePriceProjected: purchaseProjection.housePriceProjected,
       savingsPercentage: Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100),

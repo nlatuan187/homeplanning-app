@@ -9,30 +9,63 @@ export default function AddCashflowModal({
   open,
   onClose,
   onSubmit,
+  monthlySurplus, // Thêm prop mới
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (description: string, amount: number) => void;
+  monthlySurplus: number; // Thêm type cho prop
 }) {
-  const [type, setType] = useState<"in" | "out" | null>(null);
+  const [type, setType] = useState<"in" | "out">("in");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  // State mới để lưu kết quả tính toán
+  const [timeImpactInDays, setTimeImpactInDays] = useState(0);
 
-  const formattedAmount = Number(amount).toLocaleString();
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 1. Loại bỏ tất cả các ký tự không phải là số
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+
+    // 2. Cập nhật state amount với giá trị số thuần túy
+    setAmount(numericValue);
+  };
+
+  // Sử dụng useMemo để chỉ tính toán lại khi `amount` thay đổi
+  const formattedAmountForDisplay = React.useMemo(() => {
+    if (!amount) return "";
+    const number = parseInt(amount, 10);
+    return isNaN(number) ? "" : number.toLocaleString("en-US");
+  }, [amount]);
 
   const handleSubmit = () => {
-    if (!type || description.trim() === "" || amount.trim() === "") return;
+    if (!type || amount.trim() === "") return;
 
+    const finalDescription =
+      description.trim() === ""
+        ? type === "in"
+          ? "Dòng tiền vào"
+          : "Dòng tiền ra"
+        : description;
+
+    // Sử dụng formattedAmountForDisplay để hiển thị trong câu xác nhận
     const sentence =
       type === "in"
-        ? `Kiếm được thêm ${formattedAmount} nhờ ${description}`
-        : `Chi tiêu thêm ${formattedAmount} do ${description}`;
+        ? `Kiếm được thêm ${formattedAmountForDisplay} nhờ ${finalDescription}`
+        : `Chi tiêu thêm ${formattedAmountForDisplay} do ${finalDescription}`;
 
     // Tính toán amount với dấu đúng (triệu VND)
     // Lưu ý: amountValue sẽ là số âm nếu là tiền ra, số dương nếu là tiền vào
     const amountValue = type === "in" ? Number(amount) / 1000000 : -(Number(amount) / 1000000);
+
+    // Tính toán tác động về thời gian
+    if (monthlySurplus > 0) {
+      const days = Math.round((Math.abs(amountValue) / monthlySurplus) * 30);
+      setTimeImpactInDays(days);
+    } else {
+      setTimeImpactInDays(0);
+    }
 
     if (type === "in") {
       setShowSuccessModal(true);
@@ -41,13 +74,13 @@ export default function AddCashflowModal({
     }
 
     // Gọi onSubmit với description và amountValue
-    onSubmit(description, amountValue);
+    onSubmit(finalDescription, amountValue);
   };
 
   const handleCloseAll = () => {
     setShowSuccessModal(false);
     setShowWarningModal(false);
-    setType(null);
+    setType("in");
     setDescription("");
     setAmount("");
     onClose();
@@ -103,10 +136,11 @@ export default function AddCashflowModal({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền (nhập số)</label>
                 <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Ví dụ: 20.000.000"
+                  type="text" // Đổi sang type="text"
+                  inputMode="numeric" // Gợi ý bàn phím số trên di động
+                  value={formattedAmountForDisplay} // Hiển thị giá trị đã định dạng
+                  onChange={handleAmountChange} // Sử dụng hàm xử lý mới
+                  placeholder="Ví dụ: 20,000,000"
                   className="w-full border border-gray-300 text-black placeholder:text-gray-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
@@ -137,10 +171,10 @@ export default function AddCashflowModal({
               <Image src="/icons/confetti.png" alt="confetti" width={40} height={40} />
             </div>
             <div className="text-lg font-semibold mb-1">
-              Kiếm thêm được <span className="text-green-600">{formattedAmount}</span>
+              Kiếm thêm được <span className="text-green-600">{formattedAmountForDisplay}</span>
             </div>
             <p className="text-sm text-gray-600">
-              Bạn sẽ mua được nhà sớm hơn kế hoạch 30 ngày nếu duy trì dòng tiền vào này mỗi tháng.
+              Bạn sẽ mua được nhà sớm hơn kế hoạch {timeImpactInDays} ngày nếu duy trì dòng tiền vào này mỗi tháng.
             </p>
           </div>
         </div>
@@ -161,10 +195,10 @@ export default function AddCashflowModal({
               <Image src="/icons/snail.png" alt="snail" width={40} height={40} />
             </div>
             <div className="text-lg font-semibold mb-1">
-              Chi tiêu thêm <span className="text-red-600">{formattedAmount}</span>
+              Chi tiêu thêm <span className="text-red-600">{formattedAmountForDisplay}</span>
             </div>
             <p className="text-sm text-gray-600">
-              Bạn sẽ phải hoãn kế hoạch nhà 30 ngày nếu tiếp tục khoản chi này trong những tháng tiếp theo.
+              Bạn sẽ phải hoãn kế hoạch nhà {timeImpactInDays} ngày nếu tiếp tục khoản chi này trong những tháng tiếp theo.
             </p>
           </div>
         </div>

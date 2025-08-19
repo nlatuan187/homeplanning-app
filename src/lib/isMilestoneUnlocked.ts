@@ -11,6 +11,14 @@ export interface Milestone {
   amountValue?: number | null;
 }
 
+// Định nghĩa interface cho các task trong một milestone con
+export interface MilestoneTask {
+  text: string;
+  type: string;
+  status: string;
+  amount?: number;
+}
+
 // Định nghĩa interface mới cho MilestoneGroup theo yêu cầu
 export interface MilestoneGroup {
   id: number;
@@ -18,8 +26,10 @@ export interface MilestoneGroup {
   status: "done" | "current" | "upcoming";
   milestones: {
     groupId: number;
-    status: "done" | "current" | "upcoming"; // ← Add "current" here
+    status: "done" | "current" | "upcoming";
     amountValue: number;
+    items: MilestoneTask[]; // Thêm thuộc tính 'items' vào đây
+    monthlySurplus: number; // Thêm thuộc tính 'monthlySurplus'
   }[];
 }
 
@@ -522,6 +532,7 @@ export function getMilestonesByGroup(
         status,
         amountValue,
         items,
+        monthlySurplus: projectionForThisYear.monthlySurplus, // <-- THÊM DÒNG NÀY
       };
 
       milestones.push(milestone);

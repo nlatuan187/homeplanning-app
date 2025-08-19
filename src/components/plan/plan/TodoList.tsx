@@ -20,6 +20,7 @@ export interface TodoListProps {
   hasNextMilestone?: boolean;
   onGoToRoadmap?: () => void;
   isLastMilestone?: boolean;
+  monthlySurplus: number; // <-- THÊM PROP NÀY
 }
 
 export default function TodoList({ 
@@ -33,7 +34,8 @@ export default function TodoList({
   previousMilestoneAmount,
   planId,
   hasNextMilestone = false,
-  isLastMilestone = false // Thêm prop mới
+  isLastMilestone = false, // Thêm prop mới
+  monthlySurplus, // <-- NHẬN PROP NÀY
 }: TodoListProps) {
   const [items, setItems] = useState(defaultItems);
   const [modalOpen, setModalOpen] = useState(false);
@@ -331,6 +333,7 @@ export default function TodoList({
         open={modalOpen} 
         onClose={() => setModalOpen(false)} 
         onSubmit={handleAddExtraTask} // Đã đúng rồi vì handleAddExtraTask nhận (description, amount)
+        monthlySurplus={monthlySurplus} // <-- TRUYỀN VÀO MODAL
       />
     </>
   );
