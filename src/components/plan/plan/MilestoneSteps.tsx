@@ -6,40 +6,56 @@ import { Check } from "lucide-react";
 interface MilestoneStepsProps {
   totalSteps: number;
   currentStep: number;
+  milestones?: {
+    groupId: number;
+    status: "done" | "current" | "upcoming";
+    amountValue: number;
+  }[];
 }
 
-export default function MilestoneSteps({ totalSteps, currentStep }: MilestoneStepsProps) {
+export default function MilestoneSteps({ totalSteps, currentStep, milestones }: MilestoneStepsProps) {
   return (
-    <div className="w-full flex items-center justify-between py-4 px-4">
-      {Array.from({ length: totalSteps }, (_, i) => {
-        const step = i + 1;
-        const isCompleted = step < currentStep;
-        const isCurrent = step === currentStep;
+    <div className="w-full py-4 px-4">
+      {/* Container full width với justify-between */}
+      <div className="flex items-center justify-between w-full">
+        {Array.from({ length: totalSteps }, (_, i) => {
+          const step = i + 1;
+          const milestone = milestones?.[i];
+          
+          // Xác định trạng thái dựa vào milestone data nếu có
+          let isCompleted = false;
+          let isCurrent = false;
+          
+          if (milestones && milestone) {
+            // Sử dụng status từ milestone data
+            isCompleted = milestone.status === "done";
+            isCurrent = milestone.status === "current";
+          } else {
+            // Fallback về logic cũ
+            isCompleted = step < currentStep;
+            isCurrent = step === currentStep;
+          }
 
-        return (
-          <React.Fragment key={step}>
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0
-                ${isCompleted ? "bg-cyan-500 text-white border-cyan-500" : ""}
-                ${isCurrent ? "text-cyan-500 border-cyan-500" : ""}
-                ${!isCompleted && !isCurrent ? "text-white border-white/50" : ""}
-              `}
-            >
-              {isCompleted ? <Check size={18} /> : step}
-            </div>
-
-            {step !== totalSteps && (
+          return (
+            <React.Fragment key={step}>
               <div
-                className={`
-                  h-0.5 border-t border-dashed border-white/40
-                  w-6 sm:w-10 md:w-16 lg:w-24 xl:w-32
-                  mx-1 sm:mx-2
+                className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all
+                  ${isCompleted ? "bg-cyan-500 text-white border-cyan-500" : ""}
+                  ${isCurrent ? "text-cyan-500 border-cyan-500" : ""}
+                  ${!isCompleted && !isCurrent ? "text-white border-white/50" : ""}
                 `}
-              ></div>
-            )}
-          </React.Fragment>
-        );
-      })}
+              >
+                {isCompleted ? <Check size={28} /> : <span className="text-xl font-semibold">{step}</span>}
+              </div>
+              {/* Không cần line riêng nếu dùng justify-between, 
+                   nhưng nếu muốn line vẫn hiển thị thì dùng absolute hoặc flex-grow */}
+              {step !== totalSteps && (
+                <div className="flex-grow h-0.5 border-t border-dashed border-white/40 mx-3"></div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }

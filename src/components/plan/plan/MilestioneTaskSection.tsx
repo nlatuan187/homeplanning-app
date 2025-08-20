@@ -1,33 +1,87 @@
 // components/MilestoneTaskSection.tsx
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import TodoList from "./TodoList";
-import { TaskType } from "./TodoItem";
+import { Lock } from "lucide-react";
 
 interface MilestoneTaskSectionProps {
+  currentMilestone: any;
+  currentStep: number;
   milestoneId: number;
+  planId: string;
+  plan: any;
+  onSavingsUpdate?: (amount: number) => void;
+  onMilestoneCompleted?: () => void;
+  isMilestoneCompleted?: boolean;
+  accumulationMax: number;
+  accumulationMin: number;
+  milestones: any[];
+  currentMilestoneInGroup: any;
+  onGoToRoadmap?: () => void;
+  isLastMilestone?: boolean;
+  hasNextMilestone?: boolean;
+  monthlySurplus: number; // <-- THÊM PROP NÀY
 }
 
-const defaultTasksByMilestone: Record<number, { text: string; type: TaskType }[]> = {
-  1: [
-    { text: "Gửi tiết kiệm tháng đầu", type: "must_do" },
-    { text: "Theo dõi chi tiêu", type: "should_do" },
-  ],
-  2: [
-    { text: "Tăng khoản tiết kiệm hàng tháng", type: "must_do" },
-    { text: "Tìm hiểu về đầu tư", type: "should_do" },
-  ],
-  // Thêm các milestone khác tùy ý
-};
+export default function MilestoneTaskSection({ 
+  milestoneId, 
+  planId,
+  plan,
+  onSavingsUpdate, 
+  onMilestoneCompleted, 
+  isMilestoneCompleted = false,
+  accumulationMax,
+  accumulationMin,
+  milestones,
+  currentMilestoneInGroup,
+  onGoToRoadmap,
+  isLastMilestone = false,
+  hasNextMilestone = false,
+  currentMilestone,
+  currentStep,
+  monthlySurplus, // <-- NHẬN PROP NÀY
+}: MilestoneTaskSectionProps) {
+  const currentMilestoneStatus = currentMilestoneInGroup?.status || "upcoming";
+  
+  const allTasks = currentMilestoneInGroup?.items || [];
 
-export default function MilestoneTaskSection({ milestoneId }: MilestoneTaskSectionProps) {
-  const tasks = defaultTasksByMilestone[milestoneId] || [];
+  const tasksWithStatus = (isMilestoneCompleted || currentMilestoneStatus === "done")
+    ? allTasks.map(task => ({ ...task, status: "auto-completed" as const }))
+    : allTasks;
+  
+  const todoListKey = `group-${currentMilestone?.id}-step-${currentStep}`;
 
   return (
-    <div className="p-4">
-      <h2 className="text-white text-xl font-bold mb-4">Cột mốc {milestoneId}</h2>
-      <TodoList milestoneId={milestoneId} defaultItems={tasks} />
+    <div className="">
+      {currentMilestoneInGroup?.status === 'upcoming' ? (
+        <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-lg p-8 flex flex-col items-center justify-center text-center min-h-[300px]">
+          <Lock className="w-12 h-12 text-slate-500 mb-4" />
+          <p className="text-slate-300 font-semibold text-lg">
+            Cột mốc này đang được khoá
+          </p>
+          <p className="text-slate-400 mt-1">
+            Hãy hoàn thành các cột mốc trước để mở khoá nhé!
+          </p>
+        </div>
+      ) : (
+        <TodoList
+          key={todoListKey}
+          milestoneId={milestoneId}
+          planId={planId}
+          defaultItems={tasksWithStatus}
+          onSavingsUpdate={onSavingsUpdate}
+          onMilestoneCompleted={onMilestoneCompleted}
+          isMilestoneCompleted={isMilestoneCompleted || currentMilestoneStatus === "done"}
+          plan={plan}
+          currentMilestoneAmount={accumulationMax}
+          previousMilestoneAmount={accumulationMin}
+          onGoToRoadmap={onGoToRoadmap}
+          isLastMilestone={isLastMilestone}
+          hasNextMilestone={hasNextMilestone}
+          monthlySurplus={monthlySurplus} // <-- TRUYỀN XUỐNG TODOLIST
+        />
+      )}
     </div>
   );
 }

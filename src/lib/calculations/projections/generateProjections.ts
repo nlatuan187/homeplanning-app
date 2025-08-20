@@ -58,7 +58,8 @@ function calculateMonthlyPayment(
  * This is the core calculation engine for the application.
  */
 export function generateProjections(plan: Plan, maxYearsToProject?: number): ProjectionRow[] {
-  const currentYear = new Date().getFullYear();
+  const currentYear = plan.createdAt.getFullYear();
+  const currentMonth = plan.createdAt.getMonth();
   const maxYears = maxYearsToProject || (plan.yearsToPurchase + 5);
   const projectionData: ProjectionRow[] = [];
 
@@ -70,6 +71,7 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   // Monthly rate from annual compound interest
   const annualReturnRate = plan.pctInvestmentReturn / 100;
   const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
+  console.log("monthlyRate", monthlyRate)
 
   const userMonthlyIncomeN0 = plan.userMonthlyIncome;
   const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? (plan.coApplicantMonthlyIncome || 0) : 0;
@@ -80,8 +82,8 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
   const monthlyExpensesN0 = plan.monthlyLivingExpenses + (plan.monthlyNonHousingDebt || 0) + ((plan.currentAnnualInsurancePremium || 0) / 12);
   const annualExpensesN0 = monthlyExpensesN0 * 12;
   const annualSavingsN0 = annualIncomeN0 - annualExpensesN0
-  const cumulativeSavingsFromInitialN0 = initialSavings * Math.pow(1 + monthlyRate, 12)
-  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12 * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
+  const cumulativeSavingsFromInitialN0 = initialSavings
+  const cumulativeSavingsFromMonthlyN0 = annualSavingsN0 / 12
 
   const targetEFN0 = monthlyExpensesN0 * 6;
   const paymentMethod = (plan as PlanWithPaymentMethod).paymentMethod || "fixed";
@@ -117,7 +119,7 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
     factorChild: 0,
     loanTermYears: plan.loanTermYears,
     cumulativeSavingsFromInitial: cumulativeSavingsFromInitialN0,
-    cumulativeSavingsFromMonthly: cumulativeSavingsFromMonthlyN0,
+    cumulativeSavingsFromMonthly: 0,
   };
 
   year0.loanAmountNeeded = Math.max(0, year0.housePriceProjected - year0.cumulativeSavings);
@@ -128,11 +130,11 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
 
   projectionData.push(year0);
 
-  let accumulatedFromInitial = year0.cumulativeSavingsFromInitial;
-  let accumulatedFromMonthly = year0.cumulativeSavingsFromMonthly;
-
   for (let n = 1; n <= maxYears; n++) {
-    const prev = projectionData[n - 1];
+    let prev = projectionData[n - 1];
+
+    let accumulatedFromMonthly = prev.cumulativeSavingsFromMonthly + prev.annualSavings / 12 * (Math.pow(1 + monthlyRate, 12 - currentMonth) - 1) / monthlyRate;
+    let accumulatedFromInitial = prev.cumulativeSavingsFromInitial * Math.pow(1 + monthlyRate, 12 - currentMonth);
 
     const userAnnualIncome = prev.primaryIncome * (1 + plan.pctSalaryGrowth / 100);
     const coApplicantAnnualIncome = prev.spouseIncome * (1 + (plan.coApplicantSalaryGrowth ?? plan.pctSalaryGrowth) / 100);
@@ -163,13 +165,13 @@ export function generateProjections(plan: Plan, maxYearsToProject?: number): Pro
 
     const monthlyNewSavings = annualSavings / 12;
 
-    accumulatedFromInitial *= Math.pow(1 + monthlyRate, 12);
+    accumulatedFromInitial *= Math.pow(1 + monthlyRate, currentMonth);
 
     const fvOfCurrentYearMonthlySavings = (monthlyRate > 0)
-      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, 12) - 1) / monthlyRate
-      : monthlyNewSavings * 12;
+      ? monthlyNewSavings * (Math.pow(1 + monthlyRate, currentMonth) - 1) / monthlyRate
+      : monthlyNewSavings * currentMonth;
 
-    accumulatedFromMonthly *= Math.pow(1 + monthlyRate, 12);
+    accumulatedFromMonthly *= Math.pow(1 + monthlyRate, currentMonth);
     accumulatedFromMonthly += fvOfCurrentYearMonthlySavings;
 
     const cumulativeSavings = accumulatedFromInitial + accumulatedFromMonthly;

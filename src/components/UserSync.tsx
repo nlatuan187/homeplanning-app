@@ -14,21 +14,15 @@ export function UserSync() {
           const response = await fetch("/api/user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: user.id,
-              email: user.primaryEmailAddress?.emailAddress,
-              createdAt: user.createdAt,
-              updatedAt: user.updatedAt,
-            }),
           });
           
           if (response.ok) {
-            console.log("User saved to database successfully");
+            console.log("User synchronized with database successfully");
           } else {
-            console.error("Failed to save user to database");
+            console.error("Failed to sync user with database");
           }
         } catch (error) {
-          console.error("Error saving user to database:", error);
+          console.error("Error syncing user with database:", error);
         }
       };
 

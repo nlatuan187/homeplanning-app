@@ -109,7 +109,6 @@ export default function MultiStepForm({ userId }: MultiStepFormProps) {
     const fieldsForCurrentStep = getFieldsForStep(currentStep);
     const isValid = await form.trigger(fieldsForCurrentStep);
     
-    // Log errors to the console for debugging if validation fails
     if (!isValid) {
       console.log('Validation errors:', form.formState.errors);
     }

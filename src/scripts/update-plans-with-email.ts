@@ -33,7 +33,7 @@ async function updatePlansWithEmail() {
               userEmail: plan.user.email,
             } as Prisma.PlanUpdateInput,
           });
-          
+
           console.log(`Updated plan ${plan.id} with email ${plan.user.email}`);
         } else {
           console.log(`No email found for user ${plan.userId} (plan ${plan.id})`);

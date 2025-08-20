@@ -14,69 +14,69 @@ export function generateAccumulationMilestones(
 ): ChartMilestone[] {
   const milestones: ChartMilestone[] = [];
 
-  const baseDate = plan.createdAt ? new Date(plan.createdAt) : new Date();
-  let month = baseDate.getMonth() + 1;
-  let year = baseDate.getFullYear();
-
-  const confirmedPurchaseYear = plan.confirmedPurchaseYear ?? year;
-  const length = confirmedPurchaseYear - year
-
-  let initialSavings = plan.initialSavings || 0;
-  if (
-    plan.familySupport?.familySupportType === "GIFT" &&
-    plan.familySupport?.familyGiftTiming === "NOW" &&
-    plan.familySupport?.familySupportAmount
-  ) {
-    initialSavings += plan.familySupport.familySupportAmount;
+  // Dữ liệu đầu vào phải có ít nhất trạng thái ban đầu và một năm dự phóng.
+  if (projectionData.length < 2) {
+    return [];
   }
 
+  // Cột mốc đầu tiên ("Hiện tại") chính là dữ liệu đầu tiên trong chuỗi dự phóng.
+  const initialState = projectionData[0];
   milestones.push({
     name: "Hiện tại",
-    cumulativeSavingsFromInitial: Math.round(initialSavings),
-    cumulativeSavingsFromMonthly: 0,
-    cumulativeSavings: Math.round(initialSavings),
+    cumulativeSavingsFromInitial: Math.round(initialState.cumulativeSavingsFromInitial),
+    cumulativeSavingsFromMonthly: Math.round(initialState.cumulativeSavingsFromMonthly),
+    cumulativeSavings: Math.round(initialState.cumulativeSavings),
   });
 
-  for (let i = 0; i < length; i++) {
-    const p = projectionData[i];
+  const baseYear = initialState.year;
 
-    month += 6;
-    if (month > 12) {
-      month -= 12;
-      year += 1;
-    }
-    const paddedMonth1 = month.toString().padStart(2, "0");
-    const label1 = `${paddedMonth1}/${year}`;
+  // Lặp qua từng năm trong dữ liệu dự phóng.
+  // Bắt đầu từ 1 vì projectionData[0] là trạng thái ban đầu, không phải cuối một năm.
+  for (let i = 1; i < projectionData.length; i++) {
+    // Dữ liệu tại thời điểm bắt đầu năm (tức là cuối năm trước).
+    const startOfYearData = projectionData[i - 1]; 
+    // Dữ liệu tại thời điểm kết thúc năm - đây là "điểm neo" của chúng ta.
+    const endOfYearData = projectionData[i]; 
 
-    const annualReturnRate = p.pctInvestmentReturn / 100;
-    const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12);
-    const math = (Math.pow(monthlyRate, 6) - 1) / (Math.pow(monthlyRate, 12) - 1)
+    // Lấy các thông số tài chính áp dụng cho năm hiện tại.
+    const annualReturnRate = endOfYearData.pctInvestmentReturn / 100;
+    const monthlySavings = endOfYearData.annualSavings / 12;
 
-    const cumulativeSavingsFromMonthly = p.cumulativeSavingsFromMonthly * math
-    const cumulativeSavingsFromInitial = p.cumulativeSavingsFromInitial / Math.pow(monthlyRate, 6)
+    // Tính toán lãi suất và hệ số nhân hàng tháng, xử lý trường hợp lãi suất bằng 0.
+    const hasReturn = annualReturnRate > 0;
+    const monthlyMultiplier = hasReturn ? Math.pow(1 + annualReturnRate, 1 / 12) : 1;
+    const monthlyRate = hasReturn ? monthlyMultiplier - 1 : 0;
 
+    // === CỘT MỐC 1: 6 tháng giữa năm (Tháng 6) ===
+    
+    // Tính toán tăng trưởng của vốn ban đầu từ đầu năm đến giữa năm.
+    const midYearInitial = startOfYearData.cumulativeSavingsFromInitial * Math.pow(monthlyMultiplier, 6);
+    
+    // Tính toán tăng trưởng của các khoản tiết kiệm hàng tháng đã có từ trước.
+    const midYearMonthlyFromPrevious = startOfYearData.cumulativeSavingsFromMonthly * Math.pow(monthlyMultiplier, 6);
+
+    // Tính giá trị tương lai của các khoản tiết kiệm mới được thêm vào trong 6 tháng đầu năm.
+    const newSavingsFv6Months = monthlyRate > 0
+      ? monthlySavings * (Math.pow(monthlyMultiplier, 6) - 1) / monthlyRate
+      : monthlySavings * 6;
+    
+    const midYearMonthlyTotal = midYearMonthlyFromPrevious + newSavingsFv6Months;
+    
     milestones.push({
-      name: label1,
-      cumulativeSavingsFromInitial: cumulativeSavingsFromInitial,
-      cumulativeSavingsFromMonthly: cumulativeSavingsFromMonthly,
-      cumulativeSavings: cumulativeSavingsFromInitial + cumulativeSavingsFromMonthly,
+      name: `06/${baseYear + i}`,
+      cumulativeSavingsFromInitial: Math.round(midYearInitial),
+      cumulativeSavingsFromMonthly: Math.round(midYearMonthlyTotal),
+      cumulativeSavings: Math.round(midYearInitial + midYearMonthlyTotal),
     });
 
-    // Mốc sau 12 tháng (tức là thêm 6 tháng nữa)
-    month += 6;
-    if (month > 12) {
-      month -= 12;
-      year += 1;
-    }
-    const paddedMonth2 = month.toString().padStart(2, "0");
-    const label2 = `${paddedMonth2}/${year}`;
-
-    // Dùng lại p hoặc tính thêm nếu cần khác biệt giữa 6 và 12 tháng
+    // === CỘT MỐC 2: Cuối năm (Tháng 12) ===
+    
+    // Để đảm bảo khớp 100%, ta sử dụng trực tiếp dữ liệu đã tính sẵn từ generateProjections.
     milestones.push({
-      name: label2,
-      cumulativeSavingsFromInitial: Math.round(p.cumulativeSavingsFromInitial ?? 0),
-      cumulativeSavingsFromMonthly: Math.round(p.cumulativeSavingsFromMonthly ?? 0),
-      cumulativeSavings: Math.round(p.cumulativeSavings ?? 0),
+      name: `12/${baseYear + i}`,
+      cumulativeSavingsFromInitial: Math.round(endOfYearData.cumulativeSavingsFromInitial),
+      cumulativeSavingsFromMonthly: Math.round(endOfYearData.cumulativeSavingsFromMonthly),
+      cumulativeSavings: Math.round(endOfYearData.cumulativeSavings),
     });
   }
 

@@ -76,7 +76,11 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --connector-len: 160px;
 }
+
+@media (min-width: 369px)  { :root { --connector-len: 160px; } } /* sm */
+@media (min-width: 1050px) { :root { --connector-len: 780px; } }
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
@@ -116,7 +120,90 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+
+  /* Modern Milestone Timeline Styles */
+  .milestone-node {
+    position: relative !important;
+    z-index: 10 !important;
+    transition: all 0.3s ease-in-out !important;
+  }
+
+  .milestone-node.odd::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 100% !important;
+    width: var(--connector-len) !important;
+    height: 2px !important;
+    background: repeating-linear-gradient(to right,
+        #06b6d4 0px,
+        #06b6d4 12px,
+        transparent 12px,
+        transparent 20px) !important;
+    transform: translateY(-50%) !important;
+    z-index: 5 !important;
+    border-radius: 2px !important;
+  }
+
+  .milestone-node.even::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 100% !important;
+    width: var(--connector-len) !important;
+    height: 2px !important;
+    background: repeating-linear-gradient(to left,
+        #06b6d4 0px,
+        #06b6d4 12px,
+        transparent 12px,
+        transparent 20px) !important;
+    transform: translateY(-50%) !important;
+    z-index: 5 !important;
+    border-radius: 2px !important;
+  }
+
+  /* Status-based line colors */
+  .milestone-node.done.odd::after,
+  .milestone-node.done.even::after {
+    background: repeating-linear-gradient(to right,
+        #06b6d4 0px,
+        #06b6d4 12px,
+        transparent 12px,
+        transparent 20px) !important;
+  }
+
+  .milestone-node.current.odd::after,
+  .milestone-node.current.even::after {
+    background: repeating-linear-gradient(to right,
+        #6b7280 0px,
+        #6b7280 12px,
+        transparent 12px,
+        transparent 20px) !important;
+  }
+
+  .milestone-node.upcoming.odd::after,
+  .milestone-node.upcoming.even::after {
+    background: repeating-linear-gradient(to right,
+        #6b7280 0px,
+        #6b7280 12px,
+        transparent 12px,
+        transparent 20px) !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
   }
 }
