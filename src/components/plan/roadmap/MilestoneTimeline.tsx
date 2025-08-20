@@ -247,24 +247,20 @@ function MilestoneNode({
   const handleClick = () => {
     console.log("MilestoneNode clicked:", group.title, "Goal:", group.id);
     
-    // KIỂM TRA NẾU CỘT MỐC ĐANG "CURRENT"
     if (group.status === "current") {
-      // Tìm chỉ số của cột mốc con đầu tiên cũng có status "current"
       const currentSubMilestoneIndex = group.milestones.findIndex(
         (m) => m.status === "current"
       );
 
-      // Nếu tìm thấy, điều hướng với tham số `step`
       if (currentSubMilestoneIndex !== -1) {
-        const step = currentSubMilestoneIndex + 1; // Step là index + 1
+        const step = currentSubMilestoneIndex + 1;
         router.push(
           `/plan/${plan.id}/plan?milestoneId=${group.id}&step=${step}`
         );
-        return; // Dừng hàm tại đây
+        return;
       }
     }
 
-    // Điều hướng mặc định cho các trường hợp khác
     router.push(`/plan/${plan.id}/plan?milestoneId=${group.id}`);
   };
 

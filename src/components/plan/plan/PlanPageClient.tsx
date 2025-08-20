@@ -46,10 +46,12 @@ type PlanWithMilestoneProgress = Plan & {
 
 export default function PlanPageClient({ 
   initialPlan, 
-  initialMilestoneId 
+  initialMilestoneId, 
+  initialStep
 }: { 
   initialPlan: PlanWithMilestoneProgress;
   initialMilestoneId?: number;
+  initialStep?: number;
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,7 +66,7 @@ export default function PlanPageClient({
   // SỬA LỖI 2: SẮP XẾP LẠI THỨ TỰ KHAI BÁO
   // Khai báo state `currentMilestoneStep` ở đây để các `useMemo` sau có thể sử dụng
   // =================================================================
-  const [currentMilestoneStep, setCurrentMilestoneStep] = useState(1);
+  const [currentMilestoneStep, setCurrentMilestoneStep] = useState(initialStep || 1);
 
   // SỬA: THÊM STATE MỚI ĐỂ LÀM "TÍN HIỆU"
   // const [justCompletedIdentifier, setJustCompletedIdentifier] = useState<string | null>(null);
@@ -355,14 +357,12 @@ export default function PlanPageClient({
   }, [milestoneGroups, currentStep, currentMilestone, currentMilestoneInGroup, router, initialPlan.id]);
 
 
-  // SỬA: THAY ĐỔI DEPENDENCY ĐỂ CHỈ LẮNG NGHE ID
+  // SỬA: THAY ĐỔI DEPENDENCY ĐỂ CHỈ LẮNG NGHE ID VÀ STEP TỪ URL
   useEffect(() => {
-    // Bất cứ khi nào ID của group trên URL thay đổi,
-    // chúng ta sẽ reset step về 1.
-    setCurrentMilestoneStep(1);
-    // Dependency `currentMilestoneId` là một con số ổn định,
-    // nó chỉ thay đổi khi router.push được gọi để chuyển group.
-  }, [initialMilestoneId]);
+    // Bất cứ khi nào ID của group hoặc step trên URL thay đổi,
+    // chúng ta sẽ reset step về giá trị tương ứng.
+    setCurrentMilestoneStep(initialStep || 1);
+  }, [initialMilestoneId, initialStep]);
 
   console.log("currentMilestoneInGroup?.monthlySurplus", currentMilestoneInGroup?.monthlySurplus);
 
