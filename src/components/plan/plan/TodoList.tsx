@@ -6,10 +6,22 @@ import TodoItem, { TaskType } from "./TodoItem";
 import AddCashflowModal from "./AddCashflowModal";
 import MilestoneCompleted from "./MilestoneCompleted";
 import { saveCustomTask } from "@/actions/milestoneProgress";
+import { useDebounce } from "@/hooks/useDebounce";
+
+// Định nghĩa một kiểu dữ liệu nội bộ để làm việc, bao gồm cả ID
+export interface TodoItemWithId {
+  id: string; // ID duy nhất và ổn định do chúng ta tự tạo ra
+  text: string;
+  type: TaskType;
+  status: "incomplete" | "completed" | "auto-completed";
+  amount?: number;
+}
 
 export interface TodoListProps {
   milestoneId: number;
   defaultItems: { text: string; type: TaskType; status: "incomplete" | "completed" | "auto-completed"; amount?: number }[];
+  // BƯỚC 3.1: SỬA LẠI PROP
+  onProgressUpdate?: (tasks: any[]) => Promise<any>;
   onSavingsUpdate?: (amount: number) => void;
   onMilestoneCompleted?: () => void;
   isMilestoneCompleted?: boolean;
@@ -26,6 +38,7 @@ export interface TodoListProps {
 export default function TodoList({ 
   milestoneId, 
   defaultItems, 
+  onProgressUpdate, // Nhận prop mới
   onSavingsUpdate, 
   onMilestoneCompleted,
   isMilestoneCompleted = false,
@@ -40,17 +53,44 @@ export default function TodoList({
   const [items, setItems] = useState(defaultItems);
   const [modalOpen, setModalOpen] = useState(false);
   const [showMilestoneCompleted, setShowMilestoneCompleted] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // State để báo hiệu đang lưu
   
   const rewardedTasksRef = useRef<Set<string>>(new Set());
+  const isInitialMount = useRef(true);
 
-  // SỬA LỖI NỀN TẢNG: Chỉ reset lại toàn bộ state khi người dùng chuyển sang milestone LỚN khác.
-  // Bỏ `defaultItems` khỏi dependency để ngăn việc re-render của component cha 
-  // ghi đè lên trạng thái do người dùng vừa tương tác.
+  // BƯỚC 3.2: DEBOUNCE TOÀN BỘ DANH SÁCH ITEMS
+  const debouncedItems = useDebounce(items, 1500);
+
+  // Reset state khi defaultItems thay đổi
   useEffect(() => {
     setItems(defaultItems);
-    rewardedTasksRef.current.clear();
-  }, [milestoneId]);
+    // Quan trọng: reset isInitialMount để không lưu ngay khi chuyển milestone
+    isInitialMount.current = true; 
+  }, [defaultItems]);
+
+  // BƯỚC 3.3: useEffect ĐỂ GỌI API KHI `debouncedItems` THAY ĐỔI
+  useEffect(() => {
+    // Bỏ qua lần render đầu tiên
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (onProgressUpdate) {
+      const saveProgress = async () => {
+        setIsProcessing(true);
+        try {
+          await onProgressUpdate(debouncedItems);
+        } catch (error) {
+          console.error("Failed to save progress:", error);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      saveProgress();
+    }
+  }, [debouncedItems, onProgressUpdate]);
+
 
   const calculateMonthlySurplus = () => {
     if (!plan) return 0;
@@ -84,9 +124,6 @@ export default function TodoList({
   };
 
   useEffect(() => {
-    // Chỉ cập nhật lại state items khi milestoneId thay đổi.
-    // Việc này ngăn không cho prop `defaultItems` từ component cha
-    // ghi đè lên trạng thái mà người dùng vừa tương tác.
     setItems(defaultItems);
     rewardedTasksRef.current.clear();
   }, [milestoneId]); // Bỏ `defaultItems` khỏi danh sách dependency
@@ -137,45 +174,27 @@ export default function TodoList({
     setModalOpen(false);
   };
 
-  const handleToggleTask = async (taskIndex: number, isCompleted: boolean) => {
-    // 1. Ngăn chặn click liên tục
-    if (isProcessing) return;
-    setIsProcessing(true);
+  const handleToggleTask = (taskIndex: number) => {
+    const currentItem = items[taskIndex];
+    if (!currentItem) return;
 
-    const item = items[taskIndex];
-    const amountToUpdate = isCompleted ? -(item.amount || 0) : (item.amount || 0);
+    const newStatus = currentItem.status === 'completed' ? 'incomplete' : 'completed';
 
-    try {
-      // 2. Gọi và chờ server xác nhận
-      if (onSavingsUpdate && item.amount !== undefined) {
-        await onSavingsUpdate(amountToUpdate);
-      }
-
-      // 3. Nếu thành công, cập nhật UI một cách chính thức
-      setItems(prev => {
-        const newItems = [...prev];
-        const taskKey = `${milestoneId}-${item.text}-${item.type}`;
-        
-        if (isCompleted) {
-          newItems[taskIndex] = { ...item, status: "incomplete" };
-        } else {
-          newItems[taskIndex] = { ...item, status: "completed" };
-          if (item.amount !== undefined) {
-            rewardedTasksRef.current.add(taskKey);
-          }
-        }
-        return newItems;
-      });
-
-    } catch (error) {
-      // 4. Nếu có lỗi, thông báo cho người dùng
-      console.error("Failed to update task:", error);
-      // **Gợi ý:** Ở đây bạn có thể dùng một thư viện thông báo (toast)
-      // để hiện lỗi cho người dùng, ví dụ: alert("Cập nhật thất bại, vui lòng thử lại.");
-    } finally {
-      // 5. Cho phép người dùng tương tác lại
-      setIsProcessing(false);
+    // Cập nhật savings ở client ngay lập tức
+    if (onSavingsUpdate && currentItem.amount) {
+      const amountToUpdate = newStatus === 'completed' ? currentItem.amount : -currentItem.amount;
+      onSavingsUpdate(amountToUpdate);
     }
+
+    // Cập nhật state `items`, việc lưu sẽ được `useEffect` và `useDebounce` xử lý
+    setItems(currentItems =>
+      currentItems.map((item, index) => {
+        if (index === taskIndex) {
+          return { ...item, status: newStatus };
+        }
+        return item;
+      })
+    );
   };
 
   // Hàm lấy màu border dựa trên type
@@ -230,12 +249,8 @@ export default function TodoList({
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 transition-opacity ${getBorderColor(item.type)} ${getBackgroundColor("incomplete")} ${isProcessing ? 'opacity-50' : 'opacity-100'}`}
                 >
                   <div 
-                    className={`w-5 h-5 border-2 border-gray-400 rounded-full cursor-pointer hover:border-gray-300 transition-colors ${
-                      isProcessing ? 'cursor-not-allowed' : ''
-                    }`}
-                    onClick={() => {
-                      if (!isProcessing) handleToggleTask(index, false);
-                    }}
+                    className={`w-5 h-5 border-2 border-gray-400 rounded-full cursor-pointer hover:border-gray-300 transition-colors`}
+                    onClick={() => handleToggleTask(index)}
                   ></div>
                   <span className="text-white flex-1">{item.text}</span>
                   {item.amount && (
@@ -297,10 +312,7 @@ export default function TodoList({
                       ? "bg-gray-600 hover:bg-gray-500" 
                       : "bg-gray-500 hover:bg-gray-400"
                   }`}
-                  onClick={() => {
-                    console.log("🔄 Clicking completed item:", item.status);
-                    handleToggleTask(index, true);
-                  }}
+                  onClick={() => handleToggleTask(index)}
                 >
                   <span className="text-white text-xs">✓</span>
                 </div>

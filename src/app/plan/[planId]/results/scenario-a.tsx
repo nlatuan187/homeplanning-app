@@ -8,6 +8,7 @@ import { editPlan } from "@/actions";
 import { AlertTriangle } from "lucide-react"; // CheckIcon removed
 import { Plan } from "@prisma/client";
 import { calculateAdditionalSavingsForViability } from "@/lib/calculations/affordabilityHelpers";
+import { useRouter } from "next/navigation";
 
 interface ResultsScenarioAProps {
   plan: Plan;
@@ -30,6 +31,7 @@ export default function ResultsScenarioA({
 }: ResultsScenarioAProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const router = useRouter();
 
   const additionalSavingsNeeded = calculateAdditionalSavingsForViability(
     projection,
@@ -288,13 +290,16 @@ export default function ResultsScenarioA({
         </div>
       </div>
 
-      <Button
-        onClick={handleEdit}
-        disabled={isEditing}
-        className="w-full bg-white text-black hover:bg-slate-200 text-sm font-medium py-3"
-      >
-        {isEditing ? "Đang chuyển hướng..." : "Thay đổi kế hoạch"}
-      </Button>
+      <div className="container mx-auto my-3 max-w-5xl pt-2 flex justify-between">
+        <Button type="button" onClick={handleEdit}>
+          {isEditing ? "Đang chuyển hướng..." : "Thay đổi kế hoạch"}
+        </Button>
+
+
+        <Button type="button" variant="outline" onClick={() => router.push(`/plan/${plan.id}/playground`)}>
+          Xem lộ trình
+        </Button>
+      </div>
     </div>
   );
 }

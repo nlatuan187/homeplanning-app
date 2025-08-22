@@ -13,7 +13,7 @@ import MilestoneCompleted from "./MilestoneCompleted";
 import AddCashflowModal from "./AddCashflowModal";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { updatePlanProgress } from "@/actions/updatePlanProgress";
-import { updateCurrentSavings, updateMilestoneProgress } from "@/actions/milestoneProgress";
+import { updateCurrentSavings, updateMilestoneProgress, syncMilestoneTasks } from "@/actions/milestoneProgress";
 
 
 // =================================================================
@@ -21,6 +21,7 @@ import { updateCurrentSavings, updateMilestoneProgress } from "@/actions/milesto
 // Bổ sung các kiểu dữ liệu chi tiết hơn để code hiểu rõ cấu trúc
 // =================================================================
 interface SubMilestoneItem {
+  id: string; // Thêm ID để định danh task
   text: string;
   type: string;
   status: "incomplete" | "completed" | "auto-completed";
@@ -31,7 +32,8 @@ interface SubMilestone {
   groupId: number;
   status: "done" | "current" | "upcoming";
   amountValue: number;
-  items: SubMilestoneItem[]; // <-- Bổ sung thuộc tính 'items' bị thiếu
+  items: SubMilestoneItem[];
+  monthlySurplus: number; // Thêm trường dữ liệu surplus
 }
 
 // Kế thừa và mở rộng type gốc
@@ -67,6 +69,29 @@ export default function PlanPageClient({
   // Khai báo state `currentMilestoneStep` ở đây để các `useMemo` sau có thể sử dụng
   // =================================================================
   const [currentMilestoneStep, setCurrentMilestoneStep] = useState(initialStep || 1);
+
+  // =================================================================
+  // BƯỚC 1: SỬ DỤNG useCallback ĐỂ ỔN ĐỊNH HÀM XỬ LÝ
+  // =================================================================
+  const handleTaskStatusChange = useCallback(
+    (taskIndex: number, isCompleted: boolean) => {
+      // Gọi server action với planId đã được "đóng gói"
+      return updateTaskStatusByIndex(initialPlan.id, taskIndex, isCompleted);
+    },
+    [initialPlan.id] // Dependency là planId để đảm bảo hàm chỉ được tạo lại khi cần
+  );
+
+  // =================================================================
+  // BƯỚC 2: TẠO HÀM MỚI ĐỂ GỬI CẢ TASKS VÀ SAVINGS LÊN SERVER
+  // =================================================================
+  const handleProgressUpdate = useCallback(async (tasks: SubMilestoneItem[]) => {
+    // Lấy giá trị savings mới nhất từ state của component
+    const latestSavings = milestoneProgress?.currentSavings ?? 0;
+    
+    // Gọi server action với đầy đủ các tham số cần thiết
+    return syncMilestoneTasks(initialPlan.id, tasks, latestSavings);
+  }, [initialPlan.id, milestoneProgress?.currentSavings]); // Dependencies để đảm bảo hàm được tạo lại khi giá trị thay đổi
+
 
   // SỬA: THÊM STATE MỚI ĐỂ LÀM "TÍN HIỆU"
   // const [justCompletedIdentifier, setJustCompletedIdentifier] = useState<string | null>(null);
@@ -130,6 +155,45 @@ export default function PlanPageClient({
     if (!currentMilestoneData?.milestones) return null;
     return currentMilestoneData.milestones[currentStep - 1] || null;
   }, [currentMilestoneData, currentStep]);
+
+
+  // =================================================================
+  // BƯỚC 1: LOGIC LỰA CHỌN NGUỒN DỮ LIỆU ĐỂ HIỂN THỊ
+  // =================================================================
+  const displayMilestoneGroup = useMemo(() => {
+    // Nếu không có milestone con để hiển thị, trả về null
+    if (!currentMilestoneInGroup) return null;
+
+    // Kiểm tra xem đây có phải là milestone con mà người dùng đang thực hiện không
+    const isTheActualCurrentMilestone = currentMilestoneInGroup.status === 'current';
+    
+    // Kiểm tra xem có dữ liệu tiến trình hợp lệ đã được lưu trong DB không
+    const hasPersistentData = 
+      isTheActualCurrentMilestone &&
+      milestoneProgress?.currentMilestoneData &&
+      typeof milestoneProgress.currentMilestoneData === 'object' &&
+      'items' in (milestoneProgress.currentMilestoneData as object) &&
+      Array.isArray((milestoneProgress.currentMilestoneData as any).items);
+
+    // Quyết định nguồn dữ liệu cho danh sách công việc
+    const sourceItems = hasPersistentData
+      ? (milestoneProgress.currentMilestoneData as any).items
+      : currentMilestoneInGroup.items;
+
+    // QUAN TRỌNG: Đảm bảo mỗi công việc có một ID duy nhất và ổn định 
+    // để React render và cho các bước cập nhật sau này.
+    const itemsWithIds = sourceItems.map((item: any, index: number) => ({
+      ...item,
+      // Tạo ID ổn định dựa trên group, index của milestone con, và index của công việc
+      id: item.id || `task-${currentMilestoneInGroup.groupId}-${currentStep - 1}-${index}`,
+    }));
+
+    // Trả về object hoàn chỉnh để hiển thị, với danh sách công việc đã được chọn lọc
+    return {
+      ...currentMilestoneInGroup,
+      items: itemsWithIds,
+    };
+  }, [currentMilestoneInGroup, milestoneProgress?.currentMilestoneData, currentStep]);
 
 
   const isCurrentMilestoneDone = false; // Placeholder
@@ -583,7 +647,6 @@ export default function PlanPageClient({
         <div className="mb-4">
           <AccumulationProgress 
             current={milestoneProgress?.currentSavings ?? 0}
-            // SỬA: Sử dụng giá trị đã được tính toán chính xác
             min={progressBarValues.min}
             max={progressBarValues.max}
           />
@@ -602,19 +665,18 @@ export default function PlanPageClient({
             accumulationMax={currentMilestoneInGroup?.amountValue || 0}
             accumulationMin={currentMilestoneData?.lastDoneAmountValue ?? 0}
             milestones={currentMilestoneData?.milestones || []}
-            currentMilestoneInGroup={currentMilestoneInGroup}
-            onSavingsUpdate={async (amount) => {
-              // Hàm này bây giờ sẽ throw lỗi nếu gặp vấn đề,
-              // để component con có thể bắt và xử lý.
-              const updatedProgress = await updateCurrentSavings(initialPlan.id, amount);
-              
+            // SỬA: Truyền xuống dữ liệu đã qua xử lý thay vì dữ liệu gốc
+            currentMilestoneInGroup={displayMilestoneGroup}
+            // BƯỚC 2.1: TRUYỀN HÀM WRAPPER MỚI XUỐNG THAY VÌ BIND TRỰC TIẾP
+            onProgressUpdate={handleProgressUpdate}
+            // onTaskStatusChange không còn cần thiết
+            onSavingsUpdate={(amount) => {
+              // Hàm này bây giờ chỉ cập nhật state ở client để UI phản hồi ngay
               setMilestoneProgress(prev => {
-                if (!prev) return updatedProgress;
+                if (!prev) return null;
                 return {
                   ...prev,
-                  currentSavings: updatedProgress.currentSavings,
-                  savingsPercentage: updatedProgress.savingsPercentage,
-                  lastProgressUpdate: updatedProgress.lastProgressUpdate,
+                  currentSavings: prev.currentSavings + amount,
                 };
               });
             }}
@@ -631,61 +693,6 @@ export default function PlanPageClient({
           />
         </div>
       </div>
-
-      {/* <AddCashflowModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={async (description: string, amount: number) => {
-          console.log("💰 Add cashflow:", description, "Amount:", amount);
-          
-          try {
-            // Cập nhật currentSavings trong database
-            const updatedProgress = await updateCurrentSavings(initialPlan.id, amount);
-            console.log("✅ Database updated with cashflow, new currentSavings:", updatedProgress.currentSavings);
-            
-            // Cập nhật currentSavings trong local state
-            setMilestoneProgress(prev => {
-              if (!prev) return updatedProgress;
-              
-              return {
-                ...prev,
-                currentSavings: updatedProgress.currentSavings,
-                savingsPercentage: updatedProgress.savingsPercentage,
-                lastProgressUpdate: updatedProgress.lastProgressUpdate,
-              };
-            });
-            
-            // Cập nhật status milestones và groups dựa theo currentSavings mới
-            updateMilestoneStatusesBasedOnCurrentSavings();
-            
-            console.log("✅ Local state updated with new currentSavings:", updatedProgress.currentSavings);
-            
-            // Đóng modal sau khi hoàn thành
-            setModalOpen(false);
-            
-          } catch (error) {
-            console.error("❌ Error updating current savings with cashflow:", error);
-            // Fallback: cập nhật local state nếu database fail
-            setMilestoneProgress(prev => {
-              if (!prev) return null;
-              
-              const newCurrentSavings = prev.currentSavings + amount;
-              console.log(" Fallback: updating local state", prev.currentSavings, "->", newCurrentSavings);
-              
-              return {
-                ...prev,
-                currentSavings: newCurrentSavings,
-                savingsPercentage: prev.housePriceProjected > 0 
-                  ? Math.round((newCurrentSavings / prev.housePriceProjected) * 100)
-                  : 0,
-              };
-            });
-            
-            // Đóng modal sau khi fallback
-            setModalOpen(false);
-          }
-        }}
-      /> */}
     </main>
   );
 }
