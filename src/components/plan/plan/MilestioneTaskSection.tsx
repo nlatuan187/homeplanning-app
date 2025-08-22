@@ -13,6 +13,8 @@ interface MilestoneTaskSectionProps {
   plan: any;
   onSavingsUpdate?: (amount: number) => void;
   onMilestoneCompleted?: () => void;
+  // BƯỚC 2.2: SỬA SIGNATURE CỦA PROP
+  onProgressUpdate?: (tasks: any[]) => Promise<void>;
   isMilestoneCompleted?: boolean;
   accumulationMax: number;
   accumulationMin: number;
@@ -28,6 +30,7 @@ export default function MilestoneTaskSection({
   milestoneId, 
   planId,
   plan,
+  onProgressUpdate, // Nhận prop mới
   onSavingsUpdate, 
   onMilestoneCompleted, 
   isMilestoneCompleted = false,
@@ -70,6 +73,8 @@ export default function MilestoneTaskSection({
           milestoneId={milestoneId}
           planId={planId}
           defaultItems={tasksWithStatus}
+          // BƯỚC 2.3: TRUYỀN PROP MỚI XUỐNG TODOLIST
+          onProgressUpdate={onProgressUpdate}
           onSavingsUpdate={onSavingsUpdate}
           onMilestoneCompleted={onMilestoneCompleted}
           isMilestoneCompleted={isMilestoneCompleted || currentMilestoneStatus === "done"}

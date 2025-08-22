@@ -4,6 +4,66 @@ import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
+import { Plan } from "@prisma/client";
+
+// Thêm interface TaskItem nếu nó chưa tồn tại
+interface TaskItem {
+  id: string;
+  text: string;
+  type: "system" | "user";
+  status: "incomplete" | "completed" | "auto-completed";
+  amount?: number;
+}
+
+// =================================================================
+// BƯỚC 1: TẠO SERVER ACTION MỚI ĐỂ ĐỒNG BỘ TOÀN BỘ TIẾN TRÌNH
+// Action này sẽ thay thế cho updateTaskStatusByIndex
+// =================================================================
+export async function syncMilestoneTasks(
+  planId: string,
+  tasks: TaskItem[],
+  // THÊM: Nhận `currentSavings` trực tiếp từ client, đây là nguồn dữ liệu chính xác nhất
+  currentSavings: number 
+): Promise<{ success: boolean }> {
+  try {
+    // Bỏ `plan` vì không cần tính lại `initialSavings` nữa
+    const progress = await db.milestoneProgress.findUnique({ where: { planId } });
+
+    if (!progress) {
+      throw new Error("Progress not found.");
+    }
+
+    // 1. Sử dụng trực tiếp `currentSavings` từ client sau khi đã được cập nhật
+    const newCurrentSavings = Math.max(0, currentSavings); // Đảm bảo savings không bị âm
+
+    // 2. Cập nhật lại currentMilestoneData với danh sách tasks mới
+    let currentData = progress.currentMilestoneData as any;
+    if (!currentData || typeof currentData !== 'object') {
+      currentData = {};
+    }
+    currentData.items = tasks;
+    
+    // 3. Lưu tất cả thay đổi trong một lần gọi DB
+    await db.milestoneProgress.update({
+      where: { planId },
+      data: {
+        currentMilestoneData: currentData,
+        currentSavings: newCurrentSavings, // Lưu giá trị mới
+        // Cập nhật lại savingsPercentage dựa trên giá trị mới
+        savingsPercentage: progress.housePriceProjected > 0
+          ? Math.round((newCurrentSavings / progress.housePriceProjected) * 100)
+          : 0,
+      },
+    });
+    
+    console.log(`✅ Synced ${tasks.length} tasks. Savings updated to ${newCurrentSavings} for plan ${planId}`);
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error syncing milestone tasks:", error);
+    throw new Error("Failed to sync milestone tasks to the database.");
+  }
+}
 
 // Hàm helper mới để tìm cột mốc con "current"
 function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
@@ -122,9 +182,18 @@ export async function updateMilestoneProgress(
     // BƯỚC QUAN TRỌNG: Tính toán lại currentMilestoneData từ milestoneGroups đã được cập nhật
     const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups as MilestoneGroup[]);
 
+    // TÍNH TOÁN LẠI TỶ LỆ PHẦN TRĂM TIẾT KIỆM
+    const newSavingsPercentage = progress.housePriceProjected > 0
+      ? Math.round((currentSavings / progress.housePriceProjected) * 100)
+      : 0;
+
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
+        // THÊM 2 DÒNG QUAN TRỌNG DƯỚI ĐÂY
+        currentSavings: currentSavings,
+        savingsPercentage: newSavingsPercentage,
+        
         milestoneGroups: updatedMilestoneGroups, 
         completedMilestones: completedMilestones,
         // Cập nhật trường currentMilestoneData
@@ -416,37 +485,119 @@ export async function updateCustomTaskStatus(
   newStatus: "incomplete" | "completed" | "auto-completed"
 ) {
   try {
+    console.log(`\n--- [${new Date().toISOString()}] ---`);
+    console.log(`[START] updateCustomTaskStatus for planId: ${planId}, taskId: ${taskId}, newStatus: ${newStatus}`);
+
     const progress = await getOrCreateMilestoneProgress(planId);
-    const planPageData = progress.planPageData as any || {};
-    
+    const planPageData = (progress.planPageData as any) || {};
+
     if (!planPageData.customTasks?.[milestoneId]) {
+      console.error("[ERROR] No custom tasks found for milestoneId:", milestoneId);
       throw new Error("No custom tasks found for this milestone");
     }
-    
-    // Tìm và cập nhật task
+
     const tasks = planPageData.customTasks[milestoneId];
     const taskIndex = tasks.findIndex((t: any) => t.id === taskId);
-    
+
     if (taskIndex === -1) {
+      console.error("[ERROR] Task not found with taskId:", taskId);
       throw new Error("Task not found");
     }
-    
+
+    const taskToUpdate = tasks[taskIndex];
+    const oldStatus = taskToUpdate.status;
+    console.log("[INFO] Found task to update:", { id: taskToUpdate.id, text: taskToUpdate.text, amount: taskToUpdate.amount, oldStatus });
+
+    if (oldStatus === newStatus) {
+      console.log("[INFO] Status is unchanged. Exiting.");
+      return { success: true, progress };
+    }
+
+    let amountChange = 0;
+    const taskAmount = taskToUpdate.amount || 0;
+
+    if (newStatus === 'completed' && oldStatus !== 'completed') {
+      amountChange = taskAmount;
+    } else if (newStatus !== 'completed' && oldStatus === 'completed') {
+      amountChange = -taskAmount;
+    }
+    console.log(`[CALC] Task amount: ${taskAmount}, Amount change: ${amountChange}`);
+
     tasks[taskIndex].status = newStatus;
     tasks[taskIndex].updatedAt = new Date().toISOString();
-    
-    // Cập nhật database
+
+    if (amountChange === 0) {
+      console.log("[INFO] No change in savings. Updating task status only.");
+      const updatedProgress = await db.milestoneProgress.update({
+        where: { planId },
+        data: { planPageData },
+      });
+      console.log("[SUCCESS] Only task status updated in DB.");
+      return { success: true, progress: updatedProgress };
+    }
+
+    const initialSavings = progress.currentSavings;
+    const newCurrentSavings = initialSavings + amountChange;
+    const finalCurrentSavings = Math.max(0, newCurrentSavings);
+    console.log(`[CALC] Savings: ${initialSavings} -> ${finalCurrentSavings}`);
+
+    const newSavingsPercentage =
+      progress.housePriceProjected > 0
+        ? Math.round((finalCurrentSavings / progress.housePriceProjected) * 100)
+        : 0;
+
+    // Tính toán lại trạng thái các cột mốc (logic từ hàm updateCurrentSavings)
+    let milestoneGroups = (progress.milestoneGroups as MilestoneGroup[]) || [];
+    let foundCurrent = false;
+    const updatedMilestoneGroups = milestoneGroups.map(group => {
+      const updatedMilestones = group.milestones
+        .map(milestone => {
+          let status: "done" | "current" | "upcoming" = "upcoming";
+          if (finalCurrentSavings >= milestone.amountValue) {
+            status = "done";
+          }
+          return { ...milestone, status };
+        })
+        .sort((a, b) => a.amountValue - b.amountValue);
+
+      const finalMilestones = updatedMilestones.map(milestone => {
+        if (!foundCurrent && milestone.status === "upcoming") {
+          foundCurrent = true;
+          return { ...milestone, status: "current" as const };
+        }
+        return milestone;
+      });
+
+      const allDone = finalMilestones.every(m => m.status === "done");
+      const hasCurrent = finalMilestones.some(m => m.status === "current");
+
+      return {
+        ...group,
+        milestones: finalMilestones,
+        status: allDone ? "done" : hasCurrent ? "current" : "upcoming",
+      };
+    });
+
+    const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups);
+
+    console.log("[DB] Preparing to update database with new savings...");
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
-        planPageData: planPageData,
+        planPageData,
+        currentSavings: finalCurrentSavings,
+        savingsPercentage: newSavingsPercentage,
+        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
+        lastProgressUpdate: new Date(),
       },
     });
-    
-    console.log("✅ Custom task status updated:", { taskId, newStatus });
+    console.log("[SUCCESS] Database updated successfully.");
+
     return { success: true, progress: updatedProgress };
-    
+
   } catch (error) {
-    console.error("Error updating custom task status:", error);
+    console.error("[FATAL ERROR] in updateCustomTaskStatus:", error);
     throw error;
   }
 } 

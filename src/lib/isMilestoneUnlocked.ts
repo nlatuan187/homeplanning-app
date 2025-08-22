@@ -496,7 +496,7 @@ export function getMilestonesByGroup(
 
       // Lãi được tính trên số dư cuối tháng trước
       const monthlyInvestmentReturn =
-        currentSimulatedBalance * monthlyInvestmentRate;
+        Number((currentSimulatedBalance * monthlyInvestmentRate).toFixed(1));
 
       // 3. Tính toán amountValue mới và cập nhật số dư cho tháng sau
       const prevAmountValue = currentSimulatedBalance;
