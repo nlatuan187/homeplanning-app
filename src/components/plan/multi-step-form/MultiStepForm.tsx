@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,9 +24,10 @@ import { Step4_Loan } from "./steps/Step4_Loan";
 
 interface MultiStepFormProps {
   userId: string;
+  plan?: PlanFormState & { id: string }; // Prop to pass existing plan data
 }
 
-export default function MultiStepForm({ userId }: MultiStepFormProps) {
+export default function MultiStepForm({ userId, plan }: MultiStepFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +38,7 @@ export default function MultiStepForm({ userId }: MultiStepFormProps) {
   const form = useForm<PlanFormState>({
     resolver: zodResolver(planSchema),
     mode: "onChange",
-    defaultValues: {
+    defaultValues: plan || { // Use plan data if provided, otherwise use defaults
       yearsToPurchase: 3,
       targetHousePriceN0: 2000,
       pctHouseGrowth: 10.0,
@@ -69,6 +70,13 @@ export default function MultiStepForm({ userId }: MultiStepFormProps) {
       },
     },
   });
+
+  // Reset form with plan data when in edit mode
+  useEffect(() => {
+    if (plan) {
+      form.reset(plan);
+    }
+  }, [plan, form]);
 
   const getFieldsForStep = (step: number): (keyof PlanFormState)[] => {
     switch (step) {
@@ -128,7 +136,8 @@ export default function MultiStepForm({ userId }: MultiStepFormProps) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const payload = { ...data, userId };
+      // Pass planId if it exists (edit mode)
+      const payload = { ...data, userId, planId: plan?.id };
       const result = await submitPlan(payload);
       if (!result.success || !result.planId) {
         throw new Error(result.error || "Failed to process plan");

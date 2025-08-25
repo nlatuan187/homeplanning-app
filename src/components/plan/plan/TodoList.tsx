@@ -246,11 +246,11 @@ export default function TodoList({
               return (
                 <div 
                   key={`item-${index}`} 
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 transition-opacity ${getBorderColor(item.type)} ${getBackgroundColor("incomplete")} ${isProcessing ? 'opacity-50' : 'opacity-100'}`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 transition-opacity cursor-pointer ${getBorderColor(item.type)} ${getBackgroundColor("incomplete")} ${isProcessing ? 'opacity-50' : 'opacity-100'}`}
+                  onClick={() => handleToggleTask(index)}
                 >
                   <div 
-                    className={`w-5 h-5 border-2 border-gray-400 rounded-full cursor-pointer hover:border-gray-300 transition-colors`}
-                    onClick={() => handleToggleTask(index)}
+                    className={`w-5 h-5 border-2 border-gray-400 rounded-full hover:border-gray-300 transition-colors`}
                   ></div>
                   <span className="text-white flex-1">{item.text}</span>
                   {item.amount && (

@@ -224,27 +224,14 @@ export default function PlanPageClient({
     }
   }, [initialMilestoneId]);
 
-  const handlePreviousMilestone = () => {
-    if (currentStep > 1) {
-      setCurrentMilestoneStep(currentStep - 1);
-    } else if (currentMilestoneIndex > 0) {
-      const previousGroup = mainMilestones[currentMilestoneIndex - 1];
-      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${previousGroup.id}`);
-      setCurrentMilestoneStep(previousGroup.milestones.length);
-    }
+  const handleStepClick = (step: number) => {
+    if (!currentMilestone) return;
+    router.push(
+      `/plan/${initialPlan.id}/plan?milestoneId=${currentMilestone.id}&step=${step}`,
+    );
   };
 
-  // Thêm state để track xem có phải đang chuyển từ MilestoneCompleted không
   const [isTransitioningFromCompleted, setIsTransitioningFromCompleted] = useState(false);
-
-  const handleNextMilestone = () => {
-    if (currentStep < totalSteps) {
-      setCurrentMilestoneStep(currentStep + 1);
-    } else if (currentMilestoneIndex < mainMilestones.length - 1) {
-      const nextGroup = mainMilestones[currentMilestoneIndex + 1];
-      router.push(`/plan/${initialPlan.id}/plan?milestoneId=${nextGroup.id}`);
-    }
-  };
 
   const updateCurrentMilestone = (milestone: any) => {
     console.log("🔄 updateCurrentMilestone called with:", milestone);
@@ -578,60 +565,46 @@ export default function PlanPageClient({
   
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      {/* Header với nút swipe */}
-      <header className="container mx-auto max-w-5xl px-4 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-950 z-40 border-b border-slate-800">
-        <Button variant="ghost" size="icon" className="text-white" onClick={() => router.push(`/plan/${initialPlan.id}/roadmap`)}>
-          <ArrowLeft className="h-6 w-6" />
-        </Button>
-        
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white"
-            onClick={handlePreviousMilestone}
-            disabled={currentMilestoneIndex === 0 && currentStep === 1}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold">
-              {currentMilestoneData ? currentMilestoneData.title : "Cột mốc"}
-            </div>
-            <div className="text-[14px] text-gray-400">
-              {currentMilestoneData ? (
-                (() => {
-                  const maxAmountValue = Math.max(...currentMilestoneData.milestones.map(m => m.amountValue));
-                  
-                  if (maxAmountValue != null) {
-                    if (maxAmountValue >= 1000000000) {
-                      return `Tích lũy đạt ${(maxAmountValue / 1000000000).toFixed(1)} tỷ`;
-                    } else if (maxAmountValue >= 1000000) {
-                      return `Tích lũy đạt ${maxAmountValue / 1000000} triệu`;
-                    } else {
-                      return `Tích lũy đạt ${Math.round(maxAmountValue).toLocaleString()}`;
-                    }
-                  } else {
-                    return "Tích lũy đạt mục tiêu";
-                  }
-                })()
-              ) : (
-                "Tích lũy đạt mục tiêu"
-              )}
-            </div>
+      <header className="container mx-auto max-w-5xl px-4 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-950 z-40 border-b border-slate-800 relative">
+        <div className="flex flex-col items-start md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:items-center">
+          <div className="text-2xl font-bold">
+            {currentMilestoneData ? currentMilestoneData.title : "Cột mốc"}
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white"
-            onClick={handleNextMilestone}
-            disabled={currentMilestoneIndex === mainMilestones.length - 1}
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+          <div className="text-[14px] text-gray-400">
+            {currentMilestoneData ? (
+              (() => {
+                const maxAmountValue = Math.max(...currentMilestoneData.milestones.map(m => m.amountValue));
+                
+                if (maxAmountValue != null) {
+                  if (maxAmountValue >= 1000000000) {
+                    return `Tích lũy đạt ${(maxAmountValue / 1000000000).toFixed(1)} tỷ`;
+                  } else if (maxAmountValue >= 1000000) {
+                    return `Tích lũy đạt ${maxAmountValue / 1000000} triệu`;
+                  } else {
+                    return `Tích lũy đạt ${Math.round(maxAmountValue).toLocaleString()}`;
+                  }
+                } else {
+                  return "Tích lũy đạt mục tiêu";
+                }
+              })()
+            ) : (
+              "Tích lũy đạt mục tiêu"
+            )}
+          </div>
         </div>
+
+        {/* Spacer vô hình chỉ hiển thị trên desktop để giữ nút bấm ở bên phải */}
+        <div className="hidden md:block"></div>
+
+        {/* Phần Button ở bên phải */}
+        <Button 
+          variant="outline"
+          size="sm" 
+          className="bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-200 cursor-pointer" 
+          onClick={() => router.push(`/plan/${initialPlan.id}/roadmap`)}
+        >
+          Roadmap
+        </Button>
       </header>
 
       <div className="container mx-auto max-w-5xl px-4">
@@ -640,6 +613,7 @@ export default function PlanPageClient({
             totalSteps={totalSteps} 
             currentStep={currentStep}
             milestones={currentMilestoneData?.milestones || []}
+            onStepClick={handleStepClick}
           />
         </div>
 

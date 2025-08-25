@@ -27,6 +27,18 @@ export async function submitPlan(formData: PlanFormState & { planId?: string; us
       return { success: false, error: "Unauthorized" };
     }
 
+    // Giai đoạn 3: Kiểm tra xem người dùng đã có kế hoạch nào chưa TRƯỚC KHI tạo mới
+    if (!planId) {
+      const existingPlan = await db.plan.findFirst({
+        where: { userId: userId },
+      });
+
+      if (existingPlan) {
+        // Nếu đã có, không cho tạo mới và trả về lỗi
+        return { success: false, error: "User already has a plan." };
+      }
+    }
+
     const { familySupport, paymentMethod, ...restOfPlanData } = planData;
 
     // The payload for the main Plan model should only contain its direct fields.
@@ -119,6 +131,7 @@ export async function submitPlan(formData: PlanFormState & { planId?: string; us
         affordabilityOutcome,
         firstViableYear,
         buffer: targetYearBuffer,
+        confirmedPurchaseYear: plan.yearsToPurchase + new Date().getFullYear(),
         // Invalidate report cache since plan inputs have changed
         reportGeneratedAt: null,
         reportAssetEfficiency: null,

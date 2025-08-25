@@ -230,6 +230,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       pctInvestmentReturn: debouncedInvestmentReturn,
       monthlyLivingExpenses: debouncedMonthlyExpense,
       monthlyOtherIncome: debouncedExtraIncome,
+      buffer: projection?.buffer ?? 0,
     });
   }, [debouncedSalaryGrowth, debouncedInvestmentReturn, debouncedMonthlyExpense, debouncedExtraIncome, plan]);
 
@@ -301,8 +302,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   const tiLeTienCanVay =
     housePriceProjected > 0 ? Math.round((loanAmountNeeded / housePriceProjected) * 100) : 0;
   const soTienCanVay = loanAmountNeeded / 1000;
-  const buffer = projection?.buffer || 0;
-
   const adjustedPlanForChart = {
     ...plan,
     initialSavings: hasEmergencyFund 
@@ -363,7 +362,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
           </div>
           <div className="bg-white text-black rounded-lg shadow px-6 py-4 flex-1 flex flex-col justify-center">
             <h2 className="text-lg font-semibold whitespace-nowrap text-center">
-              {Math.round(buffer ?? 0).toLocaleString()} triệu/tháng
+              {Math.round(projection?.buffer ?? 0).toLocaleString()} triệu/tháng
             </h2>
             <p className="text-sm text-center mt-1">Khoản dư sau khi trả nợ</p>
           </div>

@@ -135,6 +135,7 @@ model MilestoneProgress {
   id                    String   @id @default(cuid())
   planId                String   // Foreign key linking to the Plan model
   plan                  Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  userEmail             String?
   
   // Current progress tracking
   currentSavings        Float    @default(0) // Số tiền tiết kiệm hiện tại (VND)

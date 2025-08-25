@@ -11,9 +11,10 @@ interface MilestoneStepsProps {
     status: "done" | "current" | "upcoming";
     amountValue: number;
   }[];
+  onStepClick: (step: number) => void;
 }
 
-export default function MilestoneSteps({ totalSteps, currentStep, milestones }: MilestoneStepsProps) {
+export default function MilestoneSteps({ totalSteps, currentStep, milestones, onStepClick }: MilestoneStepsProps) {
   return (
     <div className="w-full py-4 px-4">
       {/* Container full width với justify-between */}
@@ -39,11 +40,12 @@ export default function MilestoneSteps({ totalSteps, currentStep, milestones }: 
           return (
             <React.Fragment key={step}>
               <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all
+                className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer hover:scale-110
                   ${isCompleted ? "bg-cyan-500 text-white border-cyan-500" : ""}
                   ${isCurrent ? "text-cyan-500 border-cyan-500" : ""}
                   ${!isCompleted && !isCurrent ? "text-white border-white/50" : ""}
                 `}
+                onClick={() => onStepClick(step)}
               >
                 {isCompleted ? <Check size={28} /> : <span className="text-xl font-semibold">{step}</span>}
               </div>
