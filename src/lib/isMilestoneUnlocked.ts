@@ -190,16 +190,6 @@ function getItemsByGroupId(
         type: "system",
         status: "incomplete",
       },
-      ...(plan.hasCoApplicant
-        ? [
-            {
-              text: `Trích từ tài khoản tiết kiệm hoặc thu nhập hàng tháng ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu để gửi vào tài khoản dự phòng`,
-              type: "system",
-              status: "incomplete",
-              amount: -emergencyFund,
-            },
-          ]
-        : []),
       {
         text: `Chi tiêu gia đình không vượt quá ${monthlyExpenses.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu`,
         type: "system",
@@ -224,7 +214,7 @@ function getItemsByGroupId(
         : []),
       {
         text: `Bỏ ra 1 khoản ${monthlyIncome - monthlyOtherIncome - monthlyExpenses} triệu VNĐ dư ra sau khi chi tiêu từ thu nhập vào khoản tích lũy ban đầu`,
-        type: "system",
+        type: "system", 
         status: "incomplete",
         amount: monthlyInvestmentReturn,
       },
@@ -250,16 +240,6 @@ function getItemsByGroupId(
               type: "system",
               status: "incomplete",
               amount: monthlyOtherIncome,
-            },
-          ]
-        : []),
-      ...(plan.hasCoApplicant
-        ? [
-            {
-              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
-              type: "system",
-              status: "incomplete",
-              amount: -emergencyFund,
             },
           ]
         : []),
@@ -300,16 +280,6 @@ function getItemsByGroupId(
         status: "incomplete",
         amount: monthlyIncome * 0.1,
       },
-      ...(plan.hasCoApplicant
-        ? [
-            {
-              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
-              type: "system",
-              status: "incomplete",
-              amount: -emergencyFund,
-            },
-          ]
-        : []),
       {
         text: "Tìm hiểu tối thiểu sản phẩm của 3 công ty bảo hiểm và so sánh các gói",
         type: "system",
@@ -330,17 +300,7 @@ function getItemsByGroupId(
         type: "system",
         status: "incomplete",
         amount: monthlyInvestmentReturn,
-      },
-      ...(plan.hasCoApplicant
-        ? [
-            {
-              text: `Bổ sung thêm ${emergencyFund.toLocaleString("en-US", { maximumFractionDigits: 0 })} triệu vào quỹ dự phòng để tạo được quỹ dự phòng trị giá 3 tháng chi phí của gia đình`,
-              type: "system",
-              status: "incomplete",
-              amount: -emergencyFund,
-            },
-          ]
-        : []),
+      }
     ],
 
     5: [
@@ -515,6 +475,20 @@ export function getMilestonesByGroup(
         monthlyInvestmentReturn,
         monthlyOtherIncome
       );
+
+      // Thêm các tác vụ cho quỹ dự phòng trong 6 tháng đầu tiên
+      if (plan.hasCoApplicant && cumulativeMonthIndex < 6) {
+        items.push({
+          text: `Bổ sung thêm ${monthlyExpenses.toLocaleString("en-US", {
+            maximumFractionDigits: 0,
+          })} triệu vào quỹ dự phòng cho tháng thứ ${
+            cumulativeMonthIndex + 1
+          }`,
+          type: "emergency_fund",
+          status: "incomplete",
+          amount: monthlyExpenses,
+        });
+      }
 
       // 5. Xác định trạng thái của milestone
       let status: "done" | "current" | "upcoming" = "upcoming";

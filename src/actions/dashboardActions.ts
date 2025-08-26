@@ -16,7 +16,8 @@ export async function getPlansForUser(userId: string): Promise<ExtendedPlan[]> {
   // The "use server" directive at the top of this file ensures this.
   const plans = await db.plan.findMany({
     where: { userId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" }, // Sắp xếp theo ngày cập nhật mới nhất
+    take: 1, // Chỉ lấy 1 kế hoạch duy nhất
     select: {
       // Keep valid fields
       id: true,

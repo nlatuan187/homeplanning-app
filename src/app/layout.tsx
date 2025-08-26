@@ -5,6 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { viVN } from "@clerk/localizations/vi-VN";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserSync } from "@/components/UserSync";
+import { Suspense } from "react";
+import { Analytics } from "@/components/analytics";
 // import { FeedbackButton } from "@/components/feedback-button"; // Removed FeedbackButton import
 
 const inter = Inter({ subsets: ["latin"] });
@@ -23,6 +25,9 @@ export default function RootLayout({
     <ClerkProvider localization={viVN}>
       <html lang="vi" className="dark">
         <body className={inter.className}>
+          <Suspense fallback={null}>
+            <Analytics />
+          </Suspense>
           <TooltipProvider>
             <UserSync />
             {children}

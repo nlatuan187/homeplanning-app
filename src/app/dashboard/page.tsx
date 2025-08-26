@@ -22,6 +22,7 @@ import {
   // SheetTrigger, // Removed as not used globally
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import BottomNavbar from "@/components/layout/BottomNavbar";
 
 // Extended Plan type - this can be removed if `getPlansForUser` return type is sufficient
 // or if we import ExtendedPlan from dashboardActions.ts (if exported there)
@@ -177,6 +178,9 @@ export default function Dashboard() {
   
   const currentYear = new Date().getFullYear();
 
+  // Lấy plan duy nhất để truyền vào Navbar
+  const plan = plans.length > 0 ? plans[0] : null;
+
   const SupportCard = () => (
     <Card 
       className="bg-slate-800 border-slate-700 hover:bg-slate-700/50 transition-colors cursor-pointer"
@@ -197,7 +201,7 @@ export default function Dashboard() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-slate-950 text-slate-100 pb-20">
       <header className="container mx-auto max-w-5xl px-4 pt-8 py-6 flex justify-between items-center sticky top-0 bg-slate-950 z-40 border-b border-slate-800"> {/* Increased py-4 to py-6 */}
         <div className="text-2xl font-bold">Lập kế hoạch mua nhà</div> {/* Increased text-xl to text-2xl */}
         <UserButton afterSignOutUrl="/" />
@@ -217,9 +221,11 @@ export default function Dashboard() {
             <p className="text-slate-300">
               Thiết kế kế hoạch tài chính tổng thể để tìm ra thời điểm mua nhà hợp lý, đồng thời tối ưu số tiền bạn đang có.
             </p>
-            <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-200 font-semibold">
-              <Link href="/plan/new">Tạo kế hoạch mới <ArrowRight className="ml-2 h-5 w-5" /></Link>
-            </Button>
+            {plans.length === 0 && (
+              <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-200 font-semibold">
+                <Link href="/plan/new">Tạo kế hoạch mới <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -229,16 +235,16 @@ export default function Dashboard() {
 
         {plans.length > 0 && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-100">Các kế hoạch đã tạo</h2>
+            <h2 className="text-2xl font-bold text-slate-100">Kế hoạch của bạn</h2>
             <div className="space-y-4">
               {plans.map((plan, index) => {
                 const targetYear = currentYear + plan.yearsToPurchase;
-                let detailLink = `/plan/${plan.id}/results`;
-                if (plan.affordabilityOutcome === "ScenarioB" && plan.confirmedPurchaseYear && plan.reportGeneratedAt) {
-                  detailLink = `/plan/${plan.id}/report`;
-                }
-                const isViable = (plan.affordabilityOutcome === "ScenarioA" && (plan.buffer ?? 0) >= 0) || 
-                                 (plan.affordabilityOutcome === "ScenarioB" && !!plan.firstViableYear);
+                
+                const isViable = (plan.affordabilityOutcome === "ScenarioB" && plan.confirmedPurchaseYear);
+
+                const detailLink = isViable
+                  ? `/plan/${plan.id}/report`
+                  : `/plan/${plan.id}/results`;
 
                 return (
                   <Card key={plan.id} className="bg-slate-900 border-slate-800"> {/* Changed background and border */}
@@ -294,6 +300,7 @@ export default function Dashboard() {
           <SupportSheetContent />
         </SheetContent>
       </Sheet>
+      {plan && <BottomNavbar planId={plan.id}/>}
     </main>
   );
 }

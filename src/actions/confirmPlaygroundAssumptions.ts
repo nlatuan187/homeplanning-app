@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
@@ -32,8 +32,8 @@ export async function confirmPlaygroundAssumptions(
   newAssumptions: z.infer<typeof assumptionSchema>
 ) {
   // 1. Xác thực người dùng
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const user = await currentUser();
+  if (!user) throw new Error("Unauthorized");
 
   // 2. Kiểm tra quyền truy cập plan
   const plan = await db.plan.findUnique({
@@ -41,7 +41,7 @@ export async function confirmPlaygroundAssumptions(
     include: { familySupport: true },
   });
 
-  if (!plan || plan.userId !== userId) {
+  if (!plan || plan.userId !== user.id) {
     throw new Error("Forbidden");
   }
 
@@ -111,6 +111,10 @@ export async function confirmPlaygroundAssumptions(
       currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : null,
       lastMilestoneCalculation: new Date(),
       lastProgressUpdate: new Date(),
+      userEmail:
+        user.emailAddresses.find(
+          (e) => e.id === user.primaryEmailAddressId
+        )?.emailAddress || "",
     },
     create: {
       planId,
@@ -121,6 +125,10 @@ export async function confirmPlaygroundAssumptions(
       currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : null,
       lastMilestoneCalculation: new Date(),
       lastProgressUpdate: new Date(),
+      userEmail:
+        user.emailAddresses.find(
+          (e) => e.id === user.primaryEmailAddressId
+        )?.emailAddress || "",
     },
   });
 

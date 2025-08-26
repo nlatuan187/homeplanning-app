@@ -236,11 +236,11 @@ export default function ReportPage() {
     <main className="min-h-screen bg-black text-white">
       {/* Top Navigation Bar (Back, Edit) - Constrained Width, Sticky */}
       <header className="container mx-auto max-w-5xl px-4 py-3 flex justify-between items-center sticky top-0 bg-black z-40">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${planId}/financial-peace`)} className="text-slate-300 hover:text-white">
-          <ArrowLeft className="h-6 w-6" />
+        <Button variant="outline" onClick={() => router.push(`/dashboard`)} className="text-slate-300 hover:text-white cursor-pointer">
+          Trở lại dashboard
         </Button>
         {/* Title removed from here */}
-        <Button variant="ghost" size="icon" onClick={handleEditPlan} disabled={isEditingPlan} className="text-slate-300 hover:text-white">
+        <Button variant="ghost" size="icon" onClick={handleEditPlan} disabled={isEditingPlan} className="text-slate-300 hover:text-white cursor-pointer">
           {isEditingPlan ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-slate-300"></div> : <Edit3 className="h-5 w-5" />}
         </Button>
       </header>
