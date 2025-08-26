@@ -181,7 +181,7 @@ export default function TodoList({
     const newStatus = currentItem.status === 'completed' ? 'incomplete' : 'completed';
 
     // Cập nhật savings ở client ngay lập tức
-    if (onSavingsUpdate && currentItem.amount) {
+    if (onSavingsUpdate && currentItem.amount && currentItem.type !== "emergency_fund") {
       const amountToUpdate = newStatus === 'completed' ? currentItem.amount : -currentItem.amount;
       onSavingsUpdate(amountToUpdate);
     }
