@@ -51,7 +51,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
   // 1. Khởi tạo log từ DB thông qua `initialPlan`
   // Giờ đây, database là "nguồn chân lý" cho log.
   const [interactionLog, setInteractionLog] = useState<InteractionLogEntry[]>(
-    () => (initialPlan.playgroundInteractionLog as InteractionLogEntry[]) || []
+    () => (initialPlan.history?.interactionLog as InteractionLogEntry[]) || []
   );
 
   // Ref này vẫn hữu ích để lưu các giá trị ban đầu cho log 'interaction_start'

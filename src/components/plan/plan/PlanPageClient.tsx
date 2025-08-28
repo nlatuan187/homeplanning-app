@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plan, MilestoneProgress } from "@prisma/client";
+import { Plan, MilestoneProgress, PlanRoadmap } from "@prisma/client";
 import { MilestoneGroup as OriginalMilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, ChevronsUpDown, Lock, Check } from "lucide-react";
@@ -13,26 +13,19 @@ import MilestoneCompleted from "./MilestoneCompleted";
 import AddCashflowModal from "./AddCashflowModal";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { updatePlanProgress } from "@/actions/updatePlanProgress";
-import { updateCurrentSavings, updateMilestoneProgress, syncMilestoneTasks } from "@/actions/milestoneProgress";
+import { updateCurrentSavings, updateMilestoneProgress, syncMilestoneTasks, TaskItem } from "@/actions/milestoneProgress";
 
 
 // =================================================================
 // SỬA LỖI 1: HOÀN THIỆN TYPE DEFINITION
 // Bổ sung các kiểu dữ liệu chi tiết hơn để code hiểu rõ cấu trúc
 // =================================================================
-interface SubMilestoneItem {
-  id: string; // Thêm ID để định danh task
-  text: string;
-  type: string;
-  status: "incomplete" | "completed" | "auto-completed";
-  amount?: number;
-}
 
 interface SubMilestone {
   groupId: number;
   status: "done" | "current" | "upcoming";
   amountValue: number;
-  items: SubMilestoneItem[];
+  items: TaskItem[];
   monthlySurplus: number; // Thêm trường dữ liệu surplus
 }
 
@@ -42,27 +35,31 @@ interface MilestoneGroup extends OriginalMilestoneGroup {
 }
 
 
-type PlanWithMilestoneProgress = Plan & {
+type PlanWithDetails = Plan & {
   milestoneProgress?: MilestoneProgress | null;
+  planRoadmap?: PlanRoadmap | null;
 };
 
 export default function PlanPageClient({ 
   initialPlan, 
   initialMilestoneId, 
-  initialStep
+  initialStep,
+  initialProgress,
+  initialRoadmap,
 }: { 
-  initialPlan: PlanWithMilestoneProgress;
+  initialPlan: PlanWithDetails;
   initialMilestoneId?: number;
   initialStep?: number;
+  initialProgress: MilestoneProgress | null;
+  initialRoadmap: PlanRoadmap | null;
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [showMilestoneCompleted, setShowMilestoneCompleted] = useState(false);
   const [justCompletedMilestoneId, setJustCompletedMilestoneId] = useState<number | null>(null);
 
-  const [milestoneProgress, setMilestoneProgress] = useState<MilestoneProgress | null>(
-    initialPlan.milestoneProgress || null 
-  );
+  const [progress, setProgress] = useState<MilestoneProgress | null>(initialProgress);
+  const [roadmap, setRoadmap] = useState<PlanRoadmap | null>(initialRoadmap);
   
   // =================================================================
   // SỬA LỖI 2: SẮP XẾP LẠI THỨ TỰ KHAI BÁO
@@ -84,25 +81,25 @@ export default function PlanPageClient({
   // =================================================================
   // BƯỚC 2: TẠO HÀM MỚI ĐỂ GỬI CẢ TASKS VÀ SAVINGS LÊN SERVER
   // =================================================================
-  const handleProgressUpdate = useCallback(async (tasks: SubMilestoneItem[]) => {
+  const handleProgressUpdate = useCallback(async (tasks: TaskItem[]) => {
     // Lấy giá trị savings mới nhất từ state của component
-    const latestSavings = milestoneProgress?.currentSavings ?? 0;
+    const latestSavings = progress?.currentSavings ?? 0;
     
     // Gọi server action với đầy đủ các tham số cần thiết
     return syncMilestoneTasks(initialPlan.id, tasks, latestSavings);
-  }, [initialPlan.id, milestoneProgress?.currentSavings]); // Dependencies để đảm bảo hàm được tạo lại khi giá trị thay đổi
+  }, [initialPlan.id, progress?.currentSavings]); // Dependencies để đảm bảo hàm được tạo lại khi giá trị thay đổi
 
 
   // SỬA: THÊM STATE MỚI ĐỂ LÀM "TÍN HIỆU"
   // const [justCompletedIdentifier, setJustCompletedIdentifier] = useState<string | null>(null);
 
   const milestoneGroups: MilestoneGroup[] = useMemo(() => {
-    return milestoneProgress?.milestoneGroups
-      ? (typeof milestoneProgress?.milestoneGroups === 'string'
-        ? JSON.parse(milestoneProgress.milestoneGroups)
-        : milestoneProgress.milestoneGroups)
+    return roadmap?.milestoneGroups
+      ? (typeof roadmap?.milestoneGroups === 'string'
+        ? JSON.parse(roadmap.milestoneGroups)
+        : (roadmap.milestoneGroups as any))
       : [];
-  }, [milestoneProgress?.milestoneGroups]);
+  }, [roadmap?.milestoneGroups]);
   // Các `useMemo` giờ sẽ được tính toán theo đúng thứ tự phụ thuộc
   const mainMilestones = useMemo(() => {
     return milestoneGroups.map(group => ({
@@ -112,8 +109,6 @@ export default function PlanPageClient({
       milestones: group.milestones,
     })).sort((a, b) => a.id - b.id);
   }, [milestoneGroups]);
-
-  
 
   const currentMilestone = useMemo(() => {
     if (initialMilestoneId) {
@@ -139,17 +134,17 @@ export default function PlanPageClient({
       ? (initialPlan.initialSavings || 0)
       : Math.max(...(mainMilestones[currentMilestoneIndex - 1]?.milestones.map(m => m.amountValue) || [0]));
 
-    const progress = milestoneProgress?.currentSavings || 0;
+    const currentSavings = progress?.currentSavings || 0;
     const min = lastDoneAmountValue;
     const max = Math.max(...currentMilestone.milestones.map(m => m.amountValue));
-    const progressPercent = max > min ? Math.round(((progress - min) / (max - min)) * 100) : 0;
+    const progressPercent = max > min ? Math.round(((currentSavings - min) / (max - min)) * 100) : 0;
 
     return {
       ...currentMilestone,
       lastDoneAmountValue,
       progress: Math.max(0, Math.min(100, progressPercent)),
     };
-  }, [currentMilestone, currentMilestoneIndex, mainMilestones, initialPlan.initialSavings, milestoneProgress?.currentSavings]);
+  }, [currentMilestone, currentMilestoneIndex, mainMilestones, initialPlan.initialSavings, progress?.currentSavings]);
 
   const currentMilestoneInGroup = useMemo(() => {
     if (!currentMilestoneData?.milestones) return null;
@@ -170,14 +165,14 @@ export default function PlanPageClient({
     // Kiểm tra xem có dữ liệu tiến trình hợp lệ đã được lưu trong DB không
     const hasPersistentData = 
       isTheActualCurrentMilestone &&
-      milestoneProgress?.currentMilestoneData &&
-      typeof milestoneProgress.currentMilestoneData === 'object' &&
-      'items' in (milestoneProgress.currentMilestoneData as object) &&
-      Array.isArray((milestoneProgress.currentMilestoneData as any).items);
+      roadmap?.currentMilestoneData &&
+      typeof roadmap.currentMilestoneData === 'object' &&
+      'items' in (roadmap.currentMilestoneData as object) &&
+      Array.isArray((roadmap.currentMilestoneData as any).items);
 
     // Quyết định nguồn dữ liệu cho danh sách công việc
     const sourceItems = hasPersistentData
-      ? (milestoneProgress.currentMilestoneData as any).items
+      ? (roadmap.currentMilestoneData as any).items
       : currentMilestoneInGroup.items;
 
     // QUAN TRỌNG: Đảm bảo mỗi công việc có một ID duy nhất và ổn định 
@@ -193,7 +188,7 @@ export default function PlanPageClient({
       ...currentMilestoneInGroup,
       items: itemsWithIds,
     };
-  }, [currentMilestoneInGroup, milestoneProgress?.currentMilestoneData, currentStep]);
+  }, [currentMilestoneInGroup, roadmap?.currentMilestoneData, currentStep]);
 
 
   const isCurrentMilestoneDone = false; // Placeholder
@@ -250,7 +245,7 @@ export default function PlanPageClient({
       title: milestone.title,
       status: milestone.status,
       milestones: milestone.milestones,
-      currentSavings: milestoneProgress?.currentSavings || 0,
+      currentSavings: progress?.currentSavings || 0,
       lastDoneAmountValue: lastDoneAmountValue,
       progress: 0, // Sẽ được tính toán lại
     };
@@ -258,9 +253,9 @@ export default function PlanPageClient({
     console.log("🔄 New milestone data:", newMilestoneData);
 
     // Cập nhật local state
-    setMilestoneProgress(prev => prev ? {
+    setRoadmap(prev => prev ? {
       ...prev,
-      currentMilestoneData: newMilestoneData,
+      currentMilestoneData: newMilestoneData as any,
     } : null);
     
     // Reset milestone con về bước đầu tiên
@@ -306,7 +301,7 @@ export default function PlanPageClient({
     const subMilestoneIndexOfCurrent = currentStep - 1;
     const subMilestoneCurrent = currentMilestoneInGroup;
     const allMilestoneGroups = milestoneGroups;
-    const currentSavingsValue = milestoneProgress?.currentSavings || 0;
+    const currentSavingsValue = progress?.currentSavings || 0;
 
     if (!groupOfCurrentMilestone || subMilestoneIndexOfCurrent < 0 || !subMilestoneCurrent) return;
 
@@ -349,7 +344,7 @@ export default function PlanPageClient({
     });
     
     try {
-      const updatedProgressFromServer = await updateMilestoneProgress(
+      const { updatedProgress, updatedRoadmap } = await updateMilestoneProgress(
         initialPlan.id,
         milestoneIdentifier,
         true,
@@ -359,7 +354,8 @@ export default function PlanPageClient({
         newGroups
       );
 
-      setMilestoneProgress(updatedProgressFromServer);
+      setProgress(updatedProgress);
+      setRoadmap(updatedRoadmap);
 
       if (nextMilestone) {
         if (nextMilestone.groupId === groupOfCurrentMilestone.id) {
@@ -417,13 +413,8 @@ export default function PlanPageClient({
 
   console.log("currentMilestoneInGroup?.monthlySurplus", currentMilestoneInGroup?.monthlySurplus);
 
-
-  const handleGoToRoadmap = () => {
-    router.push(`/plan/${initialPlan.id}/roadmap`);
-  };
-
   const updateMilestoneStatusesBasedOnCurrentSavings = () => {
-    const currentSavings = milestoneProgress?.currentSavings || 0;
+    const currentSavings = progress?.currentSavings || 0;
     
     const updatedMilestoneGroups = milestoneGroups.map(group => {
       const updatedMilestones = group.milestones.map(milestone => {
@@ -462,9 +453,9 @@ export default function PlanPageClient({
       };
     });
 
-    setMilestoneProgress(prev => prev ? {
+    setRoadmap(prev => prev ? {
       ...prev,
-      milestoneGroups: updatedMilestoneGroups,
+      milestoneGroups: updatedMilestoneGroups as any,
     } : null);
     
     console.log("✅ Updated milestone statuses based on currentSavings:", currentSavings);
@@ -541,7 +532,7 @@ export default function PlanPageClient({
                 });
                 
                 // Cập nhật local state
-                setMilestoneProgress(prev => prev ? {
+                setRoadmap(prev => prev ? {
                   ...prev,
                   milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
                 } : null);
@@ -596,7 +587,6 @@ export default function PlanPageClient({
         {/* Spacer vô hình chỉ hiển thị trên desktop để giữ nút bấm ở bên phải */}
         <div className="hidden md:block"></div>
 
-        {/* Phần Button ở bên phải */}
         <Button 
           variant="outline"
           size="sm" 
@@ -620,7 +610,7 @@ export default function PlanPageClient({
         {/* Accumulation Progress */}
         <div className="mb-4">
           <AccumulationProgress 
-            current={milestoneProgress?.currentSavings ?? 0}
+            current={progress?.currentSavings ?? 0}
             min={progressBarValues.min}
             max={progressBarValues.max}
           />
@@ -646,7 +636,7 @@ export default function PlanPageClient({
             // onTaskStatusChange không còn cần thiết
             onSavingsUpdate={(amount) => {
               // Hàm này bây giờ chỉ cập nhật state ở client để UI phản hồi ngay
-              setMilestoneProgress(prev => {
+              setProgress(prev => {
                 if (!prev) return null;
                 return {
                   ...prev,

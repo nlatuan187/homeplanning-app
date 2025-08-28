@@ -1,19 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import MilestoneTimeline from "@/components/plan/roadmap/MilestoneTimeline";
-import { Plan } from "@prisma/client";
+import { Plan, MilestoneProgress } from "@prisma/client";
 import { UserButton } from "@clerk/nextjs";
 import BottomNavbar from "@/components/layout/BottomNavbar";
+import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 
 interface RoadmapClientProps {
   plan: Plan;
   savingsPercentage: number;
   housePriceProjected: number;
   cumulativeGoal: number;
+  milestoneGroups: MilestoneGroup[];
+  currentSavings: number;
 }
 
 export default function RoadmapClient({
@@ -21,17 +24,20 @@ export default function RoadmapClient({
   savingsPercentage,
   housePriceProjected,
   cumulativeGoal,
+  milestoneGroups,
+  currentSavings,
 }: RoadmapClientProps) {
   const router = useRouter();
   
   const [progressPercentage, setProgressPercentage] = useState(savingsPercentage);
+  const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
 
   return (
     <>
       <main className="min-h-screen bg-slate-950 text-white md:p-4 pb-20">
         <div className="container mx-auto max-w-5xl">
           <div className="font-sans">
-            <div className="sticky top-0 z-50 bg-black pb-2">
+            <div className="sticky top-0 z-50 pb-2">
               <header className="px-4 py-3 flex items-center justify-center relative">
                 <Button
                   variant="ghost"
@@ -55,7 +61,7 @@ export default function RoadmapClient({
                   <li>
                     Thời gian mua:{" "}
                     <span className="font-semibold">
-                      Tháng {plan.createdAt.getMonth() + 1}/{plan.confirmedPurchaseYear}
+                      Tháng {new Date(plan.createdAt).getMonth() + 1}/{purchaseYear}
                     </span>
                   </li>
                   <li>
@@ -98,7 +104,11 @@ export default function RoadmapClient({
             </div>
 
             <div className="bottom-0 inset-x-0 z-50 px-4 mb-2">
-              <MilestoneTimeline plan={plan}/>
+              <MilestoneTimeline 
+                plan={plan} 
+                milestoneGroups={milestoneGroups} 
+                currentSavings={currentSavings} 
+              />
             </div>
 
             <div className="bottom-0 inset-x-0 z-50 px-4 mb-10 pb-5">

@@ -2,8 +2,10 @@ import React from "react";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import RoadmapClient from "@/components/plan/roadmap/RoadmapClient";
+import { getOrCreateFullMilestoneData } from "@/actions/milestoneProgress";
+import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
-import RoadmapClient from "../../../../components/plan/roadmap/RoadmapClient";
 
 export default async function RoadmapPage({
   params,
@@ -17,22 +19,30 @@ export default async function RoadmapPage({
 
   const plan = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
-    include: { 
-      familySupport: true,
-      milestoneProgress: true 
-    },
+    include: { familySupport: true },
   });
 
   if (!plan) {
     redirect("/dashboard");
   }
   
-  // Sử dụng dữ liệu từ milestoneProgress nếu có
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId);
+
+  if (!progress || !roadmap) {
+    // Xử lý trường hợp không tìm thấy dữ liệu tiến trình
+    return <div>Không thể tải dữ liệu lộ trình.</div>;
+  }
+  
+  // Tính toán các giá trị cần thiết
+  const housePriceProjected = progress.housePriceProjected;
   const projections = generateProjections(plan);
-  const currentProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
-  const housePriceProjected = (plan.milestoneProgress?.housePriceProjected || 0);
-  const cumulativeGoal = housePriceProjected - currentProjection.loanAmountNeeded;
-  const savingsPercentage = Math.round(((plan.milestoneProgress?.currentSavings || 0) / cumulativeGoal) * 100);
+  const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
+  const purchaseProjection = projections.find(p => p.year === purchaseYear) || projections[0];
+  const cumulativeGoal = housePriceProjected - purchaseProjection.loanAmountNeeded;
+  const savingsPercentage = cumulativeGoal > 0 ? Math.round((progress.currentSavings / cumulativeGoal) * 100) : 0;
+  
+  // Lấy và xử lý milestoneGroups
+  const milestoneGroups = roadmap.milestoneGroups as unknown as MilestoneGroup[] || [];
 
   return (
     <RoadmapClient 
@@ -40,6 +50,8 @@ export default async function RoadmapPage({
       savingsPercentage={savingsPercentage}
       housePriceProjected={housePriceProjected}
       cumulativeGoal={cumulativeGoal}
+      milestoneGroups={milestoneGroups}
+      currentSavings={progress.currentSavings}
     />
   );
 }

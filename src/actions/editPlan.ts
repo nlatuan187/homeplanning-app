@@ -44,7 +44,7 @@ export async function editPlan(planId: string, redirectPath?: string, startSecti
     const currentPlanData = { ...plan };
     
     // Get only revisionHistory and revisionCount for updating
-    const existingHistoryData = await db.plan.findUnique({
+    const existingHistoryData = await db.planHistory.findUnique({
       where: { id: planId },
       select: { revisionHistory: true, revisionCount: true }
     });
@@ -72,21 +72,32 @@ export async function editPlan(planId: string, redirectPath?: string, startSecti
         id: planId,
       },
       data: {
-        revisionHistory: newRevisionHistory as unknown as Prisma.InputJsonValue, // Cast to Prisma.InputJsonValue
-        revisionCount: (existingHistoryData?.revisionCount || 0) + 1,
-        // Invalidate report cache as an edit is being initiated
-        reportGeneratedAt: null,
-        reportAssetEfficiency: null,
-        reportCapitalStructure: null,
-        reportSpendingPlan: null,
-        reportInsurance: null,
-        reportBackupPlans: null,
         // Also clear confirmed purchase year and affordability results as they might become stale
         confirmedPurchaseYear: null,
         affordabilityOutcome: null,
         firstViableYear: null,
         buffer: null,
       } as Prisma.PlanUpdateInput,
+    });
+
+    await db.planHistory.update({
+      where: { planId: planId },
+      data: {
+        revisionCount: (existingHistoryData?.revisionCount || 0) + 1,
+        revisionHistory: newRevisionHistory as unknown as Prisma.InputJsonValue, // Cast to Prisma.InputJsonValue
+      }
+    });
+
+    await db.planReport.update({
+      where: { planId: planId },
+      data: {
+        generatedAt: null,
+        assetEfficiency: null,
+        capitalStructure: null,
+        spendingPlan: null,
+        insurance: null,
+        backupPlans: null,
+      }
     });
 
     // Redirect to the specified path or default to the plan form

@@ -6,115 +6,97 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // Connection string from environment variable
+  url      = env("DATABASE_URL")
 }
 
-// User model linked to Clerk userId
 model User {
-  id        String   @id @unique // Clerk User ID
-  email     String   @unique   // Store email for reference/potential future use
+  id        String   @id @unique
+  email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  plans     Plan[]   // Relation to user's plans
-  feedback  Feedback[] // Relation to user's feedback
+  plans     Plan[]
+  feedback  Feedback[]
 }
 
-// Represents user feedback
 model Feedback {
   id        String   @id @default(cuid())
   content   String   @db.Text
-  userId    String   // Foreign key linking to the User model (Clerk ID)
-  userEmail String?  // Store email for reference
+  userId    String
+  userEmail String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Represents a single financial plan created by a user
+// BẢNG PLAN ĐÃ ĐƯỢC LÀM GỌN
 model Plan {
-  id        String   @id @default(cuid()) // Unique plan identifier
-  userId    String   // Foreign key linking to the User model (Clerk ID)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Define the relation
-
-  planName  String?  // Optional name for the plan (e.g., "My First Apartment Plan")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planName    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Page 1: Goal Inputs
   yearsToPurchase    Int     @default(3)
-  targetHousePriceN0 Float   // Current price of the target house
-  targetHouseType    String? // "Chung cư", "Nhà đất", "Khác"
+  targetHousePriceN0 Float
+  targetHouseType    String?
   targetLocation     String?
-  pctHouseGrowth     Float   @default(10.0) // Assumption: Annual house price growth rate (%)
 
   // Page 2: Income Inputs
   userMonthlyIncome         Float    @default(0)
   hasCoApplicant            Boolean  @default(false)
-  coApplicantMonthlyIncome  Float?   // Co-applicant's monthly salary
-  monthlyOtherIncome        Float    @default(0) // Other monthly income for the family/user
-  pctSalaryGrowth           Float    @default(7.0)  // Assumption: User's annual salary growth rate (%)
-  coApplicantSalaryGrowth   Float?   // Assumption: Co-applicant's annual salary growth rate (%), defaults to user's if null
+  coApplicantMonthlyIncome  Float?
+
+  pctSalaryGrowth           Float    @default(7.0)
+  coApplicantSalaryGrowth   Float?
 
   // Page 3: Spending & Savings Inputs
+  monthlyOtherIncome            Float   @default(0)
   monthlyLivingExpenses         Float
-  monthlyNonHousingDebt         Float   @default(0) // Monthly payments for other debts
-  currentAnnualInsurancePremium Float   @default(0) // Annual life insurance premium
-  initialSavings                Float    @default(0)
-  pctExpenseGrowth              Float   @default(4.0)  // Assumption: Annual expense growth rate / inflation (%)
-  pctInvestmentReturn           Float   @default(9.0)  // Assumption: Annual return rate on investments (%)
+  monthlyNonHousingDebt         Float   @default(0)
+  currentAnnualInsurancePremium Float   @default(0)
+
+  initialSavings                Float   @default(0)
+  pctHouseGrowth                Float   @default(10.0)
+  pctExpenseGrowth              Float   @default(4.0)
+  pctInvestmentReturn           Float   @default(9.0)
 
   // Page 4: Loan & Support Inputs
-  loanInterestRate              Float?    @default(11.0) // Assumption: Mortgage interest rate (%)
-  loanTermYears                 Int?      @default(25)
+  loanInterestRate              Float?   @default(11.0)
+  loanTermYears                 Int?     @default(25)
   paymentMethod                 String   @default("fixed")
   
-  // Relation to the detailed FamilySupport model
-  familySupport                 FamilySupport?
-
   // --- Store the RESULT of the plan ---
-  affordabilityOutcome String? // "ScenarioA", "ScenarioB"
-  firstViableYear      Int?    // The actual year (e.g., 2027), null if ScenarioA
-  confirmedPurchaseYear Int?   // The year user selected after comparison, null initially or if ScenarioA
-
-  // --- Report caching fields ---
-  reportGeneratedAt      DateTime? 
-  reportAssetEfficiency  String?   @db.Text
-  reportCapitalStructure String?   @db.Text
-  reportSpendingPlan     String?   @db.Text
-  reportInsurance        String?   @db.Text
-  reportBackupPlans      String?   @db.Text
-
-  // --- Fields for plan editing and tracking ---
-  revisionCount          Int       @default(0)
-  revisionHistory        Json?
+  affordabilityOutcome String?
+  firstViableYear      Int?
+  confirmedPurchaseYear Int?
+  
   userEmail              String?
   buffer                 Float?
-  playgroundInteractionLog Json?
-  // Note: We are NOT storing the full ProjectionDataTable here for MVP to save space.
-  // It will be recalculated when the plan is viewed.
 
-  // Relations to new models
-  milestoneProgress     MilestoneProgress?
+  // --- QUAN HỆ ---
+  familySupport     FamilySupport?
+  milestoneProgress MilestoneProgress?
+  report            PlanReport?
+  history           PlanHistory?
+  roadmap           PlanRoadmap? // Thêm quan hệ này để dễ truy vấn
 }
 
-// Model to hold detailed information about family support
 model FamilySupport {
   id                      String                   @id @default(cuid())
   planId                  String                   @unique
   plan                    Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  
   hasFamilySupport        Boolean                  @default(false)
   familySupportType       FamilySupportType?
   familySupportAmount     Float?
   familyGiftTiming        FamilyGiftTiming?
   familyLoanRepaymentType FamilyLoanRepaymentType?
   familyLoanInterestRate  Float?
-  familyLoanTermYears     Int?      // The term in years for repaying the family loan
+  familyLoanTermYears     Int?
 }
 
-// Enums for strongly-typed categories
+// SỬA LẠI CÁC KHỐI ENUM Ở ĐÂY
 enum FamilySupportType {
   GIFT
   LOAN
@@ -130,37 +112,54 @@ enum FamilyLoanRepaymentType {
   LUMP_SUM
 }
 
-// Model để lưu trữ milestone progress và roadmap data
+// BẢNG MỚI CHO REPORT
+model PlanReport {
+  id        String   @id @default(cuid())
+  planId    String   @unique
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  generatedAt      DateTime?
+  assetEfficiency  String?   @db.Text
+  capitalStructure String?   @db.Text
+  spendingPlan     String?   @db.Text
+  insurance        String?   @db.Text
+  backupPlans      String?   @db.Text
+}
+
+// BẢNG MỚI CHO HISTORY
+model PlanHistory {
+  id               String @id @default(cuid())
+  planId           String @unique
+  plan             Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  revisionCount    Int    @default(0)
+  revisionHistory  Json?
+  interactionLog   Json?
+}
+
+// BẢNG MILESTONEPROGRESS ĐÃ ĐƯỢC LÀM GỌN
 model MilestoneProgress {
   id                    String   @id @default(cuid())
-  planId                String   // Foreign key linking to the Plan model
+  planId                String   @unique
   plan                  Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
   userEmail             String?
-  
-  // Current progress tracking
-  currentSavings        Float    @default(0) // Số tiền tiết kiệm hiện tại (VND)
-  selectedMilestoneId   Int      @default(1) // ID của milestone đang được chọn
-  totalCompletedMilestones Int   @default(0) // Tổng số milestone đã hoàn thành
-  
-  // Calculated values for roadmap
-  savingsPercentage     Float    @default(0) // Phần trăm tiết kiệm so với mục tiêu
-  housePriceProjected   Float    @default(0) // Giá nhà dự kiến tại thời điểm mua
-  
-  // Milestone data (JSON để lưu trữ linh hoạt)
-  milestoneGroups       Json?    // Cấu trúc milestone groups đã tính toán
-  currentMilestoneData  Json?    // Dữ liệu milestone hiện tại
-  completedMilestones   Json?    // Danh sách các milestone đã hoàn thành
-  
-  // Plan page specific data
-  planPageData          Json?    // Dữ liệu cho trang plan (current step, progress, etc.)
-  
-  // Timestamps for tracking
+  currentSavings        Float    @default(0)
+  selectedMilestoneId   Int      @default(1)
+  totalCompletedMilestones Int   @default(0)
+  savingsPercentage     Float    @default(0)
+  housePriceProjected   Float    @default(0)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  lastProgressUpdate    DateTime? // Thời điểm cập nhật progress cuối cùng
-  lastMilestoneCalculation DateTime? // Thời điểm tính toán milestone cuối cùng
-  
-  // Index để tối ưu query
+  lastProgressUpdate    DateTime?
+  lastMilestoneCalculation DateTime?
   @@index([planId])
-  @@unique([planId]) // Đảm bảo mỗi plan chỉ có 1 record progress
+}
+
+// BẢNG MỚI CHO ROADMAP
+model PlanRoadmap {
+  id                   String   @id @default(cuid())
+  planId               String   @unique
+  plan                 Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  milestoneGroups      Json?
+  currentMilestoneData Json?
+  completedMilestones  Json?
+  planPageData         Json?
 }

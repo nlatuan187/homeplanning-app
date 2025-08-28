@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import PlanPageClient from "@/components/plan/plan/PlanPageClient";
+import { getOrCreateFullMilestoneData } from "@/actions/milestoneProgress";
 
 export default async function PlanPage({
   params,
@@ -15,11 +16,11 @@ export default async function PlanPage({
     redirect("/sign-in");
   }
 
+  // Lấy dữ liệu plan gốc
   const planData = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
     include: { 
       familySupport: true,
-      milestoneProgress: true 
     },
   });
 
@@ -27,6 +28,9 @@ export default async function PlanPage({
     redirect("/dashboard");
   }
    
+  // Lấy dữ liệu progress và roadmap
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId);
+
   const initialMilestoneId = searchParams.milestoneId 
     ? parseInt(searchParams.milestoneId) 
     : undefined;
@@ -41,6 +45,8 @@ export default async function PlanPage({
       initialPlan={planData} 
       initialMilestoneId={initialMilestoneId}
       initialStep={initialStep} // Truyền `initialStep` vào props
+      initialProgress={progress}
+      initialRoadmap={roadmap}
     />
   );
 } 
