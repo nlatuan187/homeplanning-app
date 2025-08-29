@@ -57,12 +57,35 @@ export default function ReportPage() {
     let initialOverlayStateSet = false;
 
     const fetchReportData = async () => {
+      // Check for cached data in sessionStorage
+      const cachedReport = sessionStorage.getItem(`report_${planId}`);
+      if (cachedReport) {
+        try {
+          const data = JSON.parse(cachedReport);
+          // Basic validation to ensure cached object is what we expect
+          if (data.plan && data.reportSections && data.projectionData && data.confirmedYearData && data.loanSummary) {
+            console.log("Đang tải báo cáo từ bộ nhớ đệm của trình duyệt (sessionStorage).");
+            setPlan(data.plan);
+            setReportSections(data.reportSections);
+            setProjectionData(data.projectionData);
+            setConfirmedYearData(data.confirmedYearData);
+            setLoanSummary(data.loanSummary);
+            setIsLoadingReport(false);
+            setShowLoadingOverlay(false);
+            return; // Data loaded from cache, no need to fetch
+          }
+        } catch (e) {
+          console.error("Không thể phân tích báo cáo đã lưu, sẽ tải lại từ máy chủ.", e);
+          sessionStorage.removeItem(`report_${planId}`); // Clear invalid cache
+        }
+      }
+      
       // Don't set isLoadingReport true here yet, let cache check decide overlay
       try {
         // First, check cache status to decide if loading animation is needed
         if (!initialOverlayStateSet) {
           const cacheStatusResult = await checkReportCacheStatus(planId);
-          if (cacheStatusResult.planExists && cacheStatusResult.cacheIsValid) {
+          if (cacheStatusResult.isCacheValid) {
             setShowLoadingOverlay(false); // Valid cache, no loading animation
             setIsLoadingReport(false); // Data will load quickly from cache via generateFinalReport
           } else {
@@ -85,13 +108,6 @@ export default function ReportPage() {
 
         if (result.success) {
           const successResult = result as typeof result & { plan?: Plan; projectionData?: ProjectionRow[]; confirmedYearData?: ProjectionRow; loanSummary?: LoanSummary; reportSections?: ReportSections };
-          
-          // Log individual properties before the check
-          console.log("Checking successResult.plan:", successResult.plan);
-          console.log("Checking successResult.projectionData:", successResult.projectionData);
-          console.log("Checking successResult.confirmedYearData:", successResult.confirmedYearData);
-          console.log("Checking successResult.loanSummary:", successResult.loanSummary);
-          console.log("Checking successResult.reportSections:", successResult.reportSections);
 
           if (successResult.plan && successResult.projectionData && successResult.confirmedYearData && successResult.loanSummary && successResult.reportSections) {
             setPlan(successResult.plan);
@@ -99,6 +115,21 @@ export default function ReportPage() {
             setConfirmedYearData(successResult.confirmedYearData);
             setLoanSummary(successResult.loanSummary);
             setReportSections(successResult.reportSections);
+
+            // Cache the successful result in sessionStorage
+            const dataToCache = {
+                plan: successResult.plan,
+                projectionData: successResult.projectionData,
+                confirmedYearData: successResult.confirmedYearData,
+                loanSummary: successResult.loanSummary,
+                reportSections: successResult.reportSections,
+            };
+            try {
+                sessionStorage.setItem(`report_${planId}`, JSON.stringify(dataToCache));
+                console.log("Đã lưu báo cáo vào bộ nhớ đệm của trình duyệt (sessionStorage).");
+            } catch (e) {
+                console.error("Không thể lưu báo cáo vào sessionStorage:", e);
+            }
           } else {
             throw new Error("Dữ liệu báo cáo không đầy đủ từ server.");
           }
@@ -236,10 +267,9 @@ export default function ReportPage() {
     <main className="min-h-screen bg-black text-white">
       {/* Top Navigation Bar (Back, Edit) - Constrained Width, Sticky */}
       <header className="container mx-auto max-w-5xl px-4 py-3 flex justify-between items-center sticky top-0 bg-black z-40">
-        <Button variant="outline" onClick={() => router.push(`/dashboard`)} className="text-slate-300 hover:text-white cursor-pointer">
-          Trở lại dashboard
+        <Button variant="outline" onClick={() => router.push(`/plan/${planId}/roadmap`)} className="text-slate-300 hover:text-white cursor-pointer">
+          Quản lý kế hoạch
         </Button>
-        {/* Title removed from here */}
         <Button variant="ghost" size="icon" onClick={handleEditPlan} disabled={isEditingPlan} className="text-slate-300 hover:text-white cursor-pointer">
           {isEditingPlan ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-slate-300"></div> : <Edit3 className="h-5 w-5" />}
         </Button>

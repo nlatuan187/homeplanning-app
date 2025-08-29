@@ -79,7 +79,12 @@ export async function submitPlan(formData: PlanFormState & { planId?: string; us
               update: familySupportPayload,
             },
           },
-          revisionCount: { increment: 1 },
+          history: {
+            upsert: {
+              create: { revisionCount: 1 },
+              update: { revisionCount: { increment: 1 } },
+            },
+          },
         },
       });
     } else {
@@ -131,14 +136,27 @@ export async function submitPlan(formData: PlanFormState & { planId?: string; us
         affordabilityOutcome,
         firstViableYear,
         buffer: targetYearBuffer,
-        confirmedPurchaseYear: plan.yearsToPurchase + new Date().getFullYear(),
         // Invalidate report cache since plan inputs have changed
-        reportGeneratedAt: null,
-        reportAssetEfficiency: null,
-        reportCapitalStructure: null,
-        reportSpendingPlan: null,
-        reportInsurance: null,
-        reportBackupPlans: null,
+        report: {
+          upsert: {
+            create: {
+              generatedAt: null,
+              assetEfficiency: null,
+              capitalStructure: null,
+              spendingPlan: null,
+              insurance: null,
+              backupPlans: null,
+            },
+            update: {
+              generatedAt: null,
+              assetEfficiency: null,
+              capitalStructure: null,
+              spendingPlan: null,
+              insurance: null,
+              backupPlans: null,
+            },
+          },
+        },
       },
     });
 

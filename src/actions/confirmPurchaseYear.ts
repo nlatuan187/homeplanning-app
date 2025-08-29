@@ -43,13 +43,17 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       },
       data: {
         confirmedPurchaseYear,
-        // Invalidate cached report data as the confirmed year has changed
-        reportGeneratedAt: null,
-        reportAssetEfficiency: null,
-        reportCapitalStructure: null,
-        reportSpendingPlan: null,
-        reportInsurance: null,
-        reportBackupPlans: null,
+        // Invalidate cached report data using a nested write
+        report: {
+          update: {
+            generatedAt: null,
+            assetEfficiency: null,
+            capitalStructure: null,
+            spendingPlan: null,
+            insurance: null,
+            backupPlans: null,
+          },
+        },
       },
     });
 

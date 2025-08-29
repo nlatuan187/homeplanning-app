@@ -4,35 +4,21 @@ import { useState, useEffect, useRef } from "react"; // Added useEffect
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserButton, useUser } from "@clerk/nextjs"; // useUser for client-side user data
-// import { currentUser } from "@clerk/nextjs/server"; // No longer needed for main component
-// import { db } from "@/lib/db"; // Removed, db access moved to server action
-import { Plan } from "@prisma/client"; // Keep Plan if ExtendedPlan relies on it, or remove if ExtendedPlan is imported
+import { UserButton, useUser } from "@clerk/nextjs";
+import { Plan } from "@prisma/client";
 import Link from "next/link";
 import { redirect } from "next/navigation"; 
-import { getPlansForUser } from "@/actions/dashboardActions"; // Import server action
+import { getPlansForUser, PlanForDashboard } from "@/actions/dashboardActions"; // Import server action and type
 import { MessageSquareText, Home, DollarSign, CheckCircle2, XCircle, ArrowRight, CalendarDays, ExternalLink } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
-  // SheetFooter, // Removed as not used in SupportSheetContent
   SheetHeader,
   SheetTitle,
-  // SheetTrigger, // Removed as not used globally
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import BottomNavbar from "@/components/layout/BottomNavbar";
-
-// Extended Plan type - this can be removed if `getPlansForUser` return type is sufficient
-// or if we import ExtendedPlan from dashboardActions.ts (if exported there)
-// For now, let's assume the return type of getPlansForUser is specific enough.
-// If TypeScript complains about `plans` state, we might need to import/define ExtendedPlan.
-type ExtendedPlan = Plan & { // Keeping for now, as it's used for useState<ExtendedPlan[]>
-  buffer?: number;
-  userEmail?: string;
-  revisionHistory?: Record<string, unknown>;
-};
 
 // Support Sheet Content Component
 const SupportSheetContent = () => {
@@ -152,20 +138,23 @@ const SupportSheetContent = () => {
 export default function Dashboard() {
   const { user, isLoaded } = useUser();
   // const router = useRouter(); // Removed as not used
-  const [plans, setPlans] = useState<ExtendedPlan[]>([]);
+  const [plan, setPlan] = useState<PlanForDashboard | null>(null);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && !user) {
-      redirect("/sign-in");
-    }
-    if (user) {
-      getPlansForUser(user.id).then(fetchedPlans => {
-        setPlans(fetchedPlans);
+    const fetchPlan = async () => {
+      if (isLoaded && !user) {
+        redirect("/sign-in");
+      }
+      if (user) {
+        const fetchedPlan = await getPlansForUser(user.id);
+        setPlan(fetchedPlan);
         setIsLoadingPlans(false);
-      });
-    }
+      }
+    };
+
+    fetchPlan();
   }, [user, isLoaded]);
 
   if (!isLoaded || isLoadingPlans) {
@@ -177,9 +166,6 @@ export default function Dashboard() {
   }
   
   const currentYear = new Date().getFullYear();
-
-  // Lấy plan duy nhất để truyền vào Navbar
-  const plan = plans.length > 0 ? plans[0] : null;
 
   const SupportCard = () => (
     <Card 
@@ -221,7 +207,7 @@ export default function Dashboard() {
             <p className="text-slate-300">
               Thiết kế kế hoạch tài chính tổng thể để tìm ra thời điểm mua nhà hợp lý, đồng thời tối ưu số tiền bạn đang có.
             </p>
-            {plans.length === 0 && (
+            {!plan && (
               <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-200 font-semibold">
                 <Link href="/plan/new">Tạo kế hoạch mới <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
@@ -229,30 +215,28 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {plans.length === 0 && !isLoadingPlans && (
+        {!plan && !isLoadingPlans && (
           <SupportCard />
         )}
 
-        {plans.length > 0 && (
+        {plan && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-slate-100">Kế hoạch của bạn</h2>
             <div className="space-y-4">
-              {plans.map((plan, index) => {
+              {(() => {
                 const targetYear = currentYear + plan.yearsToPurchase;
-                
                 const isViable = (plan.affordabilityOutcome === "ScenarioB" && plan.confirmedPurchaseYear);
-
                 const detailLink = isViable
                   ? `/plan/${plan.id}/report`
                   : `/plan/${plan.id}/results`;
 
                 return (
-                  <Card key={plan.id} className="bg-slate-900 border-slate-800"> {/* Changed background and border */}
+                  <Card key={plan.id} className="bg-slate-900 border-slate-800">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
                           <CardTitle className="text-lg text-slate-50">
-                            {plan.planName || `Kế hoạch ${plans.length - index}`} - Mua nhà năm {targetYear}
+                            {plan.planName || `Kế hoạch mua nhà`} - Mua nhà năm {targetYear}
                           </CardTitle>
                           <CardDescription className="text-xs text-slate-400">
                             Tạo ngày: {new Date(plan.createdAt).toLocaleDateString("vi-VN")}
@@ -288,12 +272,12 @@ export default function Dashboard() {
                     </CardFooter>
                   </Card>
                 );
-              })}
+              })()}
             </div>
           </div>
         )}
         
-        {plans.length > 0 && <SupportCard />}
+        {plan && <SupportCard />}
       </div>
       <Sheet open={isSupportSheetOpen} onOpenChange={setIsSupportSheetOpen}>
         <SheetContent side="right" className="bg-slate-900 text-slate-100 border-slate-700 sm:max-w-lg">

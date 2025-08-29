@@ -20,16 +20,28 @@ export async function upsertInteractionLogEntry(planId: string, newEntry: Intera
   if (!userId) throw new Error("Unauthorized");
 
   try {
-    const plan = await db.plan.findFirst({
-      where: { id: planId, userId: userId }, // Đảm bảo người dùng sở hữu plan
-      select: { playgroundInteractionLog: true },
+    const planWithHistory = await db.plan.findFirst({
+      where: { id: planId, userId: userId },
+      include: {
+        history: true,
+      },
     });
 
-    if (!plan) {
+    if (!planWithHistory) {
       throw new Error("Plan not found or access denied");
     }
 
-    let currentLog: InteractionLogEntry[] = (plan.playgroundInteractionLog as InteractionLogEntry[]) || [];
+    let history = planWithHistory.history;
+    if (!history) {
+      history = await db.planHistory.create({
+        data: {
+          planId: planId,
+          interactionLog: [],
+        },
+      });
+    }
+    
+    let currentLog: InteractionLogEntry[] = (history.interactionLog as InteractionLogEntry[]) || [];
     const lastLog = currentLog.length > 0 ? currentLog[currentLog.length - 1] : null;
 
     // Logic gom nhóm theo yêu cầu:
@@ -47,10 +59,10 @@ export async function upsertInteractionLogEntry(planId: string, newEntry: Intera
       currentLog.push(newEntry);
     }
 
-    await db.plan.update({
-      where: { id: planId },
+    await db.planHistory.update({
+      where: { id: history.id },
       data: {
-        playgroundInteractionLog: currentLog,
+        interactionLog: currentLog,
       },
     });
 

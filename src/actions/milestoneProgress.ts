@@ -5,9 +5,10 @@ import { generateProjections } from "@/lib/calculations/projections/generateProj
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
 import { Plan } from "@prisma/client";
+import { Prisma } from '@prisma/client'
 
 // Thêm interface TaskItem nếu nó chưa tồn tại
-interface TaskItem {
+export interface TaskItem {
   id: string;
   text: string;
   type: "system" | "user";
@@ -17,42 +18,47 @@ interface TaskItem {
 
 // =================================================================
 // BƯỚC 1: TẠO SERVER ACTION MỚI ĐỂ ĐỒNG BỘ TOÀN BỘ TIẾN TRÌNH
-// Action này sẽ thay thế cho updateTaskStatusByIndex
 // =================================================================
 export async function syncMilestoneTasks(
   planId: string,
   tasks: TaskItem[],
-  // THÊM: Nhận `currentSavings` trực tiếp từ client, đây là nguồn dữ liệu chính xác nhất
-  currentSavings: number 
+  currentSavings: number
 ): Promise<{ success: boolean }> {
   try {
-    // Bỏ `plan` vì không cần tính lại `initialSavings` nữa
     const progress = await db.milestoneProgress.findUnique({ where: { planId } });
+    const roadmap = await db.planRoadmap.findUnique({ where: { planId } });
 
     if (!progress) {
       throw new Error("Progress not found.");
     }
+    if (!roadmap) {
+      throw new Error("Roadmap not found.");
+    }
 
-    // 1. Sử dụng trực tiếp `currentSavings` từ client sau khi đã được cập nhật
-    const newCurrentSavings = Math.max(0, currentSavings); // Đảm bảo savings không bị âm
+    const newCurrentSavings = Math.max(0, currentSavings);
 
-    // 2. Cập nhật lại currentMilestoneData với danh sách tasks mới
-    let currentData = progress.currentMilestoneData as any;
+    let currentData = roadmap.currentMilestoneData as any;
     if (!currentData || typeof currentData !== 'object') {
       currentData = {};
     }
     currentData.items = tasks;
     
-    // 3. Lưu tất cả thay đổi trong một lần gọi DB
+    // Cập nhật progress với dữ liệu savings
     await db.milestoneProgress.update({
       where: { planId },
       data: {
-        currentMilestoneData: currentData,
-        currentSavings: newCurrentSavings, // Lưu giá trị mới
-        // Cập nhật lại savingsPercentage dựa trên giá trị mới
+        currentSavings: newCurrentSavings,
         savingsPercentage: progress.housePriceProjected > 0
           ? Math.round((newCurrentSavings / progress.housePriceProjected) * 100)
           : 0,
+      },
+    });
+
+    // Cập nhật roadmap với dữ liệu tasks
+    await db.planRoadmap.update({
+      where: { planId },
+      data: {
+        currentMilestoneData: currentData,
       },
     });
     
@@ -70,7 +76,6 @@ function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
   for (const group of milestoneGroups) {
     const currentSubMilestone = group.milestones.find(m => m.status === "current");
     if (currentSubMilestone) {
-      // Trả về đối tượng theo đúng cấu trúc ta mong muốn
       return {
         milestoneId: group.id,
         title: group.title,
@@ -80,61 +85,70 @@ function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
       };
     }
   }
-  return null; // Trả về null nếu không tìm thấy
+  return null;
 }
 
-export async function getOrCreateMilestoneProgress(planId: string) {
+// Hàm này được tái cấu trúc để lấy hoặc tạo cả progress và roadmap
+export async function getOrCreateFullMilestoneData(planId: string) {
   try {
-    // Tìm existing progress
+    const plan = await db.plan.findUnique({
+      where: { id: planId },
+      include: { familySupport: true },
+    });
+
+    if (!plan) {
+      throw new Error("Plan not found");
+    }
+    
     let progress = await db.milestoneProgress.findUnique({
       where: { planId },
     });
 
+    let roadmap = await db.planRoadmap.findUnique({
+      where: { planId },
+    });
+
+    const projections = generateProjections(plan);
+    const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
+
     if (!progress) {
-      // Tạo mới nếu chưa có
-      const plan = await db.plan.findUnique({
-        where: { id: planId },
-        include: { familySupport: true },
-      });
-
-      if (!plan) {
-        throw new Error("Plan not found");
-      }
-
-      // Tính toán dữ liệu ban đầu
-      const projections = generateProjections(plan);
-      const currentYear = new Date().getFullYear();
-      const currentProjection = projections.find(p => p.year === currentYear) || projections[0];
       const currentSavings = plan.initialSavings || 0;
-
-      const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
-
-      const milestoneGroups = getMilestonesByGroup(
-        plan.createdAt.getFullYear() + (plan.createdAt.getMonth() + 1) / 12,
-        plan.confirmedPurchaseYear ?? 0 + (plan.createdAt.getMonth() + 1) / 12,
-        purchaseProjection.housePriceProjected,
-        currentSavings,
-        plan // Thêm plan parameter
-      );
-
-      // Đảm bảo dữ liệu được serialize đúng cách
-      const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
-
       progress = await db.milestoneProgress.create({
         data: {
           planId,
           currentSavings,
           housePriceProjected: purchaseProjection.housePriceProjected,
-          savingsPercentage: Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100),
-          milestoneGroups: serializedMilestoneGroups,
+          savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,
           lastMilestoneCalculation: new Date(),
         },
       });
     }
 
-    return progress;
+    if (!roadmap) {
+      const currentSavings = progress.currentSavings; // Lấy savings từ progress đã có
+      const purchaseYear = plan.confirmedPurchaseYear ?? (plan.createdAt.getFullYear() + plan.yearsToPurchase);
+      const milestoneGroups = getMilestonesByGroup(
+        plan.createdAt.getFullYear() + (plan.createdAt.getMonth() + 1) / 12,
+        purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
+        purchaseProjection.housePriceProjected,
+        currentSavings,
+        plan
+      );
+      const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
+      const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
+
+      roadmap = await db.planRoadmap.create({
+        data: {
+          planId,
+          milestoneGroups: serializedMilestoneGroups,
+          currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+        },
+      });
+    }
+
+    return { progress, roadmap };
   } catch (error) {
-    console.error("Error getting milestone progress:", error);
+    console.error("Error getting or creating full milestone data:", error);
     throw error;
   }
 }
@@ -146,64 +160,60 @@ export async function updateMilestoneProgress(
   currentSavings: number,
   completedAmount: number,
   nextMilestoneIdentifier: string | null,
-  // THAM SỐ MỚI: Nhận vào toàn bộ cấu trúc milestone groups đã được cập nhật
   updatedMilestoneGroups: any[] 
 ) {
   try {
-    const progress = await db.milestoneProgress.findUnique({
-      where: { planId },
-    });
+    const progress = await db.milestoneProgress.findUnique({ where: { planId } });
+    const roadmap = await db.planRoadmap.findUnique({ where: { planId } });
 
-    if (!progress) {
-      throw new Error("MilestoneProgress not found");
-    }
+    if (!progress) throw new Error("MilestoneProgress not found");
+    if (!roadmap) throw new Error("PlanRoadmap not found");
 
-    const completedMilestones = Array.isArray(progress.completedMilestones)
-      ? progress.completedMilestones
-      : [];
+    const completedMilestones = (Array.isArray(roadmap.completedMilestones) ? roadmap.completedMilestones : []) as Prisma.JsonArray;
 
     const existingMilestoneIndex = completedMilestones.findIndex(
       (m: any) => m.identifier === milestoneIdentifier
     );
 
+    const milestoneEntry = {
+      identifier: milestoneIdentifier,
+      allTasksCompleted,
+      completedAmount,
+      completedAt: new Date().toISOString(), // Chuyển sang ISOString
+    };
+
     if (existingMilestoneIndex !== -1) {
-      (completedMilestones[existingMilestoneIndex] as any).allTasksCompleted = allTasksCompleted;
-      (completedMilestones[existingMilestoneIndex] as any).completedAmount = completedAmount;
-      (completedMilestones[existingMilestoneIndex] as any).completedAt = new Date();
+      completedMilestones[existingMilestoneIndex] = milestoneEntry;
     } else {
-      completedMilestones.push({
-        identifier: milestoneIdentifier,
-        allTasksCompleted,
-        completedAmount,
-        completedAt: new Date(),
-      });
+      completedMilestones.push(milestoneEntry);
     }
 
-    // BƯỚC QUAN TRỌNG: Tính toán lại currentMilestoneData từ milestoneGroups đã được cập nhật
     const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups as MilestoneGroup[]);
-
-    // TÍNH TOÁN LẠI TỶ LỆ PHẦN TRĂM TIẾT KIỆM
     const newSavingsPercentage = progress.housePriceProjected > 0
       ? Math.round((currentSavings / progress.housePriceProjected) * 100)
       : 0;
 
+    // Cập nhật 2 bảng riêng biệt
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
-        // THÊM 2 DÒNG QUAN TRỌNG DƯỚI ĐÂY
         currentSavings: currentSavings,
         savingsPercentage: newSavingsPercentage,
-        
-        milestoneGroups: updatedMilestoneGroups, 
-        completedMilestones: completedMilestones,
-        // Cập nhật trường currentMilestoneData
-        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
         lastProgressUpdate: new Date(),
       },
     });
 
+    const updatedRoadmap = await db.planRoadmap.update({
+        where: { planId },
+        data: {
+            milestoneGroups: updatedMilestoneGroups, 
+            completedMilestones: completedMilestones,
+            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+        }
+    });
+
     revalidatePath(`/plan/${planId}/plan`);
-    return updatedProgress;
+    return { updatedProgress, updatedRoadmap };
     
   } catch (error) {
     console.error("Error in updateMilestoneProgress:", error);
@@ -223,37 +233,48 @@ export async function recalculateMilestoneProgress(planId: string) {
     }
 
     const projections = generateProjections(plan);
-    const currentYear = new Date().getFullYear();
-    const currentProjection = projections.find(p => p.year === currentYear) || projections[0];
     const currentSavings = plan.initialSavings || 0;
-
     const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
 
+    const purchaseYear = plan.confirmedPurchaseYear ?? (plan.createdAt.getFullYear() + plan.yearsToPurchase);
     const milestoneGroups = getMilestonesByGroup(
       plan.createdAt.getFullYear() + (plan.createdAt.getMonth() + 1) / 12,
-      plan.confirmedPurchaseYear ?? 0 + (plan.createdAt.getMonth() + 1) / 12,
+      purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
       purchaseProjection.housePriceProjected,
       currentSavings,
-      plan // Thêm plan parameter
+      plan
     );
+    const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
+    const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
 
+    const progressData = {
+      currentSavings,
+      housePriceProjected: purchaseProjection.housePriceProjected,
+      savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,
+      lastMilestoneCalculation: new Date(),
+    };
+
+    const roadmapData = {
+        milestoneGroups: serializedMilestoneGroups,
+        currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+        completedMilestones: [],
+        planPageData: {},
+    };
+
+    // Upsert cả hai bảng
     const progress = await db.milestoneProgress.upsert({
       where: { planId },
-      update: {
-        currentSavings,
-        housePriceProjected: purchaseProjection.housePriceProjected,
-        savingsPercentage: Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100),
-        milestoneGroups: JSON.parse(JSON.stringify(milestoneGroups)),
-        lastMilestoneCalculation: new Date(),
-      },
-      create: {
-        planId,
-        currentSavings,
-        housePriceProjected: purchaseProjection.housePriceProjected,
-        savingsPercentage: Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100),
-        milestoneGroups: JSON.parse(JSON.stringify(milestoneGroups)),
-        lastMilestoneCalculation: new Date(),
-      },
+      update: progressData,
+      create: { planId, ...progressData },
+    });
+
+    await db.planRoadmap.upsert({
+        where: { planId },
+        update: {
+            milestoneGroups: serializedMilestoneGroups,
+            currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+        },
+        create: { planId, ...roadmapData },
     });
 
     return progress;
@@ -265,41 +286,27 @@ export async function recalculateMilestoneProgress(planId: string) {
 
 export async function updateCurrentSavings(planId: string, amount: number) {
   try {
-    // Lấy milestone progress hiện tại
-    const currentProgress = await db.milestoneProgress.findUnique({
-      where: { planId },
-    });
-
-    if (!currentProgress) {
-      throw new Error("Milestone progress not found");
-    }
-
-    // Cập nhật currentSavings (amount có thể âm hoặc dương)
-    const newCurrentSavings = currentProgress.currentSavings + amount;
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
     
-    // Đảm bảo currentSavings không âm
+    const newCurrentSavings = progress.currentSavings + amount;
     const finalCurrentSavings = Math.max(0, newCurrentSavings);
     
-    const newSavingsPercentage = currentProgress.housePriceProjected > 0 
-      ? Math.round((finalCurrentSavings / currentProgress.housePriceProjected) * 100)
+    const newSavingsPercentage = progress.housePriceProjected > 0 
+      ? Math.round((finalCurrentSavings / progress.housePriceProjected) * 100)
       : 0;
 
-    // BƯỚC 1: Tính toán lại trạng thái các cột mốc dựa trên số tiền mới
-    let milestoneGroups = (currentProgress.milestoneGroups as MilestoneGroup[]) || [];
+    let milestoneGroups = (roadmap.milestoneGroups as unknown as MilestoneGroup[]) || [];
     
     let foundCurrent = false;
     const updatedMilestoneGroups = milestoneGroups.map(group => {
       const updatedMilestones = group.milestones.map(milestone => {
         let status: "done" | "current" | "upcoming" = "upcoming";
-        
         if (finalCurrentSavings >= milestone.amountValue) {
           status = "done";
         }
-
         return { ...milestone, status };
-      }).sort((a, b) => a.amountValue - b.amountValue); // Sắp xếp lại để tìm "current" cho đúng
+      }).sort((a, b) => a.amountValue - b.amountValue);
 
-      // Tìm "current" đầu tiên trong nhóm này
       const finalMilestones = updatedMilestones.map(milestone => {
         if (!foundCurrent && milestone.status === "upcoming") {
           foundCurrent = true;
@@ -310,29 +317,38 @@ export async function updateCurrentSavings(planId: string, amount: number) {
 
       const allDone = finalMilestones.every(m => m.status === "done");
       const hasCurrent = finalMilestones.some(m => m.status === "current");
+      
+      const groupStatus: "done" | "current" | "upcoming" = allDone ? "done" : hasCurrent ? "current" : "upcoming";
 
       return {
         ...group,
         milestones: finalMilestones,
-        status: allDone ? "done" : hasCurrent ? "current" : "upcoming",
+        status: groupStatus,
       };
     });
 
-    // BƯỚC 2: Tìm currentMilestoneData mới từ groups đã cập nhật
     const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups);
 
+    // Cập nhật progress
     const updatedProgress = await db.milestoneProgress.update({
       where: { planId },
       data: {
         currentSavings: finalCurrentSavings,
         savingsPercentage: newSavingsPercentage,
-        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
-        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
         lastProgressUpdate: new Date(),
       },
     });
 
-    console.log(`Current savings updated: ${currentProgress.currentSavings} -> ${finalCurrentSavings} (change: ${amount})`);
+    // Cập nhật roadmap
+    await db.planRoadmap.update({
+        where: { planId },
+        data: {
+            milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+        }
+    });
+
+    console.log(`Current savings updated: ${progress.currentSavings} -> ${finalCurrentSavings} (change: ${amount})`);
     
     return updatedProgress;
   } catch (error) {
@@ -341,77 +357,7 @@ export async function updateCurrentSavings(planId: string, amount: number) {
   }
 }
 
-export async function updateMilestoneProgressOnCompletion(planId: string, milestoneId: number) {
-  try {
-    // Lấy milestone progress hiện tại
-    const currentProgress = await db.milestoneProgress.findUnique({
-      where: { planId },
-    });
-
-    if (!currentProgress) {
-      throw new Error("Milestone progress not found");
-    }
-
-    // Parse milestoneGroups để tìm milestone đã hoàn thành
-    const milestoneGroups = currentProgress.milestoneGroups 
-      ? (typeof currentProgress.milestoneGroups === 'string' 
-          ? JSON.parse(currentProgress.milestoneGroups) 
-          : currentProgress.milestoneGroups) as MilestoneGroup[]
-      : [];
-
-    // Tìm milestone đã hoàn thành dựa trên milestoneId
-    const completedMilestone = milestoneGroups
-      .flatMap(group => group.milestones)
-      .find(milestone => {
-        return milestone.groupId === milestoneId;
-      });
-
-    if (completedMilestone && completedMilestone.amountValue) {
-      // Tính toán bonus khi hoàn thành milestone (ví dụ: 5% của amountValue)
-      const milestoneBonus = Math.round(completedMilestone.amountValue * 0.05);
-      
-      // Cập nhật currentSavings với bonus
-      const newCurrentSavings = currentProgress.currentSavings + milestoneBonus;
-      const newSavingsPercentage = currentProgress.housePriceProjected > 0 
-        ? Math.round((newCurrentSavings / currentProgress.housePriceProjected) * 100)
-        : 0;
-
-      // Cập nhật totalCompletedMilestones
-      const newTotalCompletedMilestones = currentProgress.totalCompletedMilestones + 1;
-
-      // Cập nhật status của milestone và group
-      const updatedMilestoneGroups = milestoneGroups.map(group => {
-        if (group.id === milestoneId) {
-          // Cập nhật status của group hiện tại thành "done"
-          return { ...group, status: "done" as const };
-        }
-        return group;
-      });
-
-      const updatedProgress = await db.milestoneProgress.update({
-        where: { planId },
-        data: {
-          currentSavings: newCurrentSavings,
-          savingsPercentage: newSavingsPercentage,
-          totalCompletedMilestones: newTotalCompletedMilestones,
-          milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
-          lastProgressUpdate: new Date(),
-        },
-      });
-
-      console.log(`Milestone ${milestoneId} completed! Added bonus: ${milestoneBonus.toLocaleString()}đ`);
-      
-      return updatedProgress;
-    }
-
-    return currentProgress;
-  } catch (error) {
-    console.error("Error updating milestone progress on completion:", error);
-    throw error;
-  }
-} 
-
-// Action để lưu custom user tasks cho milestone
+// Các hàm custom task cũng được cập nhật tương tự
 export async function saveCustomTask(
   planId: string,
   milestoneId: number,
@@ -423,13 +369,10 @@ export async function saveCustomTask(
   }
 ) {
   try {
-    // Lấy milestone progress hiện tại
-    const progress = await getOrCreateMilestoneProgress(planId);
+    const { roadmap } = await getOrCreateFullMilestoneData(planId);
     
-    // Lấy planPageData hiện tại hoặc tạo mới
-    const planPageData = progress.planPageData as any || {};
+    const planPageData = (roadmap.planPageData as any) || {};
     
-    // Khởi tạo structure cho custom tasks nếu chưa có
     if (!planPageData.customTasks) {
       planPageData.customTasks = {};
     }
@@ -438,17 +381,15 @@ export async function saveCustomTask(
       planPageData.customTasks[milestoneId] = [];
     }
     
-    // Thêm task mới với timestamp để tránh duplicate
     const newTask = {
       ...task,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
     };
     
     planPageData.customTasks[milestoneId].push(newTask);
     
-    // Cập nhật database
-    const updatedProgress = await db.milestoneProgress.update({
+    await db.planRoadmap.update({
       where: { planId },
       data: {
         planPageData: planPageData,
@@ -456,7 +397,7 @@ export async function saveCustomTask(
     });
     
     console.log("✅ Custom task saved:", newTask);
-    return { success: true, task: newTask, progress: updatedProgress };
+    return { success: true, task: newTask };
     
   } catch (error) {
     console.error("Error saving custom task:", error);
@@ -464,11 +405,10 @@ export async function saveCustomTask(
   }
 }
 
-// Action để lấy custom tasks cho milestone
 export async function getCustomTasks(planId: string, milestoneId: number) {
   try {
-    const progress = await getOrCreateMilestoneProgress(planId);
-    const planPageData = progress.planPageData as any || {};
+    const { roadmap } = await getOrCreateFullMilestoneData(planId);
+    const planPageData = (roadmap.planPageData as any) || {};
     
     return planPageData.customTasks?.[milestoneId] || [];
   } catch (error) {
@@ -477,7 +417,6 @@ export async function getCustomTasks(planId: string, milestoneId: number) {
   }
 }
 
-// Action để cập nhật status của custom task
 export async function updateCustomTaskStatus(
   planId: string,
   milestoneId: number,
@@ -485,14 +424,10 @@ export async function updateCustomTaskStatus(
   newStatus: "incomplete" | "completed" | "auto-completed"
 ) {
   try {
-    console.log(`\n--- [${new Date().toISOString()}] ---`);
-    console.log(`[START] updateCustomTaskStatus for planId: ${planId}, taskId: ${taskId}, newStatus: ${newStatus}`);
-
-    const progress = await getOrCreateMilestoneProgress(planId);
-    const planPageData = (progress.planPageData as any) || {};
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
+    const planPageData = (roadmap.planPageData as any) || {};
 
     if (!planPageData.customTasks?.[milestoneId]) {
-      console.error("[ERROR] No custom tasks found for milestoneId:", milestoneId);
       throw new Error("No custom tasks found for this milestone");
     }
 
@@ -500,16 +435,13 @@ export async function updateCustomTaskStatus(
     const taskIndex = tasks.findIndex((t: any) => t.id === taskId);
 
     if (taskIndex === -1) {
-      console.error("[ERROR] Task not found with taskId:", taskId);
       throw new Error("Task not found");
     }
 
     const taskToUpdate = tasks[taskIndex];
     const oldStatus = taskToUpdate.status;
-    console.log("[INFO] Found task to update:", { id: taskToUpdate.id, text: taskToUpdate.text, amount: taskToUpdate.amount, oldStatus });
 
     if (oldStatus === newStatus) {
-      console.log("[INFO] Status is unchanged. Exiting.");
       return { success: true, progress };
     }
 
@@ -521,33 +453,28 @@ export async function updateCustomTaskStatus(
     } else if (newStatus !== 'completed' && oldStatus === 'completed') {
       amountChange = -taskAmount;
     }
-    console.log(`[CALC] Task amount: ${taskAmount}, Amount change: ${amountChange}`);
 
     tasks[taskIndex].status = newStatus;
     tasks[taskIndex].updatedAt = new Date().toISOString();
 
     if (amountChange === 0) {
-      console.log("[INFO] No change in savings. Updating task status only.");
-      const updatedProgress = await db.milestoneProgress.update({
+      await db.planRoadmap.update({
         where: { planId },
         data: { planPageData },
       });
-      console.log("[SUCCESS] Only task status updated in DB.");
-      return { success: true, progress: updatedProgress };
+      return { success: true, progress };
     }
 
     const initialSavings = progress.currentSavings;
     const newCurrentSavings = initialSavings + amountChange;
     const finalCurrentSavings = Math.max(0, newCurrentSavings);
-    console.log(`[CALC] Savings: ${initialSavings} -> ${finalCurrentSavings}`);
 
     const newSavingsPercentage =
       progress.housePriceProjected > 0
         ? Math.round((finalCurrentSavings / progress.housePriceProjected) * 100)
         : 0;
 
-    // Tính toán lại trạng thái các cột mốc (logic từ hàm updateCurrentSavings)
-    let milestoneGroups = (progress.milestoneGroups as MilestoneGroup[]) || [];
+    let milestoneGroups = (roadmap.milestoneGroups as unknown as MilestoneGroup[]) || [];
     let foundCurrent = false;
     const updatedMilestoneGroups = milestoneGroups.map(group => {
       const updatedMilestones = group.milestones
@@ -570,31 +497,40 @@ export async function updateCustomTaskStatus(
 
       const allDone = finalMilestones.every(m => m.status === "done");
       const hasCurrent = finalMilestones.some(m => m.status === "current");
+      const groupStatus: "done" | "current" | "upcoming" = allDone ? "done" : hasCurrent ? "current" : "upcoming";
 
       return {
         ...group,
         milestones: finalMilestones,
-        status: allDone ? "done" : hasCurrent ? "current" : "upcoming",
+        status: groupStatus,
       };
     });
 
     const newCurrentMilestoneData = findCurrentSubMilestone(updatedMilestoneGroups);
 
-    console.log("[DB] Preparing to update database with new savings...");
-    const updatedProgress = await db.milestoneProgress.update({
+    // Cập nhật cả 2 bảng
+    await db.milestoneProgress.update({
       where: { planId },
       data: {
-        planPageData,
         currentSavings: finalCurrentSavings,
         savingsPercentage: newSavingsPercentage,
-        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
-        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : null,
         lastProgressUpdate: new Date(),
       },
     });
-    console.log("[SUCCESS] Database updated successfully.");
 
-    return { success: true, progress: updatedProgress };
+    const updatedRoadmap = await db.planRoadmap.update({
+        where: { planId },
+        data: {
+            planPageData,
+            milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+        }
+    });
+
+    // Trả về progress mới nhất sau khi cập nhật
+    const finalProgress = await db.milestoneProgress.findUnique({ where: { planId } });
+
+    return { success: true, progress: finalProgress };
 
   } catch (error) {
     console.error("[FATAL ERROR] in updateCustomTaskStatus:", error);

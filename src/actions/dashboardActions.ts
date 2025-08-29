@@ -3,47 +3,43 @@
 import { db } from "@/lib/db";
 import { Plan } from "@prisma/client";
 
-// Extended Plan type (can be defined here or imported if shared)
-type ExtendedPlan = Plan & {
-  buffer?: number;
-  userEmail?: string;
-  revisionHistory?: Record<string, unknown>;
-};
+// Định nghĩa một kiểu dữ liệu cho cấu trúc trả về của hàm.
+// Kiểu này chỉ bao gồm các trường cần thiết cho dashboard của MỘT kế hoạch duy nhất.
+export type PlanForDashboard = Pick<
+  Plan,
+  | "id"
+  | "planName"
+  | "createdAt"
+  | "updatedAt"
+  | "yearsToPurchase"
+  | "targetHouseType"
+  | "targetLocation"
+  | "targetHousePriceN0"
+  | "affordabilityOutcome"
+  | "confirmedPurchaseYear"
+>;
 
-export async function getPlansForUser(userId: string): Promise<ExtendedPlan[]> {
-  if (!userId) return [];
-  // Ensure Prisma Client is only used on the server.
-  // The "use server" directive at the top of this file ensures this.
-  const plans = await db.plan.findMany({
+// Hàm này hiện đã được tối ưu để chỉ lấy dữ liệu của kế hoạch GẦN NHẤT
+// mà dashboard yêu cầu, giúp giảm đáng kể việc truyền tải dữ liệu mạng.
+export async function getPlansForUser(userId: string): Promise<PlanForDashboard | null> {
+  // Đảm bảo Prisma Client chỉ được sử dụng trên server.
+  // Chỉ thị "use server" ở đầu tệp này đảm bảo điều đó.
+  const plan = await db.plan.findFirst({
     where: { userId },
-    orderBy: { updatedAt: "desc" }, // Sắp xếp theo ngày cập nhật mới nhất
-    take: 1, // Chỉ lấy 1 kế hoạch duy nhất
+    orderBy: { updatedAt: "desc" }, // Sắp xếp để lấy kế hoạch được cập nhật gần nhất
     select: {
-      // Keep valid fields
       id: true,
       planName: true,
       createdAt: true,
       updatedAt: true,
-      userId: true,
-      userEmail: true,
-      
-      // Goal
       yearsToPurchase: true,
       targetHouseType: true,
       targetLocation: true,
       targetHousePriceN0: true,
-      
-      // Result
       affordabilityOutcome: true,
-      firstViableYear: true,
       confirmedPurchaseYear: true,
-      buffer: true,
-
-      // Report Status
-      reportGeneratedAt: true,
     },
   });
-  // Important: Ensure that the data returned is serializable if it's passed from server to client.
-  // Prisma's default return types (like Date for createdAt/updatedAt) are generally fine.
-  return plans as ExtendedPlan[];
+
+  return plan;
 }

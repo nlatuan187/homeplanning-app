@@ -3,62 +3,71 @@
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // Consistent with generateFinalReport
-
-interface ReportCacheStatus {
-  cacheIsValid: boolean;
-  confirmedPurchaseYear: number | null;
-  planExists: boolean;
+interface CacheStatus {
+  isCacheValid: boolean;
+  reason: string;
 }
 
-export async function checkReportCacheStatus(planId: string): Promise<ReportCacheStatus> {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      // If no user, can't determine status for a specific plan
-      return { cacheIsValid: false, confirmedPurchaseYear: null, planExists: false };
-    }
+/**
+ * Checks if the report for a given plan is cached and still valid.
+ * @param planId The ID of the plan to check.
+ * @returns An object indicating if the cache is valid and the reason why.
+ */
+export async function checkReportCacheStatus(
+  planId: string
+): Promise<CacheStatus> {
+  const { userId } = await auth();
 
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    // 1. Fetch the plan AND its related report in a single query
     const plan = await db.plan.findUnique({
-      where: { id: planId, userId },
-      select: {
-        reportGeneratedAt: true,
-        confirmedPurchaseYear: true,
-        // Select all 5 report cache fields to check their existence
-        reportAssetEfficiency: true,
-        reportCapitalStructure: true,
-        reportSpendingPlan: true,
-        reportInsurance: true,
-        reportBackupPlans: true,
+      where: {
+        id: planId,
+        userId: userId,
+      },
+      include: {
+        report: true, // Include the related PlanReport record
       },
     });
 
     if (!plan) {
-      return { cacheIsValid: false, confirmedPurchaseYear: null, planExists: false };
+      throw new Error("Plan not found");
     }
 
-    if (!plan.confirmedPurchaseYear || !plan.reportGeneratedAt) {
-      return { cacheIsValid: false, confirmedPurchaseYear: plan.confirmedPurchaseYear, planExists: true };
+    // 2. Check the report status from the included relation
+    const report = plan.report;
+
+    if (!report || !report.generatedAt) {
+      return {
+        isCacheValid: false,
+        reason: "Report has not been generated yet.",
+      };
     }
 
-    const isCacheFresh = (new Date().getTime() - new Date(plan.reportGeneratedAt).getTime()) < CACHE_EXPIRATION_MS;
-    
-    const allSectionsCached = 
-      !!plan.reportAssetEfficiency &&
-      !!plan.reportCapitalStructure &&
-      !!plan.reportSpendingPlan &&
-      !!plan.reportInsurance &&
-      !!plan.reportBackupPlans;
+    // 3. IMPORTANT: Check if the plan was updated *after* the report was generated.
+    // If so, the cached report is stale and needs to be regenerated.
+    if (plan.updatedAt > report.generatedAt) {
+      return {
+        isCacheValid: false,
+        reason: "Plan has been updated since the last report was generated.",
+      };
+    }
 
-    return { 
-      cacheIsValid: isCacheFresh && allSectionsCached, 
-      confirmedPurchaseYear: plan.confirmedPurchaseYear,
-      planExists: true
+    // If all checks pass, the cache is valid
+    return {
+      isCacheValid: true,
+      reason: "Valid report found in cache.",
     };
-
   } catch (error) {
-    console.error("[CHECK_REPORT_CACHE_STATUS] Error:", error);
-    // In case of an unexpected error, assume cache is not valid
-    return { cacheIsValid: false, confirmedPurchaseYear: null, planExists: false };
+    console.error("Error checking report cache status:", error);
+    // Return false in case of any error to be safe
+    return {
+      isCacheValid: false,
+      reason: "An error occurred while checking the cache.",
+    };
   }
 }

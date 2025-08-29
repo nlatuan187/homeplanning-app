@@ -1,4 +1,4 @@
-import { Plan } from "@prisma/client";
+import { Plan, PlanHistory } from "@prisma/client";
 import { ProjectionRow } from "../affordability";
 
 // Define a more specific type for the plan object to satisfy TypeScript
@@ -20,6 +20,7 @@ export type PlanWithDetails = Plan & {
     familyLoanInterestRate: number | null;
     familyLoanTermYears: number | null;
   } | null;
+  history?: PlanHistory | null;
 };
 
 /**

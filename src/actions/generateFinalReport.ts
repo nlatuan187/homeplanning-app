@@ -13,6 +13,7 @@ import {
   generateBackupPlansSection,
 } from "./reportSections";
 import { Plan as PrismaPlan } from "@prisma/client";
+import { checkReportCacheStatus } from "./checkReportCacheStatus";
 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
@@ -36,21 +37,21 @@ export interface UserContext {
   confirmedPurchaseYear: number;
 }
 
-function extractUserContext(plan: PrismaPlan): UserContext {
-  if (plan.confirmedPurchaseYear === null) {
+function extractUserContext(planReport: PrismaPlan): UserContext {
+  if (planReport.confirmedPurchaseYear === null) {
     throw new Error(
       "Confirmed purchase year cannot be null when extracting user context for report."
     );
   }
   return {
-    targetYear: new Date().getFullYear() + plan.yearsToPurchase,
-    targetHouseType: plan.targetHouseType,
-    targetLocation: plan.targetLocation,
-    pctHouseGrowth: plan.pctHouseGrowth,
-    pctSalaryGrowth: plan.pctSalaryGrowth,
-    pctExpenseGrowth: plan.pctExpenseGrowth,
-    pctInvestmentReturn: plan.pctInvestmentReturn,
-    confirmedPurchaseYear: plan.confirmedPurchaseYear,
+    targetYear: new Date().getFullYear() + planReport.yearsToPurchase,
+    targetHouseType: planReport.targetHouseType,
+    targetLocation: planReport.targetLocation,
+    pctHouseGrowth: planReport.pctHouseGrowth,
+    pctSalaryGrowth: planReport.pctSalaryGrowth,
+    pctExpenseGrowth: planReport.pctExpenseGrowth,
+    pctInvestmentReturn: planReport.pctInvestmentReturn,
+    confirmedPurchaseYear: planReport.confirmedPurchaseYear,
   };
 }
 
@@ -71,84 +72,85 @@ export interface ReportSections {
 }
 
 export async function generateFinalReport(planId: string) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
+  console.log(`[generateFinalReport] Starting report generation for planId: ${planId}`);
+  
+  const { userId } = await auth();
+  if (!userId) {
+    console.error("[generateFinalReport] Error: User not authenticated.");
+    throw new Error("User not authenticated");
+  }
 
-    const plan = await db.plan.findUnique({
-      where: {
-        id: planId,
-        userId,
-      },
-      include: {
-        familySupport: true,
-      },
-    });
+  const plan = await db.plan.findUnique({
+    where: {
+      id: planId,
+      userId,
+    },
+    include: {
+      familySupport: true,
+    },
+  });
 
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
+  const planReport = await db.planReport.findUnique({
+    where: {
+      planId: planId,
+    },
+  });
 
-    if (!plan.confirmedPurchaseYear) {
-      throw new Error("No confirmed purchase year");
-    }
+  if (!plan) {
+    throw new Error("Plan not found");
+  }
+  if (!planReport) {
+    throw new Error("Plan report not found");
+  }
 
-    const projectionData = generateProjections(plan);
+  if (!plan.confirmedPurchaseYear) {
+    throw new Error("No confirmed purchase year");
+  }
 
-    const confirmedYearData = projectionData.find(
-      (p) => p.year === plan.confirmedPurchaseYear
-    );
+  const projectionData = generateProjections(plan);
 
-    if (!confirmedYearData) {
-      throw new Error("Confirmed year data not found");
-    }
+  const confirmedYearData = projectionData.find(
+    (p) => p.year === plan.confirmedPurchaseYear
+  );
 
-    const loanSummary = calculateLoanSummary(confirmedYearData);
-    const userContext = extractUserContext(plan);
+  if (!confirmedYearData) {
+    throw new Error("Confirmed year data not found");
+  }
 
-    const isCacheValid =
-      plan.reportGeneratedAt &&
-      new Date().getTime() - new Date(plan.reportGeneratedAt).getTime() <
-        CACHE_EXPIRATION_MS;
+  const loanSummary = calculateLoanSummary(confirmedYearData);
+  const userContext = extractUserContext(plan);
 
-    let reportSections: ReportSections;
+  const isCacheValid =
+  planReport.generatedAt &&
+    new Date().getTime() - new Date(planReport.generatedAt).getTime() <
+      CACHE_EXPIRATION_MS;
 
-    if (
-      isCacheValid &&
-      plan.reportAssetEfficiency &&
-      plan.reportCapitalStructure &&
-      plan.reportSpendingPlan &&
-      plan.reportInsurance &&
-      plan.reportBackupPlans
-    ) {
-      try {
-        const sections = {
-          assetEfficiency: tryParseJSON(plan.reportAssetEfficiency),
-          capitalStructure: tryParseJSON(plan.reportCapitalStructure),
-          spendingPlan: tryParseJSON(plan.reportSpendingPlan),
-          insurance: tryParseJSON(plan.reportInsurance),
-          backupPlans: tryParseJSON(plan.reportBackupPlans),
-        };
-        const failedSections = Object.entries(sections)
-          .filter(([, value]) => value === null)
-          .map(([key]) => key);
-        if (failedSections.length > 0) {
-          throw new Error(`Invalid cached data format for: ${failedSections.join(", ")}`);
-        }
-        reportSections = sections as ReportSections;
-      } catch {
-        reportSections = await generateReportSections(
-          plan,
-          confirmedYearData,
-          userContext,
-          loanSummary,
-          projectionData
-        );
-        await saveReportSections(planId, reportSections);
+  let reportSections: ReportSections;
+
+  if (
+    isCacheValid &&
+    planReport.assetEfficiency &&
+    planReport.capitalStructure &&
+    planReport.spendingPlan &&
+    planReport.insurance &&
+    planReport.backupPlans
+  ) {
+    try {
+      const sections = {
+        assetEfficiency: tryParseJSON(planReport.assetEfficiency),
+        capitalStructure: tryParseJSON(planReport.capitalStructure),
+        spendingPlan: tryParseJSON(planReport.spendingPlan),
+        insurance: tryParseJSON(planReport.insurance),
+        backupPlans: tryParseJSON(planReport.backupPlans),
+      };
+      const failedSections = Object.entries(sections)
+        .filter(([, value]) => value === null)
+        .map(([key]) => key);
+      if (failedSections.length > 0) {
+        throw new Error(`Invalid cached data format for: ${failedSections.join(", ")}`);
       }
-    } else {
+      reportSections = sections as ReportSections;
+    } catch {
       reportSections = await generateReportSections(
         plan,
         confirmedYearData,
@@ -156,38 +158,39 @@ export async function generateFinalReport(planId: string) {
         loanSummary,
         projectionData
       );
-      await saveReportSections(planId, reportSections);
+      await saveReportSections(planReport.id, reportSections);
     }
-
-    return {
-      success: true,
+  } else {
+    reportSections = await generateReportSections(
       plan,
-      projectionData,
       confirmedYearData,
+      userContext,
       loanSummary,
-      reportSections,
-    };
-  } catch (error) {
-    console.error("[GENERATE_FINAL_REPORT] Error", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: `Failed to generate final report: ${errorMessage}`,
-    };
+      projectionData
+    );
+    await saveReportSections(planReport.id, reportSections);
   }
+
+  return {
+    success: true,
+    plan,
+    projectionData,
+    confirmedYearData,
+    loanSummary,
+    reportSections,
+  };
 }
 
-async function saveReportSections(planId: string, reportSections: ReportSections) {
-  await db.plan.update({
-    where: { id: planId },
+async function saveReportSections(planReportId: string, reportSections: ReportSections) {
+  await db.planReport.update({
+    where: { id: planReportId },
     data: {
-      reportAssetEfficiency: JSON.stringify(reportSections.assetEfficiency),
-      reportCapitalStructure: JSON.stringify(reportSections.capitalStructure),
-      reportSpendingPlan: JSON.stringify(reportSections.spendingPlan),
-      reportInsurance: JSON.stringify(reportSections.insurance),
-      reportBackupPlans: JSON.stringify(reportSections.backupPlans),
-      reportGeneratedAt: new Date(),
+      assetEfficiency: JSON.stringify(reportSections.assetEfficiency),
+      capitalStructure: JSON.stringify(reportSections.capitalStructure),
+      spendingPlan: JSON.stringify(reportSections.spendingPlan),
+      insurance: JSON.stringify(reportSections.insurance),
+      backupPlans: JSON.stringify(reportSections.backupPlans),
+      generatedAt: new Date(),
     },
   });
 }
@@ -214,7 +217,7 @@ async function generateReportSections(
     ),
     generateCapitalStructureSection(plan, confirmedYearData, loanSummary),
     generateSpendingPlanSection(plan, confirmedYearData, projectionData),
-    generateInsuranceSection(plan, userContext),
+    generateInsuranceSection(plan),
     generateBackupPlansSection(plan, userContext, projectionData),
   ]);
 

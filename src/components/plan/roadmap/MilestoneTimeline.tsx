@@ -3,99 +3,8 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
-import { Plan, MilestoneProgress } from "@prisma/client";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
-
-// Update the Plan type to include the relation
-type PlanWithMilestoneProgress = Plan & {
-  milestoneProgress?: MilestoneProgress | null;
-};
-
-function getMilestones(plan: PlanWithMilestoneProgress): {
-  milestoneGroups: MilestoneGroup[];
-  currentSavings: number;
-} {
-  // Sử dụng dữ liệu từ milestoneProgress nếu có
-  if (plan.milestoneProgress?.milestoneGroups) {
-    try {
-      const milestoneGroups = JSON.parse(JSON.stringify(plan.milestoneProgress.milestoneGroups));
-      const currentSavings = plan.milestoneProgress.currentSavings;
-      
-      // Cập nhật trạng thái cho tất cả milestone groups
-      const updatedMilestoneGroups = milestoneGroups.map((group: MilestoneGroup) => {
-        const updatedMilestones = group.milestones.map(milestone => {
-          if (currentSavings >= milestone.amountValue) {
-            return { ...milestone, status: "done" as const };
-          } else {
-            return { ...milestone, status: "upcoming" as const };
-          }
-        });
-
-        return {
-          ...group,
-          milestones: updatedMilestones
-        };
-      });
-
-      // Sau đó, chỉ set 1 milestone duy nhất thành "current" và 1 group duy nhất thành "current"
-      let foundCurrent = false;
-      const finalMilestoneGroups = updatedMilestoneGroups.map((group: any) => {
-        const finalMilestones = group.milestones.map((milestone: any) => {
-          if (!foundCurrent && milestone.status === "upcoming") {
-            // Tìm milestone đầu tiên chưa hoàn thành để set thành "current"
-            foundCurrent = true;
-            return { ...milestone, status: "current" as const };
-          }
-          return milestone;
-        });
-
-        // Cập nhật status tổng thể của group
-        let groupStatus: "done" | "current" | "upcoming" = "upcoming";
-        const allDone = finalMilestones.every((milestone: any) => milestone.status === "done");
-        const hasCurrent = finalMilestones.some((milestone: any) => milestone.status === "current");
-        
-        if (allDone) {
-          groupStatus = "done";
-        } else if (hasCurrent) {
-          groupStatus = "current";
-        }
-
-        return {
-          ...group,
-          milestones: finalMilestones,
-          status: groupStatus,
-        };
-      });
-      
-      return { 
-        milestoneGroups: finalMilestoneGroups,
-        currentSavings 
-      };
-    } catch (error) {
-      console.error("Error parsing milestone data from database:", error);
-    }
-  }
-
-  // Fallback: tính toán mới nếu không có dữ liệu
-  const projections = generateProjections(plan);
-  
-  const currentYear = new Date().getFullYear();
-  const currentProjection = projections.find(p => p.year === currentYear) || projections[0];
-  const currentSavings = currentProjection?.cumulativeSavings || 0;
-
-  const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
-
-  const milestoneGroups = getMilestonesByGroup(
-    plan.createdAt.getFullYear() + (plan.createdAt.getMonth() + 1) / 12,
-    plan.confirmedPurchaseYear ?? 0 + (plan.createdAt.getMonth() + 1) / 12,
-    purchaseProjection.housePriceProjected,
-    currentSavings,
-    plan // Thêm plan parameter
-  );
-
-  return { milestoneGroups, currentSavings };
-}
+import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
+import { Plan } from "@prisma/client";
 
 // Add helper function to get roadmap image path
 function getRoadmapImagePath(goalNumber: number, totalMilestones: number): string {
@@ -141,11 +50,14 @@ function getRoadmapImagePath(goalNumber: number, totalMilestones: number): strin
 
 export default function MilestoneTimeline({
   plan,
+  milestoneGroups,
+  currentSavings,
 }: {
-  plan: PlanWithMilestoneProgress;
+  plan: Plan;
+  milestoneGroups: MilestoneGroup[];
+  currentSavings: number;
 }) {
   const spacingHeight = 150;
-  const { milestoneGroups, currentSavings } = getMilestones(plan);
 
   return (
     <div className="container mx-auto max-w-5xl relative w-full md:p-4 mt-10 overflow-visible">
@@ -171,6 +83,7 @@ export default function MilestoneTimeline({
                     isFirst={isFirst}
                     isLast={isLast}
                     currentSavings={currentSavings}
+                    milestoneGroups={milestoneGroups}
                   />
                 </div>
               </>
@@ -184,6 +97,7 @@ export default function MilestoneTimeline({
                     isFirst={isFirst}
                     isLast={isLast}
                     currentSavings={currentSavings}
+                    milestoneGroups={milestoneGroups}
                   />
                 </div>
               </>
@@ -202,16 +116,17 @@ function MilestoneNode({
   isFirst,
   isLast,
   currentSavings,
+  milestoneGroups,
 }: {
-  plan: PlanWithMilestoneProgress;
+  plan: Plan;
   group: MilestoneGroup;
   position: "odd" | "even";
   isFirst: boolean;
   isLast: boolean;
   currentSavings: number;
+  milestoneGroups: MilestoneGroup[];
 }) {
   const router = useRouter();
-  const { milestoneGroups } = getMilestones(plan);
   
   // Tìm group trước đó để tính progress
   const currentGroupIndex = milestoneGroups.findIndex(g => g.id === group.id);
