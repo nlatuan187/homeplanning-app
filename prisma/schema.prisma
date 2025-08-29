@@ -123,6 +123,7 @@ model PlanReport {
   spendingPlan     String?   @db.Text
   insurance        String?   @db.Text
   backupPlans      String?   @db.Text
+  projectionCache  Json?
 }
 
 // BẢNG MỚI CHO HISTORY

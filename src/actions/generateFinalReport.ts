@@ -2,7 +2,6 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { calculateLoanSummary } from "@/lib/calculations/projections/calculateLoanSummary";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import {
@@ -14,6 +13,7 @@ import {
 } from "./reportSections";
 import { Plan as PrismaPlan } from "@prisma/client";
 import { checkReportCacheStatus } from "./checkReportCacheStatus";
+import { getProjectionsWithCache } from "./milestoneProgress";
 
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
@@ -80,25 +80,14 @@ export async function generateFinalReport(planId: string) {
     throw new Error("User not authenticated");
   }
 
-  const plan = await db.plan.findUnique({
-    where: {
-      id: planId,
-      userId,
-    },
-    include: {
-      familySupport: true,
-    },
-  });
-
+  const { plan, projections: projectionData } = await getProjectionsWithCache(planId, userId);
+  
   const planReport = await db.planReport.findUnique({
     where: {
       planId: planId,
     },
   });
 
-  if (!plan) {
-    throw new Error("Plan not found");
-  }
   if (!planReport) {
     throw new Error("Plan report not found");
   }
@@ -106,8 +95,6 @@ export async function generateFinalReport(planId: string) {
   if (!plan.confirmedPurchaseYear) {
     throw new Error("No confirmed purchase year");
   }
-
-  const projectionData = generateProjections(plan);
 
   const confirmedYearData = projectionData.find(
     (p) => p.year === plan.confirmedPurchaseYear

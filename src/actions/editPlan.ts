@@ -92,11 +92,12 @@ export async function editPlan(planId: string, redirectPath?: string, startSecti
       where: { planId: planId },
       data: {
         generatedAt: null,
-        assetEfficiency: null,
-        capitalStructure: null,
-        spendingPlan: null,
-        insurance: null,
-        backupPlans: null,
+        assetEfficiency: Prisma.JsonNull,
+        capitalStructure: Prisma.JsonNull,
+        spendingPlan: Prisma.JsonNull,
+        insurance: Prisma.JsonNull,
+        backupPlans: Prisma.JsonNull,
+        projectionCache: Prisma.JsonNull,
       }
     });
 
