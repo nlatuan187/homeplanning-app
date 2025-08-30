@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup } from "@/lib/isMilestoneUnlocked";
+import { ProjectionRow } from "@/lib/calculations/affordability";
+import { getProjectionsWithCache } from "./milestoneProgress";
 
 // Schema để validate assumptions vẫn giữ nguyên
 const assumptionSchema = z.object({
@@ -39,11 +41,8 @@ export async function confirmPlaygroundAssumptions(
       throw new Error("Unauthorized");
     }
 
-    // 2. Lấy dữ liệu plan hiện tại để xác thực và tính toán
-    const existingPlan = await db.plan.findUnique({
-      where: { id: planId, userId: user.id },
-      include: { familySupport: true },
-    });
+    // Lấy projections trước
+    const { projections: cachedProjections, plan: existingPlan } = await getProjectionsWithCache(planId, user.id);
 
     if (!existingPlan) {
       throw new Error("Plan not found or user does not have access.");
@@ -66,7 +65,7 @@ export async function confirmPlaygroundAssumptions(
     };
 
     // 5. Chạy lại các phép tính toán chính dựa trên dữ liệu ảo
-    const projections = generateProjections(planWithNewAssumptions);
+    const projections = generateProjections(planWithNewAssumptions); // Tạo lại projections với giả định mới
     const purchaseProjection = projections.find(p => p.year === planWithNewAssumptions.confirmedPurchaseYear) || projections[0];
     const currentSavings = planWithNewAssumptions.initialSavings || 0;
 
@@ -75,7 +74,8 @@ export async function confirmPlaygroundAssumptions(
       planWithNewAssumptions.confirmedPurchaseYear ?? new Date().getFullYear() + planWithNewAssumptions.yearsToPurchase,
       purchaseProjection.housePriceProjected,
       currentSavings,
-      planWithNewAssumptions
+      planWithNewAssumptions,
+      projections
     );
     
     // Tìm milestone hiện tại từ kết quả tính toán
@@ -100,8 +100,14 @@ export async function confirmPlaygroundAssumptions(
         // Cập nhật các bảng liên quan
         report: {
           upsert: { // Dùng upsert để an toàn
-            create: { generatedAt: null },
-            update: { generatedAt: null },
+            create: { 
+              generatedAt: null,
+              projectionCache: projections as any,
+            },
+            update: { 
+              generatedAt: null,
+              projectionCache: projections as any,
+            },
           },
         },
         milestoneProgress: {

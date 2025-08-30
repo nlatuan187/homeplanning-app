@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { generateComparisonData } from "@/lib/calculations/projections/generateComparisonData";
 import { ComparisonData } from "@/lib/calculations/affordability";
+import { getProjectionsWithCache } from "./milestoneProgress";
 
 // Helper function to extract user context for AI analysis
 function extractUserContext(plan: any) {
@@ -72,11 +73,11 @@ export async function getComparisonData(planId: string) {
     const targetPurchaseYear = currentYear + plan.yearsToPurchase;
 
     // Regenerate projections
-    const projectionData = generateProjections(plan);
+    const projectionData = await getProjectionsWithCache(planId, userId);
 
     // Generate comparison data
     const comparisonData = generateComparisonData(
-      projectionData,
+      projectionData.projections,
       plan.firstViableYear,
       targetPurchaseYear
     );

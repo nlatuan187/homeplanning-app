@@ -3,6 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { FinancialPeaceClient } from "./FinancialPeaceClient"; // Create this new client component
+import { ProjectionRow } from "@/lib/calculations/affordability";
 
 interface FinancialPeacePageProps {
   params: {
@@ -24,6 +25,7 @@ export default async function FinancialPeacePage({ params }: FinancialPeacePageP
     },
     include: {
       familySupport: true,
+      report: true,
     },
   });
 
@@ -37,16 +39,23 @@ export default async function FinancialPeacePage({ params }: FinancialPeacePageP
     redirect(`/plan/${planId}/results`);
   }
 
-  // Calculate the number of years to project to ensure it includes the confirmed year.
-  const yearsToProject = plan.confirmedPurchaseYear - new Date().getFullYear();
-  // Ensure we project for at least the originally intended duration as a fallback.
-  const maxYears = Math.max(yearsToProject, plan.yearsToPurchase + 5);
+  let projectionData: ProjectionRow[];
 
-  const projectionData = generateProjections(plan, maxYears);
+  if (plan.report?.projectionCache) {
+    projectionData = plan.report.projectionCache as unknown as ProjectionRow[];
+  } else {
+    // Calculate the number of years to project to ensure it includes the confirmed year.
+    const yearsToProject = plan.confirmedPurchaseYear - new Date().getFullYear();
+    // Ensure we project for at least the originally intended duration as a fallback.
+    const maxYears = Math.max(yearsToProject, plan.yearsToPurchase + 5);
+    projectionData = generateProjections(plan, maxYears);
+  }
+
+  const lastYearData = projectionData[projectionData.length - 1];
 
   // The client component expects an object with a projectionData property.
   const affordabilityResult = {
-    projectionData: projectionData,
+    projectionData: [lastYearData], // Pass only the last year's data as an array
   };
   
   return (

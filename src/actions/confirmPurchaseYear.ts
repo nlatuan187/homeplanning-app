@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { getProjectionsWithCache } from "@/actions/milestoneProgress";
 
 /**
  * Server Action 3: Save Confirmed Year
@@ -62,7 +63,7 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
     });
 
     // Re-run projections with the confirmed year locked in
-    const projectionData = generateProjections(plan);
+    const projectionData = await getProjectionsWithCache(planId, userId);
 
     // Save the projections to the cache in PlanReport
     await db.planReport.update({

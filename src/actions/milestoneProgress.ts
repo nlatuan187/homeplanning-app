@@ -90,16 +90,9 @@ function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
 }
 
 // Hàm này được tái cấu trúc để lấy hoặc tạo cả progress và roadmap
-export async function getOrCreateFullMilestoneData(planId: string) {
+export async function getOrCreateFullMilestoneData(planId: string, userId: string) {
   try {
-    const plan = await db.plan.findUnique({
-      where: { id: planId },
-      include: { familySupport: true },
-    });
-
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
+    const { plan, projections } = await getProjectionsWithCache(planId, userId);
     
     let progress = await db.milestoneProgress.findUnique({
       where: { planId },
@@ -109,7 +102,6 @@ export async function getOrCreateFullMilestoneData(planId: string) {
       where: { planId },
     });
 
-    const projections = generateProjections(plan);
     const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
 
     if (!progress) {
@@ -133,7 +125,8 @@ export async function getOrCreateFullMilestoneData(planId: string) {
         purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
         purchaseProjection.housePriceProjected,
         currentSavings,
-        plan
+        plan,
+        projections
       );
       const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
       const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
@@ -222,18 +215,10 @@ export async function updateMilestoneProgress(
   }
 }
 
-export async function recalculateMilestoneProgress(planId: string) {
+export async function recalculateMilestoneProgress(planId: string, userId: string) {
   try {
-    const plan = await db.plan.findUnique({
-      where: { id: planId },
-      include: { familySupport: true },
-    });
+    const { plan, projections } = await getProjectionsWithCache(planId, userId);
 
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
-
-    const projections = generateProjections(plan);
     const currentSavings = plan.initialSavings || 0;
     const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
 
@@ -243,7 +228,8 @@ export async function recalculateMilestoneProgress(planId: string) {
       purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
       purchaseProjection.housePriceProjected,
       currentSavings,
-      plan
+      plan,
+      projections
     );
     const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
     const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
@@ -285,9 +271,9 @@ export async function recalculateMilestoneProgress(planId: string) {
   }
 } 
 
-export async function updateCurrentSavings(planId: string, amount: number) {
+export async function updateCurrentSavings(planId: string, amount: number, userId: string) {
   try {
-    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     
     const newCurrentSavings = progress.currentSavings + amount;
     const finalCurrentSavings = Math.max(0, newCurrentSavings);
@@ -367,10 +353,11 @@ export async function saveCustomTask(
     type: "user" | "system";
     status: "incomplete" | "completed" | "auto-completed";
     amount?: number;
-  }
+  },
+  userId: string
 ) {
   try {
-    const { roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     
     const planPageData = (roadmap.planPageData as any) || {};
     
@@ -406,9 +393,9 @@ export async function saveCustomTask(
   }
 }
 
-export async function getCustomTasks(planId: string, milestoneId: number) {
+export async function getCustomTasks(planId: string, milestoneId: number, userId: string) {
   try {
-    const { roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     const planPageData = (roadmap.planPageData as any) || {};
     
     return planPageData.customTasks?.[milestoneId] || [];
@@ -422,10 +409,11 @@ export async function updateCustomTaskStatus(
   planId: string,
   milestoneId: number,
   taskId: string,
-  newStatus: "incomplete" | "completed" | "auto-completed"
+  newStatus: "incomplete" | "completed" | "auto-completed",
+  userId: string
 ) {
   try {
-    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     const planPageData = (roadmap.planPageData as any) || {};
 
     if (!planPageData.customTasks?.[milestoneId]) {
