@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import FinancialSliders from "@/components/plan/playground/FinancialSliders";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updatePlaygroundValue, updatePlaygroundValues, upsertInteractionLogEntry } from "@/actions/updatePlayground";
+import { updatePlaygroundValue, updatePlaygroundValues, upsertInteractionLogEntry, cachePlaygroundProjections } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
 import { generateAccumulationMilestones } from "@/lib/calculations/projections/generateChartData";
 import { calculateAdditionalSavingsForViability } from "@/lib/calculations/affordabilityHelpers";
 import { editPlan } from "@/actions";
+// import { db } from "@/lib/db";
 
 type InteractionLogEntry = {
   timestamp: string;
@@ -284,6 +285,8 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
         monthlyOtherIncome: extraIncome,
       }
     );
+
+    await cachePlaygroundProjections(planId, generateProjections(plan));
 
     // Bước 3: Điều hướng người dùng
     const yearsToPurchase = confirmedProjection?.n ?? plan.yearsToPurchase;

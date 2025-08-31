@@ -4,8 +4,9 @@ import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
-import { Plan } from "@prisma/client";
+import { Plan, FamilySupport, PlanReport } from "@prisma/client";
 import { Prisma } from '@prisma/client'
+import { ProjectionRow } from "@/lib/calculations/affordability";
 
 // Thêm interface TaskItem nếu nó chưa tồn tại
 export interface TaskItem {
@@ -89,16 +90,9 @@ function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
 }
 
 // Hàm này được tái cấu trúc để lấy hoặc tạo cả progress và roadmap
-export async function getOrCreateFullMilestoneData(planId: string) {
+export async function getOrCreateFullMilestoneData(planId: string, userId: string) {
   try {
-    const plan = await db.plan.findUnique({
-      where: { id: planId },
-      include: { familySupport: true },
-    });
-
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
+    const { plan, projections } = await getProjectionsWithCache(planId, userId);
     
     let progress = await db.milestoneProgress.findUnique({
       where: { planId },
@@ -108,7 +102,6 @@ export async function getOrCreateFullMilestoneData(planId: string) {
       where: { planId },
     });
 
-    const projections = generateProjections(plan);
     const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
 
     if (!progress) {
@@ -132,7 +125,8 @@ export async function getOrCreateFullMilestoneData(planId: string) {
         purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
         purchaseProjection.housePriceProjected,
         currentSavings,
-        plan
+        plan,
+        projections
       );
       const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
       const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
@@ -221,18 +215,10 @@ export async function updateMilestoneProgress(
   }
 }
 
-export async function recalculateMilestoneProgress(planId: string) {
+export async function recalculateMilestoneProgress(planId: string, userId: string) {
   try {
-    const plan = await db.plan.findUnique({
-      where: { id: planId },
-      include: { familySupport: true },
-    });
+    const { plan, projections } = await getProjectionsWithCache(planId, userId);
 
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
-
-    const projections = generateProjections(plan);
     const currentSavings = plan.initialSavings || 0;
     const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
 
@@ -242,7 +228,8 @@ export async function recalculateMilestoneProgress(planId: string) {
       purchaseYear + (plan.createdAt.getMonth() + 1) / 12,
       purchaseProjection.housePriceProjected,
       currentSavings,
-      plan
+      plan,
+      projections
     );
     const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
     const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
@@ -284,9 +271,9 @@ export async function recalculateMilestoneProgress(planId: string) {
   }
 } 
 
-export async function updateCurrentSavings(planId: string, amount: number) {
+export async function updateCurrentSavings(planId: string, amount: number, userId: string) {
   try {
-    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     
     const newCurrentSavings = progress.currentSavings + amount;
     const finalCurrentSavings = Math.max(0, newCurrentSavings);
@@ -366,10 +353,11 @@ export async function saveCustomTask(
     type: "user" | "system";
     status: "incomplete" | "completed" | "auto-completed";
     amount?: number;
-  }
+  },
+  userId: string
 ) {
   try {
-    const { roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     
     const planPageData = (roadmap.planPageData as any) || {};
     
@@ -405,9 +393,9 @@ export async function saveCustomTask(
   }
 }
 
-export async function getCustomTasks(planId: string, milestoneId: number) {
+export async function getCustomTasks(planId: string, milestoneId: number, userId: string) {
   try {
-    const { roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     const planPageData = (roadmap.planPageData as any) || {};
     
     return planPageData.customTasks?.[milestoneId] || [];
@@ -421,10 +409,11 @@ export async function updateCustomTaskStatus(
   planId: string,
   milestoneId: number,
   taskId: string,
-  newStatus: "incomplete" | "completed" | "auto-completed"
+  newStatus: "incomplete" | "completed" | "auto-completed",
+  userId: string
 ) {
   try {
-    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId);
+    const { progress, roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     const planPageData = (roadmap.planPageData as any) || {};
 
     if (!planPageData.customTasks?.[milestoneId]) {
@@ -536,4 +525,60 @@ export async function updateCustomTaskStatus(
     console.error("[FATAL ERROR] in updateCustomTaskStatus:", error);
     throw error;
   }
+} 
+
+// Định nghĩa một kiểu dữ liệu cụ thể hơn cho đối tượng plan mà hàm này trả về
+type PlanWithCacheAndSupport = Plan & {
+  planReport: {
+    projectionCache: any;
+  } | null;
+  familySupport: FamilySupport | null;
+};
+
+/**
+ * Lấy dữ liệu dự báo tài chính cho một kế hoạch.
+ * Hàm sẽ ưu tiên lấy dữ liệu từ cache (`planReport.projectionCache`).
+ * Nếu không có cache, nó sẽ tạo ra dữ liệu dự báo mới, lưu lại vào cache,
+ * và sau đó trả về.
+ *
+ * @param {string} planId - ID của kế hoạch.
+ * @param {string} userId - ID của người dùng sở hữu kế hoạch.
+ * @returns {Promise<{ plan: PlanWithCacheAndSupport, projections: ProjectionRow[] }>} - Một đối tượng chứa plan đầy đủ và dữ liệu dự báo.
+ */
+export async function getProjectionsWithCache(planId: string, userId: string): Promise<{ plan: PlanWithCacheAndSupport, projections: ProjectionRow[] }> {
+  const plan = await db.plan.findUnique({
+    where: { id: planId, userId },
+    include: {
+      familySupport: true,
+    },
+  });
+
+  const planReport = await db.planReport.findUnique({
+    where: { planId },
+    select: {
+      projectionCache: true,
+    },
+  });
+
+  if (!plan) {
+    throw new Error("Plan not found");
+  }
+
+  let projections: ProjectionRow[];
+
+  if (planReport?.projectionCache) {
+    console.log(`[getProjectionsWithCache] Using cached projections for planId: ${planId}`);
+    projections = planReport.projectionCache as unknown as ProjectionRow[];
+  } else {
+    console.log(`[getProjectionsWithCache] No cache found. Generating and caching new projections for planId: ${planId}`);
+    projections = generateProjections(plan);
+
+    // Lưu lại cache để dùng cho các lần sau
+    await db.planReport.update({
+      where: { planId },
+      data: { projectionCache: projections as any },
+    });
+  }
+
+  return { plan: plan as PlanWithCacheAndSupport, projections };
 } 

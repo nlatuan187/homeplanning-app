@@ -1,5 +1,5 @@
 import { Plan } from "@prisma/client";
-import { generateProjections } from "./calculations/projections/generateProjections";
+import { ProjectionRow } from "./calculations/affordability";
 
 // Định nghĩa interface cho Milestone
 export interface Milestone {
@@ -389,7 +389,8 @@ export function getMilestonesByGroup(
   confirmPurchaseYear: number,
   homePrice: number,
   currentSavings: number,
-  plan: Plan
+  plan: Plan,
+  projections: ProjectionRow[]
 ): MilestoneGroup[] {
   const duration = confirmPurchaseYear - timeStart;
 
@@ -400,9 +401,6 @@ export function getMilestonesByGroup(
 
   const definitions = milestoneDefinitions[groupKey];
   const groupStructure = groupStructures[groupKey];
-
-  // Lấy "Nguồn Chân Lý" từ generateProjections
-  const projections = generateProjections(plan);
 
   // Bắt đầu mô phỏng theo tháng
   let currentSimulatedBalance = plan.initialSavings;

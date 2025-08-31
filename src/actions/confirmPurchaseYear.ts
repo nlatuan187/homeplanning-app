@@ -2,6 +2,8 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { getProjectionsWithCache } from "@/actions/milestoneProgress";
 
 /**
  * Server Action 3: Save Confirmed Year
@@ -27,14 +29,17 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
         id: planId,
         userId,
       },
-      select: { // Add explicit select to fetch only necessary fields
-        id: true,
-      }
+      include: {
+        familySupport: true, // Get the full plan with necessary relations
+      },
     });
 
     if (!plan) {
       throw new Error("Plan not found");
     }
+
+    // Update the local plan object with the confirmed year before generating projections
+    plan.confirmedPurchaseYear = confirmedPurchaseYear;
 
     // Update the plan with the confirmed purchase year
     await db.plan.update({
@@ -54,6 +59,19 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
             backupPlans: null,
           },
         },
+      },
+    });
+
+    // Re-run projections with the confirmed year locked in
+    const projectionData = await getProjectionsWithCache(planId, userId);
+
+    // Save the projections to the cache in PlanReport
+    await db.planReport.update({
+      where: {
+        planId: planId,
+      },
+      data: {
+        projectionCache: projectionData as any, // Lưu cache
       },
     });
 

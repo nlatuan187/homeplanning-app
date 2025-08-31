@@ -108,3 +108,22 @@ export async function updatePlaygroundValues(
     console.error("[PLAYGROUND_UPDATE_ERROR]", err);
   }
 }
+
+export async function cachePlaygroundProjections(planId: string, projections: any) {
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
+
+    await db.planReport.update({
+      where: { planId },
+      data: {
+        projectionCache: projections,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to cache playground projections:", error);
+    return { success: false, error: "Server error" };
+  }
+}

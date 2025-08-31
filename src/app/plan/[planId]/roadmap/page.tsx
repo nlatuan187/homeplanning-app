@@ -3,7 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import RoadmapClient from "@/components/plan/roadmap/RoadmapClient";
-import { getOrCreateFullMilestoneData } from "@/actions/milestoneProgress";
+import { getOrCreateFullMilestoneData, getProjectionsWithCache } from "@/actions/milestoneProgress";
 import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 
@@ -26,7 +26,7 @@ export default async function RoadmapPage({
     redirect("/dashboard");
   }
   
-  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId);
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId, user.id);
 
   if (!progress || !roadmap) {
     // Xử lý trường hợp không tìm thấy dữ liệu tiến trình
@@ -35,9 +35,9 @@ export default async function RoadmapPage({
   
   // Tính toán các giá trị cần thiết
   const housePriceProjected = progress.housePriceProjected;
-  const projections = generateProjections(plan);
+  const projections = await getProjectionsWithCache(params.planId, user.id);
   const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
-  const purchaseProjection = projections.find(p => p.year === purchaseYear) || projections[0];
+  const purchaseProjection = projections.projections.find(p => p.year === purchaseYear) || projections.projections[0];
   const cumulativeGoal = housePriceProjected - purchaseProjection.loanAmountNeeded;
   const savingsPercentage = cumulativeGoal > 0 ? Math.round((progress.currentSavings / cumulativeGoal) * 100) : 0;
   

@@ -97,6 +97,7 @@ export async function editPlan(planId: string, redirectPath?: string, startSecti
         spendingPlan: null,
         insurance: null,
         backupPlans: null,
+        projectionCache: null,
       }
     });
 
