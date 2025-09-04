@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
 import { Plan, FamilySupport, PlanReport } from "@prisma/client";
@@ -571,7 +571,7 @@ export async function getProjectionsWithCache(planId: string, userId: string): P
     projections = planReport.projectionCache as unknown as ProjectionRow[];
   } else {
     console.log(`[getProjectionsWithCache] No cache found. Generating and caching new projections for planId: ${planId}`);
-    projections = generateProjections(plan);
+    projections = generateProjections(plan as PlanWithDetails);
 
     // Lưu lại cache để dùng cho các lần sau
     await db.planReport.update({

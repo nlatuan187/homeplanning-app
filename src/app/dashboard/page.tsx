@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import BottomNavbar from "@/components/layout/BottomNavbar";
+import PendingPlanHandler from "@/components/PendingPlanHandler";
 
 // Support Sheet Content Component
 const SupportSheetContent = () => {
@@ -284,6 +285,7 @@ export default function Dashboard() {
           <SupportSheetContent />
         </SheetContent>
       </Sheet>
+      <PendingPlanHandler />
       {plan && <BottomNavbar planId={plan.id}/>}
     </main>
   );

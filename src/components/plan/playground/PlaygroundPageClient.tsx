@@ -178,19 +178,25 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       monthlyOtherIncome: debouncedExtraIncome,
       paymentMethod: plan.paymentMethod === "fixed" ? "fixed" : "decreasing",
     };
-    let adjustedPlan = basePlan;
+    
+    // XÓA TOÀN BỘ KHỐI `adjustedPlan` Ở ĐÂY
+    // Logic `hasInsurance` và `hasEmergencyFund` vẫn giữ lại vì nó là tương tác UI tức thời
+    let finalPlan = { ...basePlan };
     if (hasInsurance) {
       const recommendedAmount = calculateRecommendedInsurance(debouncedMonthlyExpense);
-      adjustedPlan = { ...adjustedPlan, currentAnnualInsurancePremium: (plan.currentAnnualInsurancePremium || 0) + recommendedAmount };
+      finalPlan = { ...finalPlan, currentAnnualInsurancePremium: (plan.currentAnnualInsurancePremium || 0) + recommendedAmount };
     }
     if (hasEmergencyFund) {
       const emergencyFundAmount = calculateEmergencyFund(debouncedMonthlyExpense);
-      adjustedPlan = { ...adjustedPlan, initialSavings: Math.max(0, basePlan.initialSavings - emergencyFundAmount) };
+      finalPlan = { ...finalPlan, initialSavings: Math.max(0, basePlan.initialSavings - emergencyFundAmount) };
     }
+
     const defaultTargetYear = new Date().getFullYear() + plan.yearsToPurchase;
     const confirmedYear = plan.confirmedPurchaseYear || defaultTargetYear;
     const yearsToProject = confirmedYear - new Date().getFullYear();
-    return generateProjections(adjustedPlan, yearsToProject);
+    
+    // Dùng `finalPlan` đã được điều chỉnh bởi UI
+    return generateProjections(finalPlan as PlanWithDetails, yearsToProject);
   }, [plan, debouncedSalaryGrowth, debouncedInvestmentReturn, debouncedMonthlyExpense, debouncedExtraIncome, hasInsurance, hasEmergencyFund]);
 
   useEffect(() => {

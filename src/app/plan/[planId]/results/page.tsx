@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ResultsScenarioA from "./scenario-a";
 import ResultsScenarioB from "./scenario-b";
+import ResultsHeader from "./ResultsHeader";
 
 interface ResultsPageProps {
   params: {
@@ -51,14 +52,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   return (
     <main className="min-h-screen bg-black text-white p-2 md:p-4">
       <div className="container mx-auto max-w-5xl">
-        <header className="flex justify-between items-center py-6">
-          <h1 className="text-2xl font-bold">Kết quả Phân tích</h1>
-          <div className="flex space-x-2">
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Quay lại Dashboard</Link>
-            </Button>
-          </div>
-        </header>
+        <ResultsHeader />
 
         <div className="space-y-8">
           {plan.affordabilityOutcome === "ScenarioA" ? (
