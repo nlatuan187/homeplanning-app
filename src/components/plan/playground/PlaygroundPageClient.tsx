@@ -250,12 +250,13 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
 
   const handleEditPlan = async () => {
     try {
+      // editPlan sẽ tự động redirect, không cần router.push
       await editPlan(plan.id, undefined, "goal");
-      router.push(`/plan/new?edit=${plan.id}`);
     } catch (error) {
       console.error("Error editing plan:", error);
     }
   };
+  
 
   const handleConfirm = async () => {
     setShowConfirmModal(false);

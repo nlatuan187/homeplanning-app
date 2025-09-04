@@ -23,6 +23,16 @@ export default async function PlaygroundPage({
     redirect("/dashboard");
   }
 
+  // Thêm kiểm tra milestoneProgress trước khi render PlaygroundPageClient
+  const milestoneProgress = await db.milestoneProgress.findUnique({
+    where: { planId: params.planId }
+  });
+
+  // Nếu đã có milestoneProgress, redirect về plan page
+  if (milestoneProgress) {
+    redirect(`/plan/${params.planId}/plan`);
+  }
+
   // Ép kiểu thủ công nếu bạn chắc chắn giá trị paymentMethod là đúng
   const planData: PlanWithDetails = {
     ...plan,
