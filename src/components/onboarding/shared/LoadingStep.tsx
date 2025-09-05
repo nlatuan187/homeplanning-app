@@ -2,9 +2,10 @@ import { useEffect } from "react";
 
 interface LoadingStepProps {
   onLoadingComplete: () => void;
+  title?: string;
 }
 
-export default function LoadingStep({ onLoadingComplete }: LoadingStepProps) {
+export default function LoadingStep({ onLoadingComplete, title }: LoadingStepProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onLoadingComplete();
@@ -15,6 +16,7 @@ export default function LoadingStep({ onLoadingComplete }: LoadingStepProps) {
 
   return (
     <div className="flex flex-col items-center justify-center text-center h-full flex-grow">
+      {title && <h2 className="text-2xl font-bold text-white">{title}</h2>}
       {/* You can add a spinner or animation here */}
       <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-white mb-6"></div>
       <h2 className="text-2xl font-bold text-white">Đang bận rộn tính toán...</h2>

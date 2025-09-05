@@ -53,7 +53,7 @@ export async function createPlanFromOnboarding(
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
-      firstViableYear: projectionResult.earliestPurchaseYear,
+      firstViableYear: onboardingData.purchaseYear,
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,

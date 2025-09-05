@@ -49,3 +49,21 @@ export type ProjectionResult = {
   isAffordable?: boolean;
   error?: string;
 };
+
+/**
+ * Defines the structure for a single question in the multi-step form.
+ */
+export type QuestionOption = {
+  label: string;
+  value: string | number | boolean;
+};
+
+export type Question = {
+  key: keyof OnboardingPlanState;
+  text: string;
+  type: 'number' | 'options' | 'boolean';
+  unit?: string;
+  options?: QuestionOption[];
+  // A function to determine if this question should be displayed based on previous answers
+  condition?: (answers: Partial<OnboardingPlanState>) => boolean;
+};

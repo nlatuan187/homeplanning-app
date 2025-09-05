@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import RoadmapClient from "@/components/plan/roadmap/RoadmapClient";
 import { getOrCreateFullMilestoneData, getProjectionsWithCache } from "@/actions/milestoneProgress";
 import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 
 export default async function RoadmapPage({
   params,

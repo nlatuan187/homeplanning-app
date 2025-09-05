@@ -8,6 +8,7 @@ import Link from "next/link";
 import ResultsScenarioA from "./scenario-a";
 import ResultsScenarioB from "./scenario-b";
 import ResultsHeader from "./ResultsHeader";
+import ResultsClient from "./ResultsClient";
 
 interface ResultsPageProps {
   params: {
@@ -38,7 +39,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     redirect("/dashboard");
   }
 
-  const projectionData = generateProjections(plan);
+  const projectionData = generateProjections(plan as any);
   console.log("projectionData", projectionData);
   console.log("plan", plan);
   const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
@@ -50,33 +51,6 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-2 md:p-4">
-      <div className="container mx-auto max-w-5xl">
-        <ResultsHeader />
-
-        <div className="space-y-8">
-          {plan.affordabilityOutcome === "ScenarioA" ? (
-            <ResultsScenarioA
-              plan={plan}
-              targetYear={targetYear}
-              projection={targetYearProjection}
-              firstViableYear={plan.firstViableYear}
-              projectionData={projectionData}
-              planLoanInterestRate={plan.loanInterestRate}
-              planLoanTermYears={plan.loanTermYears}
-            />
-          ) : (
-            <ResultsScenarioB
-              plan={plan}
-              targetYear={targetYear}
-              firstViableYear={plan.firstViableYear!}
-              projectionData={projectionData}
-              planLoanInterestRate={plan.loanInterestRate}
-              planLoanTermYears={plan.loanTermYears}
-            />
-          )}
-        </div>
-      </div>
-    </main>
+    <ResultsClient plan={plan} firstYearProjection={targetYearProjection} />
   );
 }

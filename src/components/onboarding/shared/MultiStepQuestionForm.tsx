@@ -1,66 +1,86 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import { OnboardingPlanState } from '../types';
-import ProgressBar from './ProgressBar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, HomeIcon } from 'lucide-react';
-import Link from "next/link";
-import { cn } from '@/lib/utils';
+import { useState, useMemo, useRef, useEffect } from "react"; // Add useRef and useEffect
+import { OnboardingPlanState } from "../types";
+import ProgressBar from "./ProgressBar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ChevronLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Define the structure for a single question
 export interface Question {
   key: keyof OnboardingPlanState;
   text: string;
-  type: 'options' | 'number';
+  type: "options" | "number";
   options?: { label: string; value: any }[];
   unit?: string;
+  condition?: (answers: Partial<OnboardingPlanState>) => boolean;
 }
 
 interface MultiStepQuestionFormProps {
   questions: Question[];
   onSubmit: (data: Partial<OnboardingPlanState>) => void;
+  title: string;
+  subtitle?: string;
 }
 
-export default function MultiStepQuestionForm({ questions, onSubmit }: MultiStepQuestionFormProps) {
+export default function MultiStepQuestionForm({
+  questions,
+  onSubmit,
+  title,
+  subtitle,
+}: MultiStepQuestionFormProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const currentValue = formData[currentQuestion.key];
+  const visibleQuestions = useMemo(() => {
+    return questions.filter((q) => !q.condition || q.condition(formData));
+  }, [questions, formData]);
+
+  const currentQuestion = visibleQuestions[currentQuestionIndex];
+  const currentValue = currentQuestion ? formData[currentQuestion.key] : undefined;
+  
+  // Use a ref to hold the most current list of visible questions
+  const visibleQuestionsRef = useRef(visibleQuestions);
+  useEffect(() => {
+    visibleQuestionsRef.current = visibleQuestions;
+  }, [visibleQuestions]);
+
 
   const handleInputChange = (value: any) => {
-    setFormData(prev => ({ ...prev, [currentQuestion.key]: value }));
+    setFormData((prev) => ({ ...prev, [currentQuestion.key]: value }));
   };
 
-  const handleOptionClick = (value: any) => {
-    handleInputChange(value);
-    // Auto-advance for option selection
-    setTimeout(() => {
-      goToNext();
-    }, 150);
-  };
-  
   const goToNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+    // Read from the ref to get the most up-to-date list length
+    if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      // Reached the end, submit the form
       onSubmit(formData);
     }
   };
 
+  const handleOptionClick = (value: any) => {
+    // Set the data first, which will trigger a re-render and update the ref
+    handleInputChange(value);
+    // Then schedule the navigation, which will use the updated ref
+    setTimeout(() => {
+      goToNext();
+    }, 150);
+  };
+
   const goToPrev = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      setCurrentQuestionIndex((prev) => prev - 1);
     }
   };
-  
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
+  const isLastQuestion = currentQuestionIndex === visibleQuestions.length - 1;
 
   // Memoize input rendering to avoid re-renders
   const renderInput = useMemo(() => {
+    if (!currentQuestion) return null;
     if (currentQuestion.type === 'options' && currentQuestion.options) {
       return (
         <div className="grid grid-cols-1 gap-3 w-full">
@@ -96,6 +116,10 @@ export default function MultiStepQuestionForm({ questions, onSubmit }: MultiStep
     return null;
   }, [currentQuestion, currentValue]);
 
+  if (!currentQuestion) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-full flex-grow w-full">
       {/* Header Section */}
@@ -114,14 +138,14 @@ export default function MultiStepQuestionForm({ questions, onSubmit }: MultiStep
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
-            Kiểm tra
+            {title}
           </div>
         </div>
 
         {/* Progress Bar */}
         <ProgressBar
           current={currentQuestionIndex + 1}
-          total={questions.length}
+          total={visibleQuestions.length}
         />
       </div>
 
@@ -146,17 +170,18 @@ export default function MultiStepQuestionForm({ questions, onSubmit }: MultiStep
               currentValue === undefined || currentValue === null || currentValue === ''
             }
           >
-            {isLastQuestion ? 'Tôi có mua được nhà không?' : 'Tiếp tục'}
+            {isLastQuestion ? subtitle : 'Tiếp tục'}
           </Button>
         )}
         {/* For option type, the final button is implicitly handled by auto-advance */}
         {currentQuestion.type === 'options' && isLastQuestion && (
           <Button
             onClick={() => onSubmit(formData)}
-            className="w-full bg-[#00ACB8] text-white hover:bg-[#008C96] py-3.5 text-base rounded-sm"
-            disabled={Object.keys(formData).length < questions.length}
+            className="w-full bg-[#00ACB8] text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
+            // FIX: Compare against the length of *visible* questions
+            disabled={Object.keys(formData).length < visibleQuestions.length}
           >
-            Tôi có mua được nhà không?
+            {subtitle}
           </Button>
         )}
       </div>

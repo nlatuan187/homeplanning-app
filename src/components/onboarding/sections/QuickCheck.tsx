@@ -96,8 +96,10 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
     return (
       <>
         {/* Background Gradient */}
-        <div className="max-w-5xl mx-auto fixed inset-0 bg-gradient-to-b from-green-300 via-green-400 to-teal-500 z-0" />
-
+        <div
+          className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
+          style={{ backgroundImage: "url('/onboarding/section1bg.png')" }}
+        />
         {/* Content */}
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10">
           <div className="flex-grow flex flex-col items-center justify-center text-center">
@@ -135,6 +137,8 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
         <MultiStepQuestionForm
           questions={quickCheckQuestions}
           onSubmit={handleSubmit}
+          title="Kiểm tra"
+          subtitle="Tôi có mua được nhà không?"
         />
       </div>
     );

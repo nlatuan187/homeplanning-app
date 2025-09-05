@@ -4,21 +4,30 @@ import { useState } from "react";
 import { OnboardingPlanState } from "./types";
 import QuickCheck from "./sections/QuickCheck";
 import SignupPrompt from "./sections/SignupPrompt";
+import FamilySupport from "./sections/FamilySupport";
 
-type OnboardingSection = 'quickCheck' | 'signupPrompt';
+type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
-export default function OnboardingFlow() {
+// Add planId to the props
+interface OnboardingFlowProps {
+  planId: string;
+}
+
+export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const [currentSection, setCurrentSection] = useState<OnboardingSection>('quickCheck');
   const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
 
   const handleQuickCheckCompleted = (data: Partial<OnboardingPlanState>) => {
-    // Save the data from the form and move to the signup prompt screen
     setPlanState(prev => ({ ...prev, ...data }));
     setCurrentSection('signupPrompt');
   };
 
+  const handleFamilySupportCompleted = (data: Partial<OnboardingPlanState>) => {
+    setPlanState(prev => ({ ...prev, ...data }));
+    setCurrentSection('spending');
+  };
+
   const handleBackFromPrompt = () => {
-    // Allow the user to go back and edit their answers
     setCurrentSection('quickCheck');
   };
 
@@ -28,6 +37,9 @@ export default function OnboardingFlow() {
         return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
       case 'signupPrompt':
         return <SignupPrompt planData={planState} onBack={handleBackFromPrompt} />;
+      case 'familySupport':
+        // Now we pass the correct planId from props
+        return <FamilySupport initialData={planState} planId={planId} />;
       default:
         return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
     }
