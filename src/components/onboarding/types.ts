@@ -26,8 +26,8 @@ export interface OnboardingPlanState {
   familySupportLoanTerm?: number;
 
   // Section 3: Spending
-  monthlyLoanRepayments?: number;
-  annualInsuranceCosts?: number;
+  monthlyNonHousingDebt?: number;
+  currentAnnualInsurancePremium?: number;
   hasDependents?: boolean;
   monthlyDependentCosts?: number;
   hasNewChildPlan?: boolean;

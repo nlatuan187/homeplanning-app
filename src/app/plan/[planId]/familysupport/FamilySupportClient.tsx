@@ -41,11 +41,11 @@ export default function FamilySupportClient({ planId }: FamilySupportClientProps
   }
 
   if (status === 'loading') {
-      return <LoadingStep title="Nguồn lực hỗ trợ" onLoadingComplete={() => {}} />;
+      return <LoadingStep title="Nguồn lực hỗ trợ" />;
   }
 
   if (status === 'result' && result) {
-      return <ResultStep title="Nguồn lực hỗ trợ" result={result} onContinue={handleContinue} />;
+      return <ResultStep title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
   }
 
   return (

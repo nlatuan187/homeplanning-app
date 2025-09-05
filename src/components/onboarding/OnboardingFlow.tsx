@@ -39,7 +39,7 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
         return <SignupPrompt planData={planState} onBack={handleBackFromPrompt} />;
       case 'familySupport':
         // Now we pass the correct planId from props
-        return <FamilySupport initialData={planState} planId={planId} />;
+        return <FamilySupport initialData={planState} planId={planId} onCompleted={handleFamilySupportCompleted} />;
       default:
         return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
     }
