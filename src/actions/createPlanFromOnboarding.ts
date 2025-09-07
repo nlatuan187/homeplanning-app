@@ -4,6 +4,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { OnboardingPlanState } from "@/components/onboarding/types";
 import { calculateOnboardingProjection } from "./calculateOnboardingProjection";
+import { computeOnboardingOutcome } from "./projectionHelpers";
+import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 
 export async function createPlanFromOnboarding(
@@ -32,10 +34,41 @@ export async function createPlanFromOnboarding(
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
+    // If user already has a plan, update its core fields from onboarding
+    const yearsToPurchase = onboardingData.purchaseYear - new Date().getFullYear();
+    const updates = {
+      planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
+      yearsToPurchase: yearsToPurchase,
+      targetHousePriceN0: onboardingData.propertyValue,
+      targetHouseType: onboardingData.propertyType,
+      targetLocation: onboardingData.city,
+      initialSavings: onboardingData.initialSavings || 0,
+      userMonthlyIncome: onboardingData.personalMonthlyIncome || 0,
+      monthlyLivingExpenses: onboardingData.personalMonthlyExpenses,
+    } as const;
+
+    const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+
+    try {
+      const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
+      const isAffordable = outcome.purchaseProjection?.isAffordable; 
+
+      await db.plan.update({
+        where: { id: updated.id },
+        data: {
+          firstViableYear: outcome.purchaseProjection.year,
+          affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+        },
+      });
+    } catch (e) {
+      logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+    }
+
     return { success: true, planId: existingPlan.id, existed: true };
   }
 
   try {
+    // Keep initial lightweight check for UX; real projection will be used after create
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
       onboardingData.purchaseYear - new Date().getFullYear();
@@ -63,12 +96,31 @@ export async function createPlanFromOnboarding(
       paymentMethod: "BankLoan",
     };
 
-    const newPlan = await db.plan.create({
+    let newPlan = await db.plan.create({
       data: {
         ...planPayload,
         user: { connect: { id: userId } },
       },
     });
+
+    // Run the official projection engine and update plan with true earliest year
+    try {
+      const outcome = await computeOnboardingOutcome({
+        ...(newPlan as any),
+        createdAt: newPlan.createdAt,
+      } as any);
+
+      const isAffordable = outcome.purchaseProjection?.isAffordable ?? false;
+      newPlan = await db.plan.update({
+        where: { id: newPlan.id },
+        data: {
+          firstViableYear: outcome.purchaseProjection.year,
+          affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+        },
+      });
+    } catch (e) {
+      logger.warn("Projection engine failed during createPlanFromOnboarding; falling back to lightweight result", { error: String(e) });
+    }
 
     return { success: true, planId: newPlan.id };
   } catch (error) {

@@ -74,7 +74,7 @@ export const Step2_Income = () => {
                     className="ml-2 h-5 w-5"
                     onClick={() => setOpenModal("salaryGrowth")}
                   >
-                    <Info className="h-4 w-4 text-cyan-400" />
+                    <Info className="h-4 w-4 text-[#00ACB8]" />
                   </Button>
                 </FormLabel>
                 <FormControl>
@@ -135,7 +135,7 @@ export const Step2_Income = () => {
                         className="ml-2 h-5 w-5"
                         onClick={() => setOpenModal("coApplicantSalaryGrowth")}
                       >
-                        <Info className="h-4 w-4 text-cyan-400" />
+                        <Info className="h-4 w-4 text-[#00ACB8]" />
                       </Button>
                     </FormLabel>
                     <FormControl>

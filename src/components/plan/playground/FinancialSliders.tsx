@@ -46,19 +46,18 @@ function SliderWithDebounce({ item }: { item: SliderItem }) {
 
   return (
     <div className="flex items-center gap-4">
-      <div className="w-40 text-left truncate">{item.label}</div>
-      <div className="w-14 text-center font-semibold text-white whitespace-nowrap">
-        {localValue}
-        {item.suffix}
-      </div>
       <input
         type="range"
         min={0}
         max={item.max}
         value={localValue}
         onChange={(e) => setLocalValue(Number(e.target.value))}
-        className="flex-1 h-2 accent-cyan-400"
+        className="flex-1 h-2 accent-[#00ACB8]"
       />
+      <div className="w-14 text-center font-semibold text-white whitespace-nowrap">
+        {localValue}
+        {item.suffix}
+      </div>
     </div>
   );
 }

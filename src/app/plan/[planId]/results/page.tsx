@@ -3,11 +3,6 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { ProjectionRow } from "@/lib/calculations/affordability";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import ResultsScenarioA from "./scenario-a";
-import ResultsScenarioB from "./scenario-b";
-import ResultsHeader from "./ResultsHeader";
 import ResultsClient from "./ResultsClient";
 
 interface ResultsPageProps {
@@ -39,12 +34,15 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     redirect("/dashboard");
   }
 
+  // Generate the full projection data on the server
   const projectionData = generateProjections(plan as any);
   console.log("projectionData", projectionData);
   console.log("plan", plan);
   const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
+  // The first year projection is simply the first viable year from the projection data.
   const targetYearProjection: ProjectionRow | undefined =
-    projectionData[plan.yearsToPurchase];
+    projectionData.find(p => p.isAffordable);
+  console.log("targetYearProjection", targetYearProjection);
 
   if (!targetYearProjection) {
     return <div>Error: Could not calculate projection for the target year.</div>;

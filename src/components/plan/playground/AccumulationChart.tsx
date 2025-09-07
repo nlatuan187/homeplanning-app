@@ -1,83 +1,51 @@
 "use client";
 
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, LineChart, Line } from 'recharts';
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
 
-type Props = {
+interface AccumulationChartProps {
   data: ChartMilestone[];
+  dataKey: "cumulativeSavings" | "housePriceProjected" | "primaryIncome"; // Thêm primaryIncome
+  name: string;
+}
+
+const formatNumber = (value: number) => {
+  return new Intl.NumberFormat('vi-VN').format(Math.round(value));
 };
 
-const SquareDot = ({ cx, cy, fill }: any) => {
-  return (
-    <rect
-      x={cx - 4}
-      y={cy - 4}
-      width={8}
-      height={8}
-      fill={fill}
-      stroke="white"
-      strokeWidth={1}
-      rx={0}
-    />
-  );
-};
-
-export default function AccumulationChart({ data }: Props) {
-  return (
-    <div className="bg-slate-900/70 rounded-xl text-white w-full">
-      <h2 className="text-white font-semibold px-6 py-2 text-lg sm:text-base text-left">
-        Dòng tiền tích luỹ
-      </h2>
-      <div className="w-full sm:w-full md:w-[700px] lg:w-[900px] mx-auto h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="#444" strokeDasharray="3 3" />
-            <XAxis dataKey="name" stroke="#ccc" padding={{ left: 25 }} />
-            <YAxis stroke="#ccc" />
-            <Tooltip />
-            <Legend
-              layout="horizontal"
-              verticalAlign="top"
-              align="center"
-              iconType="square"
-              iconSize={10}
-              wrapperStyle={{ gap: "1.5rem", fontSize: "9px", paddingBottom: 14, display: "flex", justifyContent: "center", width: "100%" }}
-            />
-            <Line
-              type="linear"
-              dataKey="cumulativeSavingsFromInitial"
-              name="Khoản tiết kiệm"
-              stroke="#a0e8e0"
-              fill="#a0e8e0"
-              fillOpacity={0.3}
-              strokeWidth={2}
-              dot={<SquareDot />}
-            />
-            <Line
-              type="linear"
-              dataKey="cumulativeSavingsFromMonthly"
-              name="Khoản tích luỹ hàng tháng"
-              stroke="#00bcd4"
-              fill="#00bcd4"
-              fillOpacity={0.3}
-              strokeWidth={2}
-              dot={<SquareDot />}
-            />
-            <Line
-              type="linear"
-              dataKey="cumulativeSavings"
-              name="Tổng tích luỹ"
-              stroke="#fbc02d"
-              fill="#fbc02d"
-              fillOpacity={0.3}
-              strokeWidth={3}
-              dot={<SquareDot />}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+export default function AccumulationChart({ data, dataKey, name }: AccumulationChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center text-slate-500 py-10">
+        Không có dữ liệu để hiển thị biểu đồ.
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={250}>
+      <AreaChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <defs>
+          <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <XAxis dataKey="name" stroke="#9ca3af" />
+        <YAxis hide={true} domain={['auto', 'dataMax * 1.1']} />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+           formatter={(value: number) => new Intl.NumberFormat('vi-VN').format(value)}
+        />
+        <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: 20 }}/>
+        <Area type="monotone" dataKey={dataKey} name={name} stroke="#22d3ee" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2}>
+           <LabelList dataKey={dataKey} position="top" formatter={formatNumber} fill="#e5e7eb" fontSize={12} />
+        </Area>
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }

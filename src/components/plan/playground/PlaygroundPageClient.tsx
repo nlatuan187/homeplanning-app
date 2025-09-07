@@ -389,7 +389,6 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
       )}
 
       <div className="container mx-auto max-w-5xl px-4 py-2">
-        <AccumulationChart data={chartData} />
         <FinancialSliders
           key={sliderKey}
           items={[
@@ -454,7 +453,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 }}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-400 rounded-full peer peer-checked:bg-cyan-500 transition-all" />
+              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00ACB8] rounded-full peer peer-checked:bg-cyan-500 transition-all" />
               <div className="absolute w-4 h-4 bg-white rounded-full left-1 top-1 peer-checked:translate-x-5 transition-all" />
             </label>
           </div>
@@ -474,7 +473,7 @@ export default function PlaygroundPageClient({ initialPlan }: { initialPlan: Pla
                 }}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-400 rounded-full peer peer-checked:bg-cyan-500 transition-all" />
+              <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#00ACB8] rounded-full peer peer-checked:bg-cyan-500 transition-all" />
               <div className="absolute w-4 h-4 bg-white rounded-full left-1 top-1 peer-checked:translate-x-5 transition-all" />
             </label>
           </div>

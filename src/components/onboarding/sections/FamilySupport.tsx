@@ -65,13 +65,13 @@ export default function FamilySupport({
 
     const familySupportPayload = {
       hasFinancialPartner: fullData.hasFinancialPartner,
-      partnerMonthlyIncome: (fullData.partnerMonthlyIncome || 0) * 1_000_000,
-      otherMonthlyIncome: (fullData.otherMonthlyIncome || 0) * 1_000_000,
+      partnerMonthlyIncome: (fullData.partnerMonthlyIncome || 0),
+      otherMonthlyIncome: (fullData.otherMonthlyIncome || 0),
       hasFamilySupport: fullData.hasFamilySupport,
       familySupportType: fullData.familySupportType,
-      familySupportGiftAmount: (fullData.familySupportGiftAmount || 0) * 1_000_000,
+      familySupportGiftAmount: (fullData.familySupportGiftAmount || 0),
       familySupportGiftTiming: fullData.familySupportGiftTiming,
-      familySupportLoanAmount: (fullData.familySupportLoanAmount || 0) * 1_000_000,
+      familySupportLoanAmount: (fullData.familySupportLoanAmount || 0),
       familySupportLoanInterest: fullData.familySupportLoanInterest,
       familySupportLoanRepayment: fullData.familySupportLoanRepayment,
       familySupportLoanTerm: fullData.familySupportLoanTerm,
@@ -80,7 +80,7 @@ export default function FamilySupport({
     const result = await updateAndRecalculateFamilySupport(planId, familySupportPayload);
     
     if (result.success) {
-      setResult(result);
+      setResult(result as RecalculationResult);
       setStep("result");
     } else {
       toast.error(result.error || "Có lỗi xảy ra, vui lòng thử lại.");
@@ -90,7 +90,7 @@ export default function FamilySupport({
 
   const handleContinue = () => {
     // This is where you might call onCompleted or navigate
-    router.push(`/plan/${planId}/results`);
+    router.push(`/plan/${planId}/spending`);
   };
 
   if (step === "intro") {

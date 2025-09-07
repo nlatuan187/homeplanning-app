@@ -66,6 +66,47 @@ export async function updatePlanProgress(
   }
 }
 
+export async function updatePlanProgressWithYear(
+  year: number
+) {
+  try {
+    // Get authenticated user
+    const { userId } = await auth();
+
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get the plan
+    const plan = await db.plan.findFirst({
+      where: {
+        userId: userId,
+      },
+    });
+
+    if (!plan) {
+      throw new Error("Plan not found");
+    }
+
+    // Verify the user owns the plan
+    if (plan.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    await db.plan.update({
+      where: {
+        id: plan.id,
+      },
+      data: {
+        confirmedPurchaseYear: year,
+      }
+    });
+
+  } catch (error) {
+    console.error("[EDIT_PLAN]", error);
+    throw error;
+  }
+}
 // Action này không còn cần thiết vì logic đã được tích hợp ở client
 // và gọi trực tiếp các action cụ thể hơn.
 // Bạn có thể cân nhắc xóa nó đi.

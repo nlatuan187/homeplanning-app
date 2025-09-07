@@ -5,23 +5,13 @@ import { currentUser } from "@clerk/nextjs/server";
 import { OnboardingPlanState } from "@/components/onboarding/types";
 import { revalidatePath } from "next/cache";
 import { Plan } from "@prisma/client";
+import { buildPlanForProjection, computeOnboardingOutcome } from "./projectionHelpers";
+import logger from "@/lib/logger";
 
-async function runProjection(plan: Plan, supportData: any): Promise<any> {
-  const previousYear = plan.firstViableYear;
-
-  // Simplified logic, assuming gift and loan amounts are passed directly
-  const supportAmount = (supportData.familySupportGiftAmount || 0) + (supportData.familySupportLoanAmount || 0);
-  const yearReduction = Math.floor(supportAmount / 100_000_000); // 1 year per 100M
-  const newYear = previousYear ? previousYear - yearReduction : new Date().getFullYear() + 10; // Fallback
-
-  let message = "";
-  if (previousYear && newYear < previousYear) {
-    message = `Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳`;
-  } else {
-    message = `Không sao, bàn tay ta làm nên tất cả, có sức người, sỏi đá cũng xếp được thành căn nhà đầu tiên 💪.`;
-  }
-
-  return { earliestPurchaseYear: newYear, message };
+async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; }> {
+  const enginePlan = await buildPlanForProjection(planId);
+  const outcome = await computeOnboardingOutcome(enginePlan);
+  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message };
 }
 
 export async function updateAndRecalculateFamilySupport(
@@ -65,7 +55,7 @@ export async function updateAndRecalculateFamilySupport(
         })
     ]);
 
-    const result = await runProjection(plan, formData);
+    const result = await runProjectionWithEngine(planId);
 
     await db.plan.update({
         where: { id: planId },
@@ -76,7 +66,7 @@ export async function updateAndRecalculateFamilySupport(
     return { success: true, ...result };
 
   } catch (error) {
-    console.error("[ACTION_ERROR] Failed to update and recalculate:", error);
+    logger.error("[ACTION_ERROR] Failed to update and recalculate (FamilySupport)", { error: String(error) });
     return { success: false, error: "Đã có lỗi xảy ra phía máy chủ." };
   }
 }

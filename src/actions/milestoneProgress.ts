@@ -573,10 +573,16 @@ export async function getProjectionsWithCache(planId: string, userId: string): P
     console.log(`[getProjectionsWithCache] No cache found. Generating and caching new projections for planId: ${planId}`);
     projections = generateProjections(plan as PlanWithDetails);
 
-    // Lưu lại cache để dùng cho các lần sau
-    await db.planReport.update({
+    // Lưu lại cache để dùng cho các lần sau  
+    await db.planReport.upsert({
       where: { planId },
-      data: { projectionCache: projections as any },
+      create: { 
+        planId,
+        projectionCache: projections as any,
+      },
+      update: { 
+        projectionCache: projections as any,
+      },
     });
   }
 

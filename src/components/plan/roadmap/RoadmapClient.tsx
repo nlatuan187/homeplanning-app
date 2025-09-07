@@ -97,7 +97,7 @@ export default function RoadmapClient({
             <div className="bg-white px-6 pb-0.5 items-center">
               <div className="mb-2 h-2 bg-slate-700 rounded-lg">
                 <div
-                  className="h-full bg-cyan-400 rounded-full"
+                  className="h-full bg-[#00ACB8] rounded-full"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>

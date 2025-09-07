@@ -79,7 +79,7 @@ export const Step1_Goal = () => {
                 <FormControl>
                   <NumberInput name={field.name} control={control} />
                 </FormControl>
-                 <p className="text-cyan-400 text-sm mt-1">Dự kiến mua nhà vào {targetPurchaseDate}.</p>
+                 <p className="text-[#00ACB8] text-sm mt-1">Dự kiến mua nhà vào {targetPurchaseDate}.</p>
                 <FormMessage />
               </FormItem>
             )}
@@ -112,7 +112,7 @@ export const Step1_Goal = () => {
                     className="ml-2 h-5 w-5"
                     onClick={() => setOpenModal("houseGrowth")}
                   >
-                    <Info className="h-4 w-4 text-cyan-400" />
+                    <Info className="h-4 w-4 text-[#00ACB8]" />
                   </Button>
                 </FormLabel>
                 <FormControl>
@@ -121,7 +121,7 @@ export const Step1_Goal = () => {
                     control={control}
                   />
                 </FormControl>
-                <p className="text-cyan-400 text-sm mt-1">
+                <p className="text-[#00ACB8] text-sm mt-1">
                   Giá nhà ước tính tại thời điểm mua:{" "}
                   {futureHousePriceInBillions.toFixed(2)} tỷ VNĐ.
                 </p>

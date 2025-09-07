@@ -82,11 +82,11 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
     // Convert units from triệu VNĐ to VNĐ and pass to the parent component
     const processedData: Partial<OnboardingPlanState> = {
       ...formData,
-      propertyValue: (formData.propertyValue || 0) * 1_000_000,
-      initialSavings: (formData.initialSavings || 0) * 1_000_000,
-      personalMonthlyIncome: (formData.personalMonthlyIncome || 0) * 1_000_000,
+      propertyValue: (formData.propertyValue || 0),
+      initialSavings: (formData.initialSavings || 0),
+      personalMonthlyIncome: (formData.personalMonthlyIncome || 0),
       personalMonthlyExpenses:
-        (formData.personalMonthlyExpenses || 0) * 1_000_000,
+        (formData.personalMonthlyExpenses || 0),
     };
 
     onCompleted(processedData);

@@ -8,7 +8,7 @@ import ResultsHeader from "./ResultsHeader";
 
 interface ResultsClientProps {
   plan: Plan & { familySupport: any };
-  firstYearProjection: any;
+  firstYearProjection?: any;
 }
 
 export default function ResultsClient({
@@ -17,6 +17,9 @@ export default function ResultsClient({
 }: ResultsClientProps) {
   const router = useRouter();
   const isScenarioA = plan.affordabilityOutcome === "ScenarioA";
+  console.log("firstYearProjection", firstYearProjection);
+  console.log("plan.firstViableYear", plan.firstViableYear);
+  console.log("firstYearProjection.year - plan.firstViableYear", firstYearProjection.year - (plan.firstViableYear || 0));
 
   return (
     <main className="min-h-screen bg-black text-white p-2 md:p-4">
@@ -35,7 +38,7 @@ export default function ResultsClient({
               </div>
               <div className="my-6 md:my-8">
                 <Image
-                  src="/Rectangle 34624509.png"
+                  src="/onboarding/result1.png"
                   alt="Decorative"
                   width={136}
                   height={169}
@@ -54,20 +57,32 @@ export default function ResultsClient({
               <div className="rounded-lg text-center font-semibold text-2xl text-red-500">
                 chưa khả thi
               </div>
-              {plan.firstViableYear && plan.firstViableYear < firstYearProjection.year ? (
-                <div className="rounded-lg p-4 text-center">
-                  nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}
-                </div>
-              ) : null}
+              {plan.firstViableYear && firstYearProjection.year - plan.firstViableYear === 1 ? (
+                <>
+                  <div className="rounded-lg p-4 text-center">
+                    nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}
+                  </div>
+                  <div className="my-6 md:my-8 items-center justify-center pt-10">
+                    <Image
+                    src="/onboarding/result2.png"
+                    alt="Decorative"
+                      width={136}
+                      height={169}
+                      className="mx-auto"
+                    />
+                  </div>
+                </>
+              ) : (
               <div className="my-6 md:my-8 items-center justify-center pt-10">
                 <Image
-                  src="/Rectangle 34624509.png"
+                  src="/onboarding/result3.png"
                   alt="Decorative"
                   width={136}
                   height={169}
                   className="mx-auto"
                 />
               </div>
+            )}
               <div className="rounded-lg py-4 px-7 text-center">
                 Chúng tôi có thể giúp bạn tìm ra cách mua sớm nhất có thể.
                 <br />

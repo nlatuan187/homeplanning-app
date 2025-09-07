@@ -28,10 +28,6 @@ export interface OnboardingPlanState {
   // Section 3: Spending
   monthlyNonHousingDebt?: number;
   currentAnnualInsurancePremium?: number;
-  hasDependents?: boolean;
-  monthlyDependentCosts?: number;
-  hasNewChildPlan?: boolean;
-  newChildYear?: number;
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;
@@ -47,6 +43,12 @@ export type ProjectionResult = {
   message: string;
   earliestPurchaseYear?: number;
   isAffordable?: boolean;
+  // Keep track of the year user selected in Quick Check to render headings correctly
+  selectedPurchaseYear?: number;
+  // The projection row year used for affordability decision (usually equals selectedPurchaseYear)
+  purchaseProjectionYear?: number;
+  // The first affordable year at or after selected year (commonly selected+1 if not affordable)
+  nextAffordableYear?: number;
   error?: string;
 };
 

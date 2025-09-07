@@ -5,6 +5,10 @@ import { OnboardingPlanState } from "./types";
 import QuickCheck from "./sections/QuickCheck";
 import SignupPrompt from "./sections/SignupPrompt";
 import FamilySupport from "./sections/FamilySupport";
+import Spending from "./sections/Spending";
+import Assumption from "./sections/Assumption";
+import { Plan } from "@prisma/client";
+import { updatePlanProgressWithYear } from "@/actions/updatePlanProgress";
 
 type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
@@ -27,6 +31,16 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
     setCurrentSection('spending');
   };
 
+  const handleSpendingCompleted = (data: Partial<OnboardingPlanState>) => {
+    setPlanState(prev => ({ ...prev, ...data }));
+    setCurrentSection('assumptions');
+  };
+
+
+  const handleFinalChoice = async (year: number) => {
+    await updatePlanProgressWithYear(year);
+  };
+
   const handleBackFromPrompt = () => {
     setCurrentSection('quickCheck');
   };
@@ -40,6 +54,10 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
       case 'familySupport':
         // Now we pass the correct planId from props
         return <FamilySupport initialData={planState} planId={planId} onCompleted={handleFamilySupportCompleted} />;
+      case 'spending':
+        return <Spending initialData={planState} planId={planId} onCompleted={handleSpendingCompleted} />;
+      case 'assumptions':
+        return <Assumption plan={planState as Plan} onFinalChoice={handleFinalChoice} step="intro" setStep={() => {}} assumptionStep={0} onNext={() => {}} onPrev={() => {}} result={null} assumptions={[]} onSliderChange={() => {}} chartData={[]}/>;
       default:
         return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
     }
