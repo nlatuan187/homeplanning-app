@@ -30,8 +30,8 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
   };
 
   return (
-    <div className="flex flex-col h-full flex-grow text-white max-w-5xl mx-auto">
-      <header className="relative flex justify-center items-center py-4">
+    <div className="flex flex-col h-full flex-grow text-white">
+      <header className="relative flex justify-center items-center pt-2">
         <button onClick={onBack} className="absolute left-0 p-2">
           <ArrowLeftIcon className="w-6 h-6 text-white" />
         </button>
@@ -43,7 +43,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
           “Tôi có thể mua được căn nhà mơ ước không?”
         </h1>
 
-        <div className="space-y-4 w-full max-w-sm mb-10">
+        <div className="space-y-4 w-full max-w-5xl mb-10">
           <div className="bg-slate-800/50 rounded-lg p-4 text-left flex items-start space-x-4">
             <Award className="h-8 w-8 text-cyan-500 mt-1 flex-shrink-0" />
             <div>

@@ -158,7 +158,7 @@ export default function MultiStepQuestionForm({
       </div>
 
       {/* Action Button */}
-      <div className="mt-auto px-4">
+      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto px-4 bg-slate-950 border-t border-slate-800 z-10">
         {currentQuestion.type === 'number' && (
           <Button
             onClick={goToNext}

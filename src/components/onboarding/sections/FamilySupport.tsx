@@ -122,18 +122,18 @@ export default function FamilySupport({
               Thật tuyệt vời nếu bạn có người đồng hành hoặc sự hỗ trợ tài chính. Hãy cùng xem những nguồn lực này có giúp bạn mua nhà sớm hơn không nhé!
             </p>
           </div>
-          <Button
-            onClick={() => setStep("form")}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
-          >
-            Đi tìm nguồn lực hỗ trợ
-          </Button>
+          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 z-10">
+            <Button
+              onClick={() => setStep("form")}
+              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+            >
+              Đi tìm nguồn lực hỗ trợ
+            </Button>
+          </div>
         </div>
       </>
     );
   }
-
-  console.log("result", result)
 
   if (step === "loading") {
       return (

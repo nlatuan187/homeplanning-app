@@ -230,8 +230,9 @@ export default function Assumption({
           </div>
 
           {/* Action Button */}
-          <div className="mt-auto pt-4">
-              <Button onClick={onNext} className="w-full bg-cyan-500 text-white hover:bg-cyan-600 py-4 text-lg font-semibold rounded-xl shadow-lg">
+          {/* This div is now fixed to the bottom of the screen */}
+          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+              <Button onClick={onNext} className="w-full bg-cyan-500 text-white hover:bg-cyan-600 py-4 text-lg font-semibold rounded-sm shadow-lg">
                   {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
               </Button>
           </div>
