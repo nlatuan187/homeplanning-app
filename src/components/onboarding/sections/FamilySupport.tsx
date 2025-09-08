@@ -12,8 +12,6 @@ import { toast } from "react-hot-toast";
 import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
-import { OnboardingProgress } from "@prisma/client";
-import { completeOnboardingSection } from "@/actions/onboardingProgress";
 
 const familySupportQuestions: Question[] = [
     { key: 'hasFinancialPartner', text: 'Bạn có người đồng hành tài chính (vợ/chồng) khi mua nhà không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
@@ -38,8 +36,9 @@ const familySupportQuestions: Question[] = [
 ];
 
 interface FamilySupportProps {
+  initialData: OnboardingPlanState;
   planId: string;
-  onboardingProgress: OnboardingProgress | null;
+  onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";

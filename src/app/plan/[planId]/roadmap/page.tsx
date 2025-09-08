@@ -34,7 +34,7 @@ export default async function RoadmapPage({
   
   // Tính toán các giá trị cần thiết
   const housePriceProjected = progress.housePriceProjected;
-  const projections = await getProjectionsWithCache(params.planId, user.id);
+  const projections = await getProjectionsWithCache(plan.id, user.id);  
   const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
   const purchaseProjection = projections.projections.find(p => p.year === purchaseYear) || projections.projections[0];
   const cumulativeGoal = housePriceProjected - purchaseProjection.loanAmountNeeded;

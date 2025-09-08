@@ -9,18 +9,17 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 
-const familySupportQuestions: Question[] = [
+const spendingQuestions: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
     // @ts-ignore
     { key: 'currentAnnualInsurancePremium', text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
 ];
 
-interface FamilySupportProps {
+interface SpendingProps {
   initialData: Partial<OnboardingPlanState>;
   planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
@@ -36,11 +35,11 @@ interface RecalculationResult {
     hasWorsened?: boolean; // 🔥 Thêm field để track việc năm mua nhà bị lùi lại
 }
 
-export default function FamilySupport({
+export default function Spending({
   initialData,
   planId,
   onCompleted,
-}: FamilySupportProps) {
+}: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
@@ -128,7 +127,7 @@ export default function FamilySupport({
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
         <MultiStepQuestionForm 
-            questions={familySupportQuestions} 
+            questions={spendingQuestions} 
             onSubmit={handleSubmit}
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"

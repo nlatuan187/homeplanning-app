@@ -8,7 +8,6 @@ import FamilySupport from "./sections/FamilySupport";
 import Spending from "./sections/Spending";
 import Assumption from "./sections/Assumption";
 import { Plan } from "@prisma/client";
-import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
 
 type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
