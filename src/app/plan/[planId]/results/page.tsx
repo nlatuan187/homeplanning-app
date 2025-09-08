@@ -41,12 +41,9 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
   // The first year projection is simply the first viable year from the projection data.
   const targetYearProjection: ProjectionRow | undefined =
-    projectionData.find(p => p.isAffordable);
+    projectionData.find(p => p.isAffordable)
+  
   console.log("targetYearProjection", targetYearProjection);
-
-  if (!targetYearProjection) {
-    return <div>Error: Could not calculate projection for the target year.</div>;
-  }
 
   return (
     <ResultsClient plan={plan} firstYearProjection={targetYearProjection} />
