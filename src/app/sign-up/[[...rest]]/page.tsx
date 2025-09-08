@@ -1,17 +1,17 @@
 "use client";
 
-import { SignUp } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
-
-export default function SignUpPage() {
+import { SignUp } from "@clerk/nextjs";
+export default function Page() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-950">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950">
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <SignUp
             appearance={{
               elements: {
-                formButtonPrimary: "bg-slate-800 hover:bg-slate-700 text-white",
+                formButtonPrimary:
+                  "bg-cyan-500 hover:bg-[#008C96] text-sm normal-case",
                 card: "bg-transparent shadow-none",
                 headerTitle: "text-white",
                 headerSubtitle: "text-slate-400",
@@ -20,10 +20,9 @@ export default function SignUpPage() {
                 footerActionLink: "text-slate-400 hover:text-white",
               },
             }}
-            routing="hash"
           />
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

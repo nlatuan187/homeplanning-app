@@ -3,7 +3,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { Plan } from "@prisma/client";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { determineAffordabilityOutcome } from "@/lib/calculations/projections/generateComparisonData";
 import { PlanFormState } from "@/components/plan/multi-step-form/types";
 // import { FormState } from "@/components/plan/plan-form"; // Old form state
@@ -120,7 +120,7 @@ export async function submitPlan(formData: PlanFormState & { planId?: string; us
     }
 
     // Re-enable and update projection logic
-    const projectionData = generateProjections(fullPlan);
+    const projectionData = generateProjections(fullPlan as Partial<PlanWithDetails>);
 
     // Determine affordability outcome
     const { affordabilityOutcome, firstViableYear } = determineAffordabilityOutcome(

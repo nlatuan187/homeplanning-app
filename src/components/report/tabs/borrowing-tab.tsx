@@ -126,7 +126,7 @@ const BorrowingReportTab: React.FC<BorrowingReportTabProps> = ({ data }) => {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Trả góp hàng tháng</span>
-              <span className="font-medium text-cyan-400">{formatNumber(loanSummary.monthlyPayment)}</span>
+              <span className="font-medium text-cyan-500">{formatNumber(loanSummary.monthlyPayment)}</span>
             </div>
              <Button variant="outline" onClick={() => setIsAmortizationSheetOpen(true)} className="w-full mt-4 bg-slate-700 border-slate-600 hover:bg-slate-600 text-slate-100">
               Xem bảng thống kê trả nợ

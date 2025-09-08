@@ -97,8 +97,17 @@ export async function editPlan(planId: string, redirectPath?: string, startSecti
         spendingPlan: null,
         insurance: null,
         backupPlans: null,
-        projectionCache: null,
+        projectionCache: Prisma.JsonNull,
       }
+    });
+
+    // Thêm logic xóa milestoneProgress và roadmap khi edit
+    await db.milestoneProgress.deleteMany({
+      where: { planId: planId }
+    });
+
+    await db.planRoadmap.deleteMany({
+      where: { planId: planId }
     });
 
     // Redirect to the specified path or default to the plan form

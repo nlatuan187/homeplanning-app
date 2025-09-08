@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import RoadmapClient from "@/components/plan/roadmap/RoadmapClient";
 import { getOrCreateFullMilestoneData, getProjectionsWithCache } from "@/actions/milestoneProgress";
 import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 
 export default async function RoadmapPage({
   params,
@@ -20,13 +19,13 @@ export default async function RoadmapPage({
   const plan = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
     include: { familySupport: true },
-  });
+  });657
 
   if (!plan) {
     redirect("/dashboard");
   }
   
-  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId, user.id);
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(plan.id, user.id);
 
   if (!progress || !roadmap) {
     // Xử lý trường hợp không tìm thấy dữ liệu tiến trình
@@ -35,7 +34,8 @@ export default async function RoadmapPage({
   
   // Tính toán các giá trị cần thiết
   const housePriceProjected = progress.housePriceProjected;
-  const projections = await getProjectionsWithCache(params.planId, user.id);
+  const projections = await getProjectionsWithCache(plan.id, user.id);  
+  console.log("projections", projections);
   const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
   const purchaseProjection = projections.projections.find(p => p.year === purchaseYear) || projections.projections[0];
   const cumulativeGoal = housePriceProjected - purchaseProjection.loanAmountNeeded;

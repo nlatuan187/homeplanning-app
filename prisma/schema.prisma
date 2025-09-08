@@ -81,6 +81,35 @@ model Plan {
   report            PlanReport?
   history           PlanHistory?
   roadmap           PlanRoadmap? // Thêm quan hệ này để dễ truy vấn
+  onboardingProgress OnboardingProgress?
+}
+
+enum OnboardingSectionState {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model OnboardingProgress {
+  id String @id @default(cuid())
+  planId String @unique
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  familySupportState    OnboardingSectionState @default(NOT_STARTED)
+  spendingState         OnboardingSectionState @default(NOT_STARTED)
+  assumptionState       OnboardingSectionState @default(NOT_STARTED)
+  familySupportPercent  Int                    @default(0)
+  spendingPercent       Int                    @default(0)
+  assumptionPercent     Int                    @default(0)
+
+  // Lưu trữ dữ liệu nháp của form
+  draftData Json?
+
+  // Section cuối cùng người dùng tương tác
+  lastSection String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FamilySupport {

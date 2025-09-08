@@ -2,8 +2,9 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { getProjectionsWithCache } from "@/actions/milestoneProgress";
+import { ProjectionRow } from "@/lib/calculations/affordability";
 
 /**
  * Server Action 3: Save Confirmed Year
@@ -40,6 +41,8 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
 
     // Update the local plan object with the confirmed year before generating projections
     plan.confirmedPurchaseYear = confirmedPurchaseYear;
+    const projectionData = generateProjections(plan as PlanWithDetails);
+    const purchaseProjection = projectionData.find((p: ProjectionRow) => p.year === confirmedPurchaseYear) || projectionData[0];
 
     // Update the plan with the confirmed purchase year
     await db.plan.update({
@@ -48,32 +51,33 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       },
       data: {
         confirmedPurchaseYear,
-        // Invalidate cached report data using a nested write
+        affordabilityOutcome: "ScenarioB",
+        targetHousePriceN0: purchaseProjection.housePriceProjected,
+        // Use upsert to handle cases where the report doesn't exist yet.
+        // This will create a new PlanReport if one isn't found, or update
+        // the existing one.
         report: {
-          update: {
-            generatedAt: null,
-            assetEfficiency: null,
-            capitalStructure: null,
-            spendingPlan: null,
-            insurance: null,
-            backupPlans: null,
+          upsert: {
+            create: {
+              // Define the initial state of the report if it's being created
+              generatedAt: null,
+              projectionCache: projectionData as any,
+            },
+            update: {
+              // If the report already exists, reset its fields to invalidate cache
+              generatedAt: null,
+              assetEfficiency: null,
+              capitalStructure: null,
+              spendingPlan: null,
+              insurance: null,
+              backupPlans: null,
+              projectionCache: projectionData as any,
+            },
           },
         },
       },
     });
 
-    // Re-run projections with the confirmed year locked in
-    const projectionData = await getProjectionsWithCache(planId, userId);
-
-    // Save the projections to the cache in PlanReport
-    await db.planReport.update({
-      where: {
-        planId: planId,
-      },
-      data: {
-        projectionCache: projectionData as any, // Lưu cache
-      },
-    });
 
     // Return success
     return {

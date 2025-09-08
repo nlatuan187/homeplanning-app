@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
 import { Plan, FamilySupport, PlanReport } from "@prisma/client";
@@ -102,13 +102,13 @@ export async function getOrCreateFullMilestoneData(planId: string, userId: strin
       where: { planId },
     });
 
-    const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
+    const purchaseProjection = projections.find((p: ProjectionRow) => p.year === plan.confirmedPurchaseYear) || projections[0];
 
     if (!progress) {
       const currentSavings = plan.initialSavings || 0;
       progress = await db.milestoneProgress.create({
         data: {
-          planId,
+          planId: plan.id,
           currentSavings,
           housePriceProjected: purchaseProjection.housePriceProjected,
           savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,
@@ -220,7 +220,7 @@ export async function recalculateMilestoneProgress(planId: string, userId: strin
     const { plan, projections } = await getProjectionsWithCache(planId, userId);
 
     const currentSavings = plan.initialSavings || 0;
-    const purchaseProjection = projections.find(p => p.year === plan.confirmedPurchaseYear) || projections[0];
+    const purchaseProjection = projections.find((p: ProjectionRow) => p.year === plan.confirmedPurchaseYear) || projections[0];
 
     const purchaseYear = plan.confirmedPurchaseYear ?? (plan.createdAt.getFullYear() + plan.yearsToPurchase);
     const milestoneGroups = getMilestonesByGroup(
@@ -564,21 +564,5 @@ export async function getProjectionsWithCache(planId: string, userId: string): P
     throw new Error("Plan not found");
   }
 
-  let projections: ProjectionRow[];
-
-  if (planReport?.projectionCache) {
-    console.log(`[getProjectionsWithCache] Using cached projections for planId: ${planId}`);
-    projections = planReport.projectionCache as unknown as ProjectionRow[];
-  } else {
-    console.log(`[getProjectionsWithCache] No cache found. Generating and caching new projections for planId: ${planId}`);
-    projections = generateProjections(plan);
-
-    // Lưu lại cache để dùng cho các lần sau
-    await db.planReport.update({
-      where: { planId },
-      data: { projectionCache: projections as any },
-    });
-  }
-
-  return { plan: plan as PlanWithCacheAndSupport, projections };
+  return { plan: plan as PlanWithCacheAndSupport, projections: planReport?.projectionCache as unknown as ProjectionRow[] };
 } 

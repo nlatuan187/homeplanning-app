@@ -55,14 +55,14 @@ export function FeedbackButton() {
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center gap-2">
           {!isOpen && (
-            <div className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm shadow-md">
+            <div className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm shadow-md max-md:hidden">
               Gửi phản hồi
             </div>
           )}
           <SheetTrigger asChild>
             <Button 
               size="icon" 
-              className="rounded-full h-12 w-12 shadow-lg"
+              className="rounded-full h-12 w-12 shadow-lg max-md:h-9 max-md:w-9"
             >
               <MessageSquarePlus className="h-6 w-6" />
               <span className="sr-only">Gửi phản hồi</span>

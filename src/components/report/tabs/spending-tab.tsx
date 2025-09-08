@@ -70,7 +70,7 @@ const SpendingReportTab: React.FC<SpendingReportTabProps> = ({ data, setActiveTa
               Bạn cần giữ vững kỷ luật chi tiêu, không tăng quá {targetExpenseGrowth}%/năm. 
               Chúng tôi cũng bổ sung một khoản chi mới là phí để mua bảo hiểm hàng năm.
             </p>
-            <Button variant="link" onClick={() => setActiveTab("bao-ve")} className="text-cyan-400 p-0 h-auto hover:text-cyan-300">
+            <Button variant="link" onClick={() => setActiveTab("bao-ve")} className="text-cyan-500 p-0 h-auto hover:text-cyan-300">
               Xem thêm bảo vệ →
             </Button>
             <div className="my-4 flex justify-end space-x-2">
@@ -118,7 +118,7 @@ const SpendingReportTab: React.FC<SpendingReportTabProps> = ({ data, setActiveTa
 
         {/* Mục 3: Giải thích của chuyên gia */}
         <AccordionItem value="item-3" className="bg-slate-900 rounded-lg border-none">
-          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100 data-[state=open]:text-cyan-400">
+          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100 data-[state=open]:text-cyan-500">
             Giải thích của chuyên gia
           </AccordionTrigger>
           <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">

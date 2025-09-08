@@ -73,7 +73,7 @@ export const Step3_Spending = () => {
                     className="ml-2 h-5 w-5"
                     onClick={() => setOpenModal("expenseGrowth")}
                   >
-                    <Info className="h-4 w-4 text-cyan-400" />
+                    <Info className="h-4 w-4 text-cyan-500" />
                   </Button>
                 </FormLabel>
                 <FormControl>
@@ -111,7 +111,7 @@ export const Step3_Spending = () => {
                     className="ml-2 h-5 w-5"
                     onClick={() => setOpenModal("investmentReturn")}
                   >
-                    <Info className="h-4 w-4 text-cyan-400" />
+                    <Info className="h-4 w-4 text-cyan-500" />
                   </Button>
                 </FormLabel>
                 <FormControl>

@@ -29,7 +29,7 @@ export default async function PlanPage({
   }
    
   // Lấy dữ liệu progress và roadmap
-  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId);
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(planData.id, user.id);
 
   const initialMilestoneId = searchParams.milestoneId 
     ? parseInt(searchParams.milestoneId) 

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import BottomNavbar from "@/components/layout/BottomNavbar";
+import PendingPlanHandler from "@/components/PendingPlanHandler";
 
 // Support Sheet Content Component
 const SupportSheetContent = () => {
@@ -224,7 +225,7 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-slate-100">Kế hoạch của bạn</h2>
             <div className="space-y-4">
               {(() => {
-                const targetYear = currentYear + plan.yearsToPurchase;
+                const targetYear = plan.confirmedPurchaseYear;
                 const isViable = (plan.affordabilityOutcome === "ScenarioB" && plan.confirmedPurchaseYear);
                 const detailLink = isViable
                   ? `/plan/${plan.id}/report`
@@ -284,6 +285,7 @@ export default function Dashboard() {
           <SupportSheetContent />
         </SheetContent>
       </Sheet>
+      <PendingPlanHandler />
       {plan && <BottomNavbar planId={plan.id}/>}
     </main>
   );

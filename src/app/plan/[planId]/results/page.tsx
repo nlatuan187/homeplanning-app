@@ -3,10 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 import { ProjectionRow } from "@/lib/calculations/affordability";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import ResultsScenarioA from "./scenario-a";
-import ResultsScenarioB from "./scenario-b";
+import ResultsClient from "./ResultsClient";
 
 interface ResultsPageProps {
   params: {
@@ -37,52 +34,21 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     redirect("/dashboard");
   }
 
-  const projectionData = generateProjections(plan);
+  // Generate the full projection data on the server
+  const projectionData = generateProjections(plan as any);
   console.log("projectionData", projectionData);
   console.log("plan", plan);
   const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
+  // The first year projection is simply the first viable year from the projection data.
   const targetYearProjection: ProjectionRow | undefined =
-    projectionData[plan.yearsToPurchase];
+    projectionData.find(p => p.isAffordable);
+  console.log("targetYearProjection", targetYearProjection);
 
   if (!targetYearProjection) {
     return <div>Error: Could not calculate projection for the target year.</div>;
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-2 md:p-4">
-      <div className="container mx-auto max-w-5xl">
-        <header className="flex justify-between items-center py-6">
-          <h1 className="text-2xl font-bold">Kết quả Phân tích</h1>
-          <div className="flex space-x-2">
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Quay lại Dashboard</Link>
-            </Button>
-          </div>
-        </header>
-
-        <div className="space-y-8">
-          {plan.affordabilityOutcome === "ScenarioA" ? (
-            <ResultsScenarioA
-              plan={plan}
-              targetYear={targetYear}
-              projection={targetYearProjection}
-              firstViableYear={plan.firstViableYear}
-              projectionData={projectionData}
-              planLoanInterestRate={plan.loanInterestRate}
-              planLoanTermYears={plan.loanTermYears}
-            />
-          ) : (
-            <ResultsScenarioB
-              plan={plan}
-              targetYear={targetYear}
-              firstViableYear={plan.firstViableYear!}
-              projectionData={projectionData}
-              planLoanInterestRate={plan.loanInterestRate}
-              planLoanTermYears={plan.loanTermYears}
-            />
-          )}
-        </div>
-      </div>
-    </main>
+    <ResultsClient plan={plan} firstYearProjection={targetYearProjection} />
   );
 }
