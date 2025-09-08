@@ -60,11 +60,6 @@ export async function updateAndRecalculateFamilySupport(
 
     const result = await runProjectionWithEngine(planId);
 
-    await db.plan.update({
-        where: { id: planId },
-        data: { firstViableYear: result.earliestPurchaseYear }
-    });
-
     // 🔥 SO SÁNH VÀ TẠO MESSAGE THEO PRD
     const newFirstViableYear = result.earliestPurchaseYear;
     let customMessage = "";

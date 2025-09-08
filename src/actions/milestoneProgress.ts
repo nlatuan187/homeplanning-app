@@ -108,7 +108,7 @@ export async function getOrCreateFullMilestoneData(planId: string, userId: strin
       const currentSavings = plan.initialSavings || 0;
       progress = await db.milestoneProgress.create({
         data: {
-          planId,
+          planId: plan.id,
           currentSavings,
           housePriceProjected: purchaseProjection.housePriceProjected,
           savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,

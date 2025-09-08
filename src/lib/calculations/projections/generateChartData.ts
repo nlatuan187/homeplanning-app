@@ -20,7 +20,7 @@ export function generateAccumulationMilestones(
 
   // Chỉ hiển thị các năm cho đến năm mục tiêu (firstViableYear)
   const targetYear = plan.firstViableYear || projectionData[projectionData.length - 1].year;
-  const filteredProjections = projectionData.filter(p => p.year <= targetYear - 1);
+  const filteredProjections = projectionData.filter(p => p.year <= targetYear);
 
   // Lặp qua dữ liệu đã lọc để tạo các cột mốc hàng năm.
   for (const yearData of filteredProjections) {

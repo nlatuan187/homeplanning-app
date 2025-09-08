@@ -230,7 +230,6 @@ export default function Assumption({
           </div>
 
           {/* Action Button */}
-          {/* This div is now fixed to the bottom of the screen */}
           <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
               <Button onClick={onNext} className="w-full bg-cyan-500 text-white hover:bg-cyan-600 py-4 text-lg font-semibold rounded-sm shadow-lg">
                   {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
@@ -266,7 +265,7 @@ export default function Assumption({
           <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
               {
                 // Case 1: Can purchase, but later than planned
-                result.earliestPurchaseYear >= (plan.firstViableYear ?? Infinity) ? (
+                result.earliestPurchaseYear >= (plan.firstViableYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.firstViableYear! >= 1) ? (
                 <div className="flex flex-col mx-4">
                   <div className="text-lg mb-4">
                     Kế hoạch <br/> 
@@ -298,7 +297,7 @@ export default function Assumption({
                   </div>
                 </div>
               // Case 2: Can purchase earlier or on time
-              ) : result.earliestPurchaseYear > 0 ? (
+              ) : (result.earliestPurchaseYear > 0 && result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.firstViableYear! >= 1) ? (
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
                   Kế hoạch <br/> 

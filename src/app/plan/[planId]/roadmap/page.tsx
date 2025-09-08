@@ -19,13 +19,13 @@ export default async function RoadmapPage({
   const plan = await db.plan.findUnique({
     where: { id: params.planId, userId: user.id },
     include: { familySupport: true },
-  });
+  });657
 
   if (!plan) {
     redirect("/dashboard");
   }
   
-  const { progress, roadmap } = await getOrCreateFullMilestoneData(params.planId, user.id);
+  const { progress, roadmap } = await getOrCreateFullMilestoneData(plan.id, user.id);
 
   if (!progress || !roadmap) {
     // Xử lý trường hợp không tìm thấy dữ liệu tiến trình
