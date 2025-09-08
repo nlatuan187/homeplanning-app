@@ -25,6 +25,9 @@ export async function updateAndRecalculateFamilySupport(
     const plan = await db.plan.findUnique({ where: { id: planId, userId: user.id } });
     if (!plan) return { success: false, error: "Plan not found." };
     
+    // 🔥 LƯU LẠI NĂM MUA NHÀ TRƯỚC KHI CÓ FAMILY SUPPORT
+    const previousFirstViableYear = plan.firstViableYear;
+    
     // 1. Separate data for Plan and FamilySupport models
     const planDataToUpdate = {
         hasCoApplicant: formData.hasFinancialPartner,
@@ -62,8 +65,25 @@ export async function updateAndRecalculateFamilySupport(
         data: { firstViableYear: result.earliestPurchaseYear }
     });
 
+    // 🔥 SO SÁNH VÀ TẠO MESSAGE THEO PRD
+    const newFirstViableYear = result.earliestPurchaseYear;
+    let customMessage = "";
+
+    if (previousFirstViableYear && newFirstViableYear < previousFirstViableYear) {
+      // Năm mua nhà sớm hơn
+      customMessage = "Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳";
+    } else {
+      // Năm mua nhà không thay đổi hoặc không có dữ liệu trước đó
+      customMessage = "Không sao, bàn tay ta làm nên tất cả, có sức người, sỏi đá cũng xếp được thành căn nhà đầu tiên 💪";
+    }
+
     revalidatePath(`/plan/${planId}`);
-    return { success: true, ...result };
+    return { 
+      success: true, 
+      earliestPurchaseYear: result.earliestPurchaseYear,
+      message: customMessage,
+      hasImproved: previousFirstViableYear && newFirstViableYear < previousFirstViableYear
+    };
 
   } catch (error) {
     logger.error("[ACTION_ERROR] Failed to update and recalculate (FamilySupport)", { error: String(error) });

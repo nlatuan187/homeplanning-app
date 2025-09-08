@@ -28,7 +28,7 @@ export async function buildPlanForProjection(planId: string): Promise<PlanWithDe
     planName: plan.planName || "",
     yearsToPurchase: plan.yearsToPurchase || 5,
     targetHousePriceN0: plan.targetHousePriceN0 || 0,
-    targetHouseType: plan.targetHouseType || "Apartment",
+    targetHouseType: plan.targetHouseType || "Chung cư",
     targetLocation: plan.targetLocation || "",
     initialSavings: plan.initialSavings || 0,
     userMonthlyIncome: plan.userMonthlyIncome || 0,

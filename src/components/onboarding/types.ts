@@ -6,7 +6,7 @@ export interface OnboardingPlanState {
   // Section 1: Quick Check
   purchaseYear?: number;
   propertyValue?: number;
-  propertyType?: 'APARTMENT' | 'LANDED_HOUSE' | 'OTHER';
+  propertyType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
   city?: string;
   initialSavings?: number;
   personalMonthlyIncome?: number;
@@ -40,7 +40,6 @@ export interface OnboardingPlanState {
  */
 export type ProjectionResult = {
   success: boolean;
-  message: string;
   earliestPurchaseYear?: number;
   isAffordable?: boolean;
   // Keep track of the year user selected in Quick Check to render headings correctly

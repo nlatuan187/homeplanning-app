@@ -12,6 +12,8 @@ import { toast } from "react-hot-toast";
 import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
+import { OnboardingProgress } from "@prisma/client";
+import { completeOnboardingSection } from "@/actions/onboardingProgress";
 
 const familySupportQuestions: Question[] = [
     { key: 'hasFinancialPartner', text: 'Bạn có người đồng hành tài chính (vợ/chồng) khi mua nhà không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
@@ -36,18 +38,20 @@ const familySupportQuestions: Question[] = [
 ];
 
 interface FamilySupportProps {
-  initialData: Partial<OnboardingPlanState>;
   planId: string;
-  onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  onboardingProgress: OnboardingProgress | null;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
+
+
 
 interface RecalculationResult {
     success: boolean;
     message: string;
     earliestPurchaseYear?: number;
     error?: string;
+    hasImproved?: boolean;
 }
 
 export default function FamilySupport({
@@ -121,7 +125,7 @@ export default function FamilySupport({
           </div>
           <Button
             onClick={() => setStep("form")}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-xl shadow-lg transition-transform transform active:scale-95"
+            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Đi tìm nguồn lực hỗ trợ
           </Button>
@@ -129,6 +133,8 @@ export default function FamilySupport({
       </>
     );
   }
+
+  console.log("result", result)
 
   if (step === "loading") {
       return (
@@ -144,6 +150,7 @@ export default function FamilySupport({
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
         onContinue={handleContinue}
+        hasImproved={result.hasImproved} // 🔥 Pass prop này
       />
   }
 

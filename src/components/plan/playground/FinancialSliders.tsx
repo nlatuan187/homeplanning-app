@@ -52,7 +52,7 @@ function SliderWithDebounce({ item }: { item: SliderItem }) {
         max={item.max}
         value={localValue}
         onChange={(e) => setLocalValue(Number(e.target.value))}
-        className="flex-1 h-2 accent-[#00ACB8]"
+        className="flex-1 h-2 accent-cyan-500"
       />
       <div className="w-14 text-center font-semibold text-white whitespace-nowrap">
         {localValue}

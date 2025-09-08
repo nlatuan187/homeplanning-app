@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { OnboardingPlanState } from "../types";
-import { Award, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Award, ShieldCheck, ArrowLeftIcon } from "lucide-react";
 
 interface SignupPromptProps {
   planData: Partial<OnboardingPlanState>;
@@ -33,7 +33,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
     <div className="flex flex-col h-full flex-grow text-white max-w-5xl mx-auto">
       <header className="relative flex justify-center items-center py-4">
         <button onClick={onBack} className="absolute left-0 p-2">
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeftIcon className="w-6 h-6 text-white" />
         </button>
       </header>
 
@@ -45,7 +45,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
 
         <div className="space-y-4 w-full max-w-sm mb-10">
           <div className="bg-slate-800/50 rounded-lg p-4 text-left flex items-start space-x-4">
-            <Award className="h-8 w-8 text-[#00ACB8] mt-1 flex-shrink-0" />
+            <Award className="h-8 w-8 text-cyan-500 mt-1 flex-shrink-0" />
             <div>
               <h2 className="font-semibold">Sự tham gia của chuyên gia</h2>
               <p className="text-slate-400 text-sm">
@@ -56,7 +56,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
           </div>
 
           <div className="bg-slate-800/50 rounded-lg p-4 text-left flex items-start space-x-4">
-            <ShieldCheck className="h-8 w-8 text-[#00ACB8] mt-1 flex-shrink-0" />
+            <ShieldCheck className="h-8 w-8 text-cyan-500 mt-1 flex-shrink-0" />
             <div>
               <h2 className="font-semibold">Bảo mật dữ liệu cá nhân</h2>
               <p className="text-slate-400 text-sm">
@@ -71,7 +71,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
       <footer className="mt-auto pb-4">
         <Button
           onClick={handleSignUp}
-          className="w-full bg-[#00ACB8] hover:bg-[#008C96] text-white py-4 text-lg rounded-sm"
+          className="w-full bg-cyan-500 hover:bg-[#008C96] text-white py-4 text-lg rounded-sm"
         >
           Đăng ký để nhận kết quả
         </Button>

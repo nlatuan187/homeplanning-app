@@ -11,7 +11,7 @@ export default function Page() {
             appearance={{
               elements: {
                 formButtonPrimary:
-                  "bg-[#00ACB8] hover:bg-[#008C96] text-sm normal-case",
+                  "bg-cyan-500 hover:bg-[#008C96] text-sm normal-case",
                 card: "bg-transparent shadow-none",
                 headerTitle: "text-white",
                 headerSubtitle: "text-slate-400",

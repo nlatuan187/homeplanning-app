@@ -164,7 +164,7 @@ export default function MultiStepQuestionForm({
             onClick={goToNext}
             className={cn(
               'w-full py-3.5 text-base rounded-sm mb-4',
-              isLastQuestion ? 'text-[#FFFFFF] bg-[#00ACB8] hover:bg-[#008C96]' : 'text-slate-900 bg-white hover:bg-slate-200',
+              isLastQuestion ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]' : 'text-slate-900 bg-white hover:bg-slate-200',
             )}
             disabled={
               currentValue === undefined || currentValue === null || currentValue === ''
@@ -177,7 +177,7 @@ export default function MultiStepQuestionForm({
         {currentQuestion.type === 'options' && isLastQuestion && (
           <Button
             onClick={() => onSubmit(formData)}
-            className="w-full bg-[#00ACB8] text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
+            className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
             // FIX: Compare against the length of *visible* questions
             disabled={Object.keys(formData).length < visibleQuestions.length}
           >

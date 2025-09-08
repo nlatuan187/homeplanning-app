@@ -95,7 +95,7 @@ export default function ResultsClient({
       <div className="fixed inset-x-0 bottom-0 bg-black p-4">
         <div className="container mx-auto max-w-5xl">
           <Button
-            className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-lg"
+            className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"
             onClick={() => router.push(`/plan/${plan.id}/familysupport`)}
           >
             Khám phá ngay

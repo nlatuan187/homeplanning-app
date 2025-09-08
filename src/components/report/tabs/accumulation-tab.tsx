@@ -148,7 +148,7 @@ const AccumulationReportTab: React.FC<AccumulationReportTabProps> = ({ data }) =
 
         {/* Mục 3: Giải thích của chuyên gia */}
         <AccordionItem value="item-3" className="bg-slate-900 rounded-lg border-none"> {/* Changed to bg-slate-900 */}
-          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100 data-[state=open]:text-[#00ACB8]">
+          <AccordionTrigger className="hover:no-underline text-sm font-semibold p-4 text-left text-slate-100 data-[state=open]:text-cyan-500">
             Giải thích của chuyên gia
           </AccordionTrigger>
           <AccordionContent className="p-4 pt-2 text-slate-300 text-xs sm:text-sm space-y-3">

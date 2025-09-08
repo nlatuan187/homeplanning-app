@@ -33,6 +33,7 @@ interface RecalculationResult {
     message: string;
     earliestPurchaseYear?: number;
     error?: string;
+    hasWorsened?: boolean; // 🔥 Thêm field để track việc năm mua nhà bị lùi lại
 }
 
 export default function FamilySupport({
@@ -56,7 +57,7 @@ export default function FamilySupport({
     const result = await updateSpendingAndRecalculate(planId, spendingPayload);
     
     if (result.success) {
-      setResult(result);
+      setResult(result as RecalculationResult);
       setStep("result");
     } else {
       toast.error(result.error || "Có lỗi xảy ra, vui lòng thử lại.");
@@ -97,7 +98,7 @@ export default function FamilySupport({
           </div>
           <Button
             onClick={() => setStep("form")}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-xl shadow-lg transition-transform transform active:scale-95"
+            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Tôi sẵn sàng rồi
           </Button>
@@ -120,6 +121,7 @@ export default function FamilySupport({
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
         onContinue={handleContinue}
+        hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
       />
   }
 

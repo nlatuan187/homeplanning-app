@@ -34,9 +34,9 @@ const quickCheckQuestions: Question[] = [
     text: "Căn nhà đó là loại nhà gì?",
     type: "options",
     options: [
-      { label: "Chung cư", value: "APARTMENT" },
-      { label: "Nhà mặt đất", value: "LANDED_HOUSE" },
-      { label: "Khác", value: "OTHER" },
+      { label: "Chung cư", value: "Chung cư" },
+      { label: "Nhà mặt đất", value: "Nhà mặt đất" },
+      { label: "Khác", value: "Khác" },
     ],
   },
   {
@@ -44,9 +44,9 @@ const quickCheckQuestions: Question[] = [
     text: "Bạn dự định sẽ mua nhà ở tỉnh/thành phố nào?",
     type: "options",
     options: [
-      { label: "Hà Nội", value: "Hanoi" },
-      { label: "TP. Hồ Chí Minh", value: "HCMC" },  
-      { label: "Tỉnh/Thành phố khác", value: "Other" },
+      { label: "Hà Nội", value: "Hà Nội" },
+      { label: "TP. Hồ Chí Minh", value: "TP. Hồ Chí Minh" },  
+      { label: "Tỉnh/Thành phố khác", value: "Tỉnh/Thành phố khác" },
     ],
   },
   {
@@ -122,7 +122,7 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
           </div>
           <Button
             onClick={handleStart}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-xl shadow-lg transition-transform transform active:scale-95"
+            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Bắt đầu ngay
           </Button>

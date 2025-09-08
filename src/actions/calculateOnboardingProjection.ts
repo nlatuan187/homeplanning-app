@@ -17,7 +17,7 @@ export async function calculateOnboardingProjection(
   } = data;
 
   if (!purchaseYear || !propertyValue || initialSavings === undefined || personalMonthlyIncome === undefined || personalMonthlyExpenses === undefined) {
-    return { success: false, message: "Dữ liệu đầu vào không đủ để tính toán.", error: "Invalid input" };
+    return { success: false, error: "Invalid input" };
   }
 
   // Build a minimal plan for the engine
@@ -57,18 +57,6 @@ export async function calculateOnboardingProjection(
   const earliestYear = earliest.year;
   const nextAffordable = projections.find(p => p.year > purchaseYear && p.isAffordable) || null;
 
-  let message = "";
-  const prevYear = previousResult?.earliestPurchaseYear;
-  if (prevYear) {
-    message = earliestYear < prevYear
-      ? `Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳 Bạn sẽ mua được nhà sớm nhất vào năm ${earliestYear}.`
-      : `Không sao, bàn tay ta làm nên tất cả 💪. Bạn sẽ mua được nhà sớm nhất vào năm ${earliestYear}.`;
-  } else {
-    message = purchaseProjection.isAffordable
-      ? `Chúc mừng, kế hoạch mua nhà năm ${purchaseYear} của bạn khả thi. Bạn thậm chí có thể mua sớm hơn vào năm ${earliestYear}.`
-      : `Kế hoạch mua nhà năm ${purchaseYear} chưa khả thi. Tuy nhiên, bạn có thể mua sớm nhất vào năm ${earliestYear}.`;
-  }
-
   return {
     success: true,
     isAffordable: purchaseProjection.isAffordable,
@@ -76,6 +64,5 @@ export async function calculateOnboardingProjection(
     selectedPurchaseYear: purchaseYear,
     purchaseProjectionYear: purchaseProjection.year,
     nextAffordableYear: nextAffordable?.year,
-    message,
   };
 }

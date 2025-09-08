@@ -24,6 +24,8 @@ export async function updateSpendingAndRecalculate(
     const plan = await db.plan.findUnique({ where: { id: planId, userId: user.id } });
     if (!plan) return { success: false, error: "Plan not found." };
 
+    const previousFirstViableYear = plan.firstViableYear;
+
     const spendingData = {
         monthlyNonHousingDebt: formData.monthlyNonHousingDebt,
         currentAnnualInsurancePremium: formData.currentAnnualInsurancePremium,
@@ -44,8 +46,24 @@ export async function updateSpendingAndRecalculate(
         data: { firstViableYear: result.earliestPurchaseYear }
     });
 
+    const newFirstViableYear = result.earliestPurchaseYear;
+    let customMessage = "";
+
+    if (previousFirstViableYear && newFirstViableYear > previousFirstViableYear) {
+      // Năm mua nhà bị lùi lại
+      customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 😞";
+    } else {
+      // Năm mua nhà không thay đổi  
+      customMessage = "Ấn tượng đấy 😀";
+    }
+
     revalidatePath(`/plan/${planId}`);
-    return { success: true, ...result };
+    return { 
+      success: true, 
+      earliestPurchaseYear: result.earliestPurchaseYear,
+      message: customMessage,
+      hasWorsened: previousFirstViableYear && newFirstViableYear > previousFirstViableYear
+    };
 
   } catch (error) {
     logger.error("[ACTION_ERROR] Failed to update and recalculate (Spending)", { error: String(error) });

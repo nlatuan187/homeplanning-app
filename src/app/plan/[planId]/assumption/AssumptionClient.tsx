@@ -12,6 +12,7 @@ import { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
 import { updateAndRecalculateAssumption } from "@/actions/updateAndRecalculateAssumption";
 import { cachePlaygroundProjections, upsertInteractionLogEntry } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
+import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
 
 interface AssumptionData {
   pctSalaryGrowth: number;
@@ -102,9 +103,24 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
     }
   };
   
-  const handleFinalChoice = (year: number) => {
-    toast.success(`Đã chốt kế hoạch mua nhà vào năm ${year}!`);
-    router.push(`/plan/${plan.id}/roadmap`);
+  const handleFinalChoice = async (year: number) => {
+    console.log("🚀 Calling confirmPurchaseYear with:", { planId: plan.id, year });
+    
+    try {
+      const result = await confirmPurchaseYear(plan.id, year);
+      console.log("📊 confirmPurchaseYear result:", result);
+      
+      if (result.success) {
+        toast.success(`Đã chốt kế hoạch mua nhà vào năm ${year}!`);
+        router.push(`/plan/${plan.id}/roadmap`);
+      } else {
+        console.error("❌ Error from confirmPurchaseYear:", result.error);
+        toast.error(result.error || "Có lỗi xảy ra khi lưu năm mua nhà");
+      }
+    } catch (error) {
+      console.error("❌ Exception in handleFinalChoice:", error);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
+    }
   };
 
   const projections = generateProjections(plan as PlanWithDetails);

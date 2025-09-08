@@ -247,7 +247,7 @@ function MilestoneNode({
             />
             {group.status === "done" && (
               <span
-                className="absolute inset-0 flex items-center justify-center text-5xl text-[#00ACB8]"
+                className="absolute inset-0 flex items-center justify-center text-5xl text-cyan-500"
                 style={{
                   pointerEvents: "none",
                   fontWeight: "bold",

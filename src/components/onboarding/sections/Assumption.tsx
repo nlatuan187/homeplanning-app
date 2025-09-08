@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import LoadingStep from "../shared/LoadingStep";
 import ProgressBar from "../shared/ProgressBar";
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, LineChart, Line, ReferenceLine } from 'recharts';
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
@@ -12,6 +12,7 @@ import FinancialSliders from "@/components/plan/playground/FinancialSliders";
 import { useUser } from "@clerk/nextjs";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { Plan } from "@prisma/client";
+import router, { useRouter } from "next/navigation";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -158,6 +159,7 @@ export default function Assumption({
   const { user, isLoaded } = useUser();
   const currentAssumption = assumptionData[assumptionStep];
   const isLastStep = assumptionStep === assumptionData.length - 1;
+  const router = useRouter();
 
   if (step === "intro") {
     return (
@@ -177,7 +179,7 @@ export default function Assumption({
               Hãy thử tư duy như một nhà hoạch định chiến lược. Bằng cách điều chỉnh các giả định, bạn sẽ thấy tác động của từng quyết định đến tốc độ chạm tay vào ngôi nhà mơ ước.
             </p>
           </div>
-          <Button onClick={() => setStep("form")} className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-xl shadow-lg transition-transform transform active:scale-95">
+          <Button onClick={() => setStep("form")} className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
             Bắt đầu thôi
           </Button>
         </div>
@@ -194,7 +196,7 @@ export default function Assumption({
             <div className="relative flex items-center h-10 mb-4">
               <div className="absolute left-0 top-1/2 -translate-y-1/2">
                 <Button variant="ghost" size="icon" onClick={onPrev} disabled={assumptionStep === 0}>
-                  <ChevronLeft className="h-12 w-12" />
+                  <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </Button>
               </div>
 
@@ -223,7 +225,7 @@ export default function Assumption({
               <div className="w-full h-auto rounded-md p-2">
                 <AccumulationChart data={chartData} dataKey={currentAssumption.chartDataKey} name={currentAssumption.name} />
               </div>
-              <p className="text-xs text-left text-[#00ACB8] mt-2">{currentAssumption.subExplanation}</p>
+              <p className="text-xs text-left text-cyan-500 mt-2">{currentAssumption.subExplanation}</p>
               <p className="text-xs text-left text-slate-400 mt-2 mb-2">{currentAssumption.explanation}</p>
           </div>
 
@@ -246,7 +248,6 @@ export default function Assumption({
     );
   }
 
-  const earliest = result.projections.find((row: ProjectionRow) => row.isAffordable) || result.projections[0];
   if (step === "result" && result) {
     return (
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950 text-white">
@@ -255,20 +256,20 @@ export default function Assumption({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setStep('form')}
+                onClick={() => router.push(`/dashboard`)}
               >
-                <ChevronLeft className="h-12 w-12" />
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
               </Button>
             </div>
-            <h2 className="text-2xl font-bold mb-2 mx-4 text-[#00ACB8]">{user?.firstName}, </h2>
           </div>
+          <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
               {
                 // Case 1: Can purchase, but later than planned
                 result.earliestPurchaseYear >= (plan.firstViableYear ?? Infinity) ? (
                 <div className="flex flex-col mx-4">
                   <div className="text-lg mb-4">
                     Kế hoạch <br/> 
-                    <div className="text-[#00ACB8] font-bold">chinh phục căn nhà đầu tiên</div> 
+                    <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                     của bạn đã sẵn sàng.
                   </div>
 
@@ -300,7 +301,7 @@ export default function Assumption({
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
                   Kế hoạch <br/> 
-                  <div className="text-[#00ACB8] font-bold">chinh phục căn nhà đầu tiên</div> 
+                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                   của bạn đã sẵn sàng.
                 </div>
                 <ResultAccumulationChart 
@@ -332,7 +333,7 @@ export default function Assumption({
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
                   Bạn sẽ cần điều chỉnh nhiều để<br/> 
-                  <div className="text-[#00ACB8] font-bold">chinh phục căn nhà đầu tiên</div> 
+                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                 </div>
                 <ResultAccumulationChart 
                   earliestPurchaseYear={result.earliestPurchaseYear}
