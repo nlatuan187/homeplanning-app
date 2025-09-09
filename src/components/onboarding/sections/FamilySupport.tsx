@@ -162,7 +162,7 @@ export default function FamilySupport({
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
         onContinue={handleContinue}
-        hasImproved={result.hasImproved} // 🔥 Pass prop này
+        hasImproved={result.hasImproved}
       />
   }
 

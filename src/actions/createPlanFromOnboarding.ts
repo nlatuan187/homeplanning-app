@@ -95,8 +95,6 @@ export async function createPlanFromOnboarding(
       loanInterestRate: 11.0,
       loanTermYears: 25,
       paymentMethod: "BankLoan",
-      hasCoApplicant: false,
-      coApplicantMonthlyIncome: 0,
     };
 
     let newPlan = await db.plan.create({
@@ -106,7 +104,7 @@ export async function createPlanFromOnboarding(
       },
     });
 
-    await db.familySupport.create({
+    await db.planFamilySupport.create({
       data: {
         planId: newPlan.id,
         hasFamilySupport: false,
@@ -116,6 +114,9 @@ export async function createPlanFromOnboarding(
         familyLoanRepaymentType: null,
         familyLoanInterestRate: 0, 
         familyLoanTermYears: 0,
+        hasCoApplicant: false,
+        coApplicantMonthlyIncome: 0,
+        monthlyOtherIncome: 0,
       },
     });
 

@@ -265,7 +265,7 @@ export default function Assumption({
           <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
               {
                 // Case 1: Can purchase, but later than planned
-                result.earliestPurchaseYear >= (plan.firstViableYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.firstViableYear! >= 1) ? (
+                result.earliestPurchaseYear >= (plan.confirmedPurchaseYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.confirmedPurchaseYear! >= 1) ? (
                 <div className="flex flex-col mx-4">
                   <div className="text-lg mb-4">
                     Kế hoạch <br/> 
@@ -275,7 +275,7 @@ export default function Assumption({
 
                   <ResultAccumulationChart 
                     earliestPurchaseYear={result.earliestPurchaseYear}
-                    desiredPurchaseYear={plan.firstViableYear}
+                    desiredPurchaseYear={plan.confirmedPurchaseYear}
                   />
                   <div className="text-center text-slate-400">
                     Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
@@ -299,19 +299,19 @@ export default function Assumption({
                   </div>
                 </div>
               // Case 2: Can purchase earlier or on time
-              ) : (result.earliestPurchaseYear > 0 && result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.firstViableYear! >= 1) ? (
+              ) : (result.earliestPurchaseYear > 0 && result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.confirmedPurchaseYear! >= 1) ? (
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
                   Kế hoạch <br/> 
-                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
+                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
                   của bạn đã sẵn sàng.
                 </div>
                 <ResultAccumulationChart 
                   earliestPurchaseYear={result.earliestPurchaseYear}
-                  desiredPurchaseYear={plan.firstViableYear}
+                  desiredPurchaseYear={plan.confirmedPurchaseYear}
                 />
                 <div className="text-center text-slate-400">
-                  Bạn có thể mua nhà vào năm {plan.firstViableYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
+                  Bạn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
                 </div>
                 <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
@@ -325,8 +325,8 @@ export default function Assumption({
                     </Button>
                   </div>
                   <div className="mt-auto pt-4">
-                      <Button onClick={() => onFinalChoice(plan.firstViableYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                        Mua nhà năm {plan.firstViableYear}
+                      <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                        Mua nhà năm {plan.confirmedPurchaseYear}
                       </Button>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export default function Assumption({
                 </div>
                 <ResultAccumulationChart 
                   earliestPurchaseYear={result.earliestPurchaseYear}
-                  desiredPurchaseYear={plan.firstViableYear}
+                  desiredPurchaseYear={plan.confirmedPurchaseYear}
                 />
                 <div className="text-center text-slate-400">
                   Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!

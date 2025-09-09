@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export interface RecalculationResult {
+  planId: string;
   plan: Plan;
   success: boolean;
   message: string;

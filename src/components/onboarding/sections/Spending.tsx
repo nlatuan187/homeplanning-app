@@ -13,18 +13,10 @@ import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 import { RecalculationResult } from "../shared/ResultStep";
-import { db } from "@/lib/db";
-import { Plan } from "@prisma/client";
-
-const spendingQuestions: Question[] = [
-    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
-    // @ts-ignore
-    { key: 'currentAnnualInsurancePremium', text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
-];
 
 interface SpendingProps {
   initialData: Partial<OnboardingPlanState>;
-  plan: Plan;
+  plan: OnboardingPlanState;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
@@ -39,9 +31,23 @@ export default function Spending({
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
 
+  const spendingQuestions: Question[] = [
+    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
+    // @ts-ignore
+    { key: 'currentAnnualInsurancePremium', text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
+    { 
+      key: 'currentAnnualOtherExpenses', 
+      text: 'Chi tiêu của cả GIA ĐÌNH hàng tháng là bao nhiêu (trừ chi tiêu CÁ NHÂN)?', 
+      type: 'number', 
+      unit: 'triệu VNĐ',  
+      condition: () => plan.hasFamilySupport === true
+    },
+  ];
+
   const defaultValues: Partial<OnboardingPlanState> = {
     monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
     currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
+    currentAnnualOtherExpenses: plan.currentAnnualOtherExpenses,
   };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
@@ -51,9 +57,10 @@ export default function Spending({
     const spendingPayload = {
       monthlyNonHousingDebt: fullData.monthlyNonHousingDebt,
       currentAnnualInsurancePremium: fullData.currentAnnualInsurancePremium,
+      currentAnnualOtherExpenses: fullData.currentAnnualOtherExpenses,
     };
 
-    const result = await updateSpendingAndRecalculate(plan.id, spendingPayload);
+    const result = await updateSpendingAndRecalculate(plan, spendingPayload);
     
     if (result.success) {
       setResult(result as RecalculationResult);
@@ -62,11 +69,6 @@ export default function Spending({
       toast.error(result.error || "Có lỗi xảy ra, vui lòng thử lại.");
       setStep("form"); // Go back to form on error
     }
-  };
-
-  const handleContinue = () => {
-    // This is where you might call onCompleted or navigate
-    router.push(`/plan/${plan.id}/assumption`);
   };
 
   if (step === "intro") {
@@ -120,7 +122,7 @@ export default function Spending({
         title="Dòng tiền đi ra "
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
-        onContinue={handleContinue}
+        onContinue={() => {router.push(`/plan/${result.planId}/assumption`);}}
         hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
       />
   }

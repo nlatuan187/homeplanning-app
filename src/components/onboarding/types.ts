@@ -28,6 +28,7 @@ export interface OnboardingPlanState {
   // Section 3: Spending
   monthlyNonHousingDebt?: number;
   currentAnnualInsurancePremium?: number;
+  currentAnnualOtherExpenses?: number;
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;

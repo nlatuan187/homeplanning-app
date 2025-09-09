@@ -53,6 +53,7 @@ model Plan {
   monthlyLivingExpenses         Float
   monthlyNonHousingDebt         Float   @default(0)
   currentAnnualInsurancePremium Float   @default(0)
+  currentAnnualOtherExpenses    Float   @default(0)
 
   initialSavings                Float   @default(0)
   pctHouseGrowth                Float   @default(10.0)

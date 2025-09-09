@@ -2,42 +2,26 @@
 
 import { useState } from "react";
 import Spending from "@/components/onboarding/sections/Spending";
-import { OnboardingPlanState } from "@/components/onboarding/types";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
-
-import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
-import { Plan } from "@prisma/client";
+import { Plan, PlanFamilySupport } from "@prisma/client";
+
+// Define the Plan with familySupport relation
+type PlanWithFamilySupport = Plan & {
+  familySupport: PlanFamilySupport | null;
+};
 
 interface SpendingClienttProps {
-  plan: Plan;
+  plan: PlanWithFamilySupport;
 }
 
 export default function SpendingClient({ plan }: SpendingClienttProps) {
   const [status, setStatus] = useState<'form' | 'loading' | 'result'>('form');
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
-
-  const handleFormSubmit = async (data: Partial<OnboardingPlanState>) => {
-    setStatus('loading');
-    
-    // Simulate calculation time
-    setTimeout(async () => {
-        const response = await updateSpendingAndRecalculate(plan.id, data);
-        if (response.success) {
-            setResult(response as RecalculationResult);
-            setStatus('result');
-        } else {
-            toast.error(response.error || "Có lỗi xảy ra.");
-            setStatus('form'); // Go back to form on error
-        }
-    }, 2500); // 2.5 second delay as per PRD
-  };
   
   const handleContinue = () => {
-      // Navigate to the next section of the plan
       router.push(`/plan/${plan.id}/spending`); // Example next step
   }
 
@@ -53,7 +37,7 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
     <Spending
       initialData={{}}
       plan={plan}
-      onCompleted={handleFormSubmit}
+      onCompleted={handleContinue}
     />
   );
 }

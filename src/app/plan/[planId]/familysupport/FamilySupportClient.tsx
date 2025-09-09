@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
 import { Plan, PlanFamilySupport } from "@prisma/client";
-
+import { OnboardingPlanState } from "@/components/onboarding/types";
 // Define the Plan with familySupport relation
 type PlanWithFamilySupport = Plan & {
   familySupport: PlanFamilySupport | null;
@@ -37,9 +37,10 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
 
   return (
     <FamilySupport
-      familySupport={plan.familySupport as PlanFamilySupport}
+      familySupport={plan.familySupport as OnboardingPlanState}
       initialData={{}}
       planId={plan.id}
+      onCompleted={handleContinue}
     />
   );
 }

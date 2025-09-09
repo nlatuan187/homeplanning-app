@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { getMilestonesByGroup, MilestoneGroup } from "@/lib/isMilestoneUnlocked";
 import { revalidatePath } from "next/cache";
-import { Plan, FamilySupport, PlanReport } from "@prisma/client";
+import { Plan, PlanFamilySupport, PlanReport } from "@prisma/client";
 import { Prisma } from '@prisma/client'
 import { ProjectionRow } from "@/lib/calculations/affordability";
 
@@ -507,7 +507,7 @@ export async function updateCustomTaskStatus(
       },
     });
 
-    const updatedRoadmap = await db.planRoadmap.update({
+    await db.planRoadmap.update({
         where: { planId },
         data: {
             planPageData,
@@ -532,7 +532,7 @@ type PlanWithCacheAndSupport = Plan & {
   planReport: {
     projectionCache: any;
   } | null;
-  familySupport: FamilySupport | null;
+  familySupport: PlanFamilySupport | null;
 };
 
 /**
