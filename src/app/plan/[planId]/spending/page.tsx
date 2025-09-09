@@ -24,6 +24,6 @@ export default async function SpendingPage({
   }
    
   return (
-    <SpendingClient planId={plan.id}/>
+    <SpendingClient plan={plan}/>
   );
 } 

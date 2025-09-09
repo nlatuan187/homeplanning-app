@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react"; // Add useRef and useEffect
+import { useState, useMemo, useRef, useEffect } from "react";
 import { OnboardingPlanState } from "../types";
 import ProgressBar from "./ProgressBar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ interface MultiStepQuestionFormProps {
   onSubmit: (data: Partial<OnboardingPlanState>) => void;
   title: string;
   subtitle?: string;
+  defaultValues?: Partial<OnboardingPlanState>; // Prop mới để nhận giá trị mặc định
 }
 
 export default function MultiStepQuestionForm({
@@ -30,9 +31,13 @@ export default function MultiStepQuestionForm({
   onSubmit,
   title,
   subtitle,
+  defaultValues = {}, // Gán giá trị mặc định là object rỗng
 }: MultiStepQuestionFormProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
+  // Khởi tạo formData với giá trị từ defaultValues
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(defaultValues);
+
+  console.log("defaultValues", defaultValues);
 
   const visibleQuestions = useMemo(() => {
     return questions.filter((q) => !q.condition || q.condition(formData));
@@ -41,7 +46,6 @@ export default function MultiStepQuestionForm({
   const currentQuestion = visibleQuestions[currentQuestionIndex];
   const currentValue = currentQuestion ? formData[currentQuestion.key] : undefined;
   
-  // Use a ref to hold the most current list of visible questions
   const visibleQuestionsRef = useRef(visibleQuestions);
   useEffect(() => {
     visibleQuestionsRef.current = visibleQuestions;
@@ -53,7 +57,6 @@ export default function MultiStepQuestionForm({
   };
 
   const goToNext = () => {
-    // Read from the ref to get the most up-to-date list length
     if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
@@ -62,9 +65,7 @@ export default function MultiStepQuestionForm({
   };
 
   const handleOptionClick = (value: any) => {
-    // Set the data first, which will trigger a re-render and update the ref
     handleInputChange(value);
-    // Then schedule the navigation, which will use the updated ref
     setTimeout(() => {
       goToNext();
     }, 150);
@@ -78,7 +79,6 @@ export default function MultiStepQuestionForm({
 
   const isLastQuestion = currentQuestionIndex === visibleQuestions.length - 1;
 
-  // Memoize input rendering to avoid re-renders
   const renderInput = useMemo(() => {
     if (!currentQuestion) return null;
     if (currentQuestion.type === 'options' && currentQuestion.options) {
@@ -99,6 +99,10 @@ export default function MultiStepQuestionForm({
     }
     
     if (currentQuestion.type === 'number') {
+      // Lấy giá trị mặc định cho câu hỏi hiện tại
+      const defaultValue = defaultValues[currentQuestion.key];
+      const placeholderText = String(defaultValue);
+
       return (
         <div className="relative w-full">
             <Input
@@ -106,7 +110,7 @@ export default function MultiStepQuestionForm({
               value={currentValue as number || ''}
               onChange={(e) => handleInputChange(parseInt(e.target.value, 10) || 0)}
               className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
-              placeholder="Nhập thông tin..."
+              placeholder={placeholderText}
             />
             {currentQuestion.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{currentQuestion.unit}</span>}
         </div>
@@ -114,7 +118,8 @@ export default function MultiStepQuestionForm({
     }
     
     return null;
-  }, [currentQuestion, currentValue]);
+  // Thêm defaultValues vào dependency array của useMemo
+  }, [currentQuestion, currentValue, defaultValues]);
 
   if (!currentQuestion) {
     return null;
@@ -173,12 +178,10 @@ export default function MultiStepQuestionForm({
             {isLastQuestion ? subtitle : 'Tiếp tục'}
           </Button>
         )}
-        {/* For option type, the final button is implicitly handled by auto-advance */}
         {currentQuestion.type === 'options' && isLastQuestion && (
           <Button
             onClick={() => onSubmit(formData)}
             className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
-            // FIX: Compare against the length of *visible* questions
             disabled={Object.keys(formData).length < visibleQuestions.length}
           >
             {subtitle}

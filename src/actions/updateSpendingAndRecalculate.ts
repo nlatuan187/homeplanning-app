@@ -3,15 +3,8 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { Plan } from "@prisma/client";
-import { buildPlanForProjection, computeOnboardingOutcome } from "./projectionHelpers";
+import { runProjectionWithEngine } from "./projectionHelpers";
 import logger from "@/lib/logger";
-
-async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; }> {
-  const enginePlan = await buildPlanForProjection(planId);
-  const outcome = await computeOnboardingOutcome(enginePlan);
-  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message };
-}
 
 export async function updateSpendingAndRecalculate(
   planId: string,
@@ -31,7 +24,6 @@ export async function updateSpendingAndRecalculate(
         currentAnnualInsurancePremium: formData.currentAnnualInsurancePremium,
     };
     
-    // 2. Use a transaction to update both tables
     await db.$transaction([
         db.plan.update({
             where: { id: planId },
@@ -59,6 +51,7 @@ export async function updateSpendingAndRecalculate(
 
     revalidatePath(`/plan/${planId}`);
     return { 
+      plan: plan,
       success: true, 
       earliestPurchaseYear: result.earliestPurchaseYear,
       message: customMessage,

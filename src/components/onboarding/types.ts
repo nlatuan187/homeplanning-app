@@ -13,16 +13,16 @@ export interface OnboardingPlanState {
   personalMonthlyExpenses?: number;
 
   // Section 2: Family Support
-  hasFinancialPartner?: boolean;
-  partnerMonthlyIncome?: number;
-  otherMonthlyIncome?: number;
+  hasCoApplicant?: boolean;
+  coApplicantMonthlyIncome?: number;
+  monthlyOtherIncome?: number;
   hasFamilySupport?: boolean;
   familySupportType?: 'GIFT' | 'LOAN';
   familySupportGiftAmount?: number;
   familySupportGiftTiming?: 'NOW' | 'AT_PURCHASE';
   familySupportLoanAmount?: number;
   familySupportLoanInterest?: number;
-  familySupportLoanRepayment?: 'MONTHLY' | 'LUMPSUM';
+  familySupportLoanRepayment?: 'MONTHLY' | 'LUMP_SUM';
   familySupportLoanTerm?: number;
 
   // Section 3: Spending

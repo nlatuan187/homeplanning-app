@@ -24,6 +24,6 @@ export default async function OnboardingPage({
   }
    
   return (
-    <FamilySupportClient planId={plan.id}/>
+    <FamilySupportClient plan={plan}/>
   );
 } 

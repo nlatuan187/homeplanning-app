@@ -102,11 +102,9 @@ export async function confirmPlaygroundAssumptions(
           upsert: { // Dùng upsert để an toàn
             create: { 
               generatedAt: null,
-              projectionCache: projections as any,
             },
             update: { 
               generatedAt: null,
-              projectionCache: projections as any,
             },
           },
         },

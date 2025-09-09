@@ -73,10 +73,10 @@ export async function computeOnboardingOutcome(plan: PlanWithDetails): Promise<{
   const targetYear = plan.confirmedPurchaseYear || (currentYear + (plan.yearsToPurchase || 0));
 
   // Find the earliest year where plan becomes affordable per engine output
-  const earliest = projections.find((row) => row.isAffordable) || projections[0];
-  const earliestYear = earliest.year;
+  const earliest = projections.find((row) => row.isAffordable) || undefined;
+  const earliestYear = earliest?.year || 0;
 
-  const purchaseProjection = projections.find((r) => r.year === targetYear) || earliest;
+  const purchaseProjection = projections.find((r) => r.year === targetYear) || earliest || projections[0];
 
   const message = earliestYear <= targetYear
     ? `Kế hoạch khả thi. Bạn có thể mua sớm nhất vào năm ${earliestYear}.`
@@ -89,6 +89,12 @@ export async function computeOnboardingOutcome(plan: PlanWithDetails): Promise<{
   });
 
   return { projections, earliestPurchaseYear: earliestYear, purchaseProjection, message };
+}
+
+export async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string;}> {
+  const enginePlan = await buildPlanForProjection(planId);
+  const outcome = await computeOnboardingOutcome(enginePlan);
+  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message };
 }
 
 

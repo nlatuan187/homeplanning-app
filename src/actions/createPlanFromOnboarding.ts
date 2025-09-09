@@ -7,6 +7,7 @@ import { calculateOnboardingProjection } from "./calculateOnboardingProjection";
 import { computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
+import { runProjectionWithEngine } from "./projectionHelpers";
 
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
@@ -86,7 +87,7 @@ export async function createPlanFromOnboarding(
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
-      firstViableYear: onboardingData.purchaseYear,
+      confirmedPurchaseYear: onboardingData.purchaseYear,
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,
@@ -94,12 +95,35 @@ export async function createPlanFromOnboarding(
       loanInterestRate: 11.0,
       loanTermYears: 25,
       paymentMethod: "BankLoan",
+      hasCoApplicant: false,
+      coApplicantMonthlyIncome: 0,
     };
 
     let newPlan = await db.plan.create({
       data: {
         ...planPayload,
         user: { connect: { id: userId } },
+      },
+    });
+
+    await db.familySupport.create({
+      data: {
+        planId: newPlan.id,
+        hasFamilySupport: false,
+        familySupportType: null,
+        familySupportAmount: 0,
+        familyGiftTiming: null,
+        familyLoanRepaymentType: null,
+        familyLoanInterestRate: 0, 
+        familyLoanTermYears: 0,
+      },
+    });
+
+    const projectionCache = await runProjectionWithEngine(newPlan.id);
+    await db.planReport.create({
+      data: {
+        planId: newPlan.id,
+        projectionCache: projectionCache,
       },
     });
 

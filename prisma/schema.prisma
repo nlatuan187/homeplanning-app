@@ -45,14 +45,11 @@ model Plan {
 
   // Page 2: Income Inputs
   userMonthlyIncome         Float    @default(0)
-  hasCoApplicant            Boolean  @default(false)
-  coApplicantMonthlyIncome  Float?
 
   pctSalaryGrowth           Float    @default(7.0)
   coApplicantSalaryGrowth   Float?
 
   // Page 3: Spending & Savings Inputs
-  monthlyOtherIncome            Float   @default(0)
   monthlyLivingExpenses         Float
   monthlyNonHousingDebt         Float   @default(0)
   currentAnnualInsurancePremium Float   @default(0)
@@ -76,7 +73,7 @@ model Plan {
   buffer                 Float?
 
   // --- QUAN HỆ ---
-  familySupport     FamilySupport?
+  familySupport     PlanFamilySupport?
   milestoneProgress MilestoneProgress?
   report            PlanReport?
   history           PlanHistory?
@@ -112,17 +109,20 @@ model OnboardingProgress {
   updatedAt DateTime @updatedAt
 }
 
-model FamilySupport {
-  id                      String                   @id @default(cuid())
-  planId                  String                   @unique
-  plan                    Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  hasFamilySupport        Boolean                  @default(false)
-  familySupportType       FamilySupportType?
-  familySupportAmount     Float?
-  familyGiftTiming        FamilyGiftTiming?
-  familyLoanRepaymentType FamilyLoanRepaymentType?
-  familyLoanInterestRate  Float?
-  familyLoanTermYears     Int?
+model PlanFamilySupport {
+  id                        String                   @id @default(cuid())
+  planId                    String                   @unique
+  plan                      Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  monthlyOtherIncome        Float                    @default(0)
+  hasCoApplicant            Boolean                  @default(false)
+  coApplicantMonthlyIncome  Float?
+  hasFamilySupport          Boolean                  @default(false)
+  familySupportType         FamilySupportType?
+  familySupportAmount       Float?
+  familyGiftTiming          FamilyGiftTiming?
+  familyLoanRepaymentType   FamilyLoanRepaymentType?
+  familyLoanInterestRate    Float?
+  familyLoanTermYears       Int?
 }
 
 // SỬA LẠI CÁC KHỐI ENUM Ở ĐÂY

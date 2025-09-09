@@ -38,9 +38,16 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   const projectionData = generateProjections(plan as any);
   const targetYearProjection: ProjectionRow | undefined =
     projectionData.find(p => p.isAffordable)
-  
-  console.log("targetYearProjection", targetYearProjection);
 
+  await db.plan.update({
+    where: {
+      id: planId,
+    },
+    data: {
+      firstViableYear: targetYearProjection?.year,
+    },
+  });
+  
   return (
     <ResultsClient plan={plan} firstYearProjection={targetYearProjection} />
   );

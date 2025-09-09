@@ -6,15 +6,16 @@ import { OnboardingPlanState } from "@/components/onboarding/types";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
-import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
+import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
+import { Plan } from "@prisma/client";
 
 interface SpendingClienttProps {
-  planId: string;
+  plan: Plan;
 }
 
-export default function SpendingClient({ planId }: SpendingClienttProps) {
+export default function SpendingClient({ plan }: SpendingClienttProps) {
   const [status, setStatus] = useState<'form' | 'loading' | 'result'>('form');
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
@@ -24,9 +25,9 @@ export default function SpendingClient({ planId }: SpendingClienttProps) {
     
     // Simulate calculation time
     setTimeout(async () => {
-        const response = await updateAndRecalculateFamilySupport(planId, data);
+        const response = await updateSpendingAndRecalculate(plan.id, data);
         if (response.success) {
-            setResult(response);
+            setResult(response as RecalculationResult);
             setStatus('result');
         } else {
             toast.error(response.error || "Có lỗi xảy ra.");
@@ -37,7 +38,7 @@ export default function SpendingClient({ planId }: SpendingClienttProps) {
   
   const handleContinue = () => {
       // Navigate to the next section of the plan
-      router.push(`/plan/${planId}/spending`); // Example next step
+      router.push(`/plan/${plan.id}/spending`); // Example next step
   }
 
   if (status === 'loading') {
@@ -45,13 +46,13 @@ export default function SpendingClient({ planId }: SpendingClienttProps) {
   }
 
   if (status === 'result' && result) {
-      return <ResultStep title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
+      return <ResultStep plan={result.plan} title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
   }
 
   return (
     <Spending
       initialData={{}}
-      planId={planId}
+      plan={plan}
       onCompleted={handleFormSubmit}
     />
   );

@@ -2,21 +2,22 @@
 
 import { db } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
-import { OnboardingPlanState } from "@/components/onboarding/types";
 import { revalidatePath } from "next/cache";
-import { Plan } from "@prisma/client";
-import { buildPlanForProjection, computeOnboardingOutcome } from "./projectionHelpers";
+import { runProjectionWithEngine } from "./projectionHelpers";
 import logger from "@/lib/logger";
 
-async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; }> {
-  const enginePlan = await buildPlanForProjection(planId);
-  const outcome = await computeOnboardingOutcome(enginePlan);
-  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message };
-}
+// Helper function to compare values, handling null/undefined/0 equivalence for some fields
+const areValuesEqual = (val1: any, val2: any) => {
+  // Treat null, undefined, and 0 as equal for numeric fields
+  if ((val1 === null || val1 === undefined || val1 === 0) && (val2 === null || val2 === undefined || val2 === 0)) {
+    return true;
+  }
+  return val1 === val2;
+};
 
 export async function updateAndRecalculateFamilySupport(
   planId: string,
-  formData: any
+  formData: any,
 ) {
   try {
     const user = await currentUser();
@@ -24,18 +25,37 @@ export async function updateAndRecalculateFamilySupport(
 
     const plan = await db.plan.findUnique({ where: { id: planId, userId: user.id } });
     if (!plan) return { success: false, error: "Plan not found." };
+
+    const planReport = await db.planReport.findUnique({ where: { planId } });
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+
+    // Fetch familySupport, it might be null if it's the first time
+    const familySupport = await db.planFamilySupport.findUnique({ where: { planId } });
     
-    // 🔥 LƯU LẠI NĂM MUA NHÀ TRƯỚC KHI CÓ FAMILY SUPPORT
-    const previousFirstViableYear = plan.firstViableYear;
-    
-    // 1. Separate data for Plan and FamilySupport models
-    const planDataToUpdate = {
-        hasCoApplicant: formData.hasFinancialPartner,
-        coApplicantMonthlyIncome: formData.partnerMonthlyIncome,
-        monthlyOtherIncome: formData.otherMonthlyIncome
+    // TẠO DỮ LIỆU HIỆN TẠI ĐỂ SO SÁNH
+    const currentData = {
+      hasCoApplicant: familySupport?.hasCoApplicant,
+      coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome,
+      monthlyOtherIncome: familySupport?.monthlyOtherIncome,
+      hasFamilySupport: familySupport?.hasFamilySupport ?? false,
+      familySupportType: familySupport?.familySupportType,
+      familySupportGiftAmount: familySupport?.familySupportType === 'GIFT' ? familySupport?.familySupportAmount : 0,
+      familySupportLoanAmount: familySupport?.familySupportType === 'LOAN' ? familySupport?.familySupportAmount : 0,
+      familySupportGiftTiming: familySupport?.familyGiftTiming,
+      familySupportLoanInterest: familySupport?.familyLoanInterestRate,
+      familySupportLoanRepayment: familySupport?.familyLoanRepaymentType,
+      familySupportLoanTerm: familySupport?.familyLoanTermYears,
     };
 
+    // SO SÁNH DỮ LIỆU MỚI VÀ CŨ
+    const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
+
+    const previousFirstViableYear = plan.firstViableYear;
+
     const familySupportData = {
+        hasCoApplicant: formData.hasCoApplicant,
+        coApplicantMonthlyIncome: formData.coApplicantMonthlyIncome,
+        monthlyOtherIncome: formData.monthlyOtherIncome,
         hasFamilySupport: formData.hasFamilySupport,
         familySupportType: formData.familySupportType,
         familySupportAmount: formData.familySupportType === 'GIFT' ? formData.familySupportGiftAmount : formData.familySupportLoanAmount,
@@ -47,37 +67,46 @@ export async function updateAndRecalculateFamilySupport(
     
     // 2. Use a transaction to update both tables
     await db.$transaction([
-        db.plan.update({
-            where: { id: planId },
-            data: planDataToUpdate,
-        }),
-        db.familySupport.upsert({
+        db.planFamilySupport.upsert({
             where: { planId },
             update: familySupportData,
             create: { planId, ...familySupportData },
         })
     ]);
 
-    const result = await runProjectionWithEngine(planId);
-
-    // 🔥 SO SÁNH VÀ TẠO MESSAGE THEO PRD
-    const newFirstViableYear = result.earliestPurchaseYear;
+    let result = { earliestPurchaseYear: 0, message: "" };
     let customMessage = "";
-
-    if (previousFirstViableYear && newFirstViableYear < previousFirstViableYear) {
-      // Năm mua nhà sớm hơn
-      customMessage = "Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳";
+    
+    if (hasChanged) {
+      result = await runProjectionWithEngine(planId);
+      if (result.earliestPurchaseYear === 0) {
+        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪"
+      } else if (result.earliestPurchaseYear < existingResult.earliestPurchaseYear) {
+        customMessage = "Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳"
+      } else {
+        customMessage = `Sự hỗ trợ của gia đình và người thân đã giúp bạn mua nhà sớm hơn trong năm ${result.earliestPurchaseYear}`;
+      }
+      await db.planReport.update({
+        where: { id: planId },
+        data: { projectionCache: result }
+      });
     } else {
-      // Năm mua nhà không thay đổi hoặc không có dữ liệu trước đó
-      customMessage = "Không sao, bàn tay ta làm nên tất cả, có sức người, sỏi đá cũng xếp được thành căn nhà đầu tiên 💪";
+      result = existingResult;
+      if (result.earliestPurchaseYear === 0) {
+        customMessage = "Bạn vẫn sẽ chưa mua được căn nhà vào năm mong muốn.";
+      } else {
+        customMessage = "Không sao, bàn tay ta làm nên tất cả, có sức người, sỏi đá cũng thành căn nhà đầu tiên 💪";
+      }
     }
 
     revalidatePath(`/plan/${planId}`);
     return { 
+      plan: plan,
       success: true, 
+      isChanged: hasChanged,
       earliestPurchaseYear: result.earliestPurchaseYear,
       message: customMessage,
-      hasImproved: previousFirstViableYear && newFirstViableYear < previousFirstViableYear
+      hasImproved: previousFirstViableYear && result.earliestPurchaseYear < previousFirstViableYear
     };
 
   } catch (error) {

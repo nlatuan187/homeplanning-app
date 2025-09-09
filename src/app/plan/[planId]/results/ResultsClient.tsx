@@ -4,7 +4,7 @@ import { Plan } from "@prisma/client";
 import { useRouter } from "next/navigation"; // Correct hook for App Router
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import ResultsHeader from "./ResultsHeader";
+import { ArrowLeftIcon } from "lucide-react";
 
 interface ResultsClientProps {
   plan: Plan & { familySupport: any };
@@ -20,10 +20,17 @@ export default function ResultsClient({
   return (
     <main className="min-h-screen bg-black text-white p-2 md:p-4">
       <div className="container mx-auto max-w-5xl pb-24">
-        <ResultsHeader />
+        <header className="relative flex justify-center items-center py-4 px-2">
+          <div className="absolute left-0">
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeftIcon className="h-6 w-6" />
+            </Button>
+          </div>
+          <h2 className="font-semibold text-white">Quick check</h2>
+        </header>
 
         <div className="rounded-lg text-center text-white pt-10">
-          Kế hoạch mua nhà năm {plan.firstViableYear}
+          Kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
         </div>
 
         <div className="space-y-8">
@@ -53,7 +60,7 @@ export default function ResultsClient({
               <div className="rounded-lg text-center font-semibold text-2xl text-red-500">
                 chưa khả thi
               </div>
-              {plan.firstViableYear && firstYearProjection && firstYearProjection.year - plan.firstViableYear === 1 ? (
+              {plan.confirmedPurchaseYear && firstYearProjection && firstYearProjection.year - plan.confirmedPurchaseYear === 1 ? (
                 <>
                   <div className="rounded-lg p-4 text-center">
                     nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}

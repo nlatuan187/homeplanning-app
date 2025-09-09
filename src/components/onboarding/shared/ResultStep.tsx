@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Plan } from "@prisma/client";
 import { ArrowLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export interface RecalculationResult {
+  plan: Plan;
   success: boolean;
   message: string;
   earliestPurchaseYear?: number;
@@ -12,6 +14,7 @@ export interface RecalculationResult {
 }
 
 interface ResultStepProps {
+  plan: Plan;
   title: string;
   message: string;
   earliestPurchaseYear?: number;
@@ -21,6 +24,7 @@ interface ResultStepProps {
 }
 
 export default function ResultStep({ 
+  plan,
   title, 
   message, 
   earliestPurchaseYear, 
@@ -56,10 +60,21 @@ export default function ResultStep({
                 </span>
             </div>
             
-            {earliestPurchaseYear && (
-                <p className="text-xl font-bold text-white">
+            {earliestPurchaseYear ? (
+              (earliestPurchaseYear > (plan.firstViableYear ?? Infinity) ? (
+                  <p className="text-xl font-bold text-white">
                     Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
-                </p>
+                  </p>
+                ) : (
+                  <p className="text-xl font-bold text-white">
+                    Bạn sẽ mua được nhà vào năm {earliestPurchaseYear}
+                  </p>
+                )
+              )
+            ) : (
+              <p className="text-xl font-bold text-white">
+                Bạn muốn khám phá thêm cách để mua được?
+              </p>
             )}
         </div>
         <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">

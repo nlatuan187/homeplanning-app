@@ -12,6 +12,9 @@ import { toast } from "react-hot-toast";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
+import { RecalculationResult } from "../shared/ResultStep";
+import { db } from "@/lib/db";
+import { Plan } from "@prisma/client";
 
 const spendingQuestions: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
@@ -21,28 +24,25 @@ const spendingQuestions: Question[] = [
 
 interface SpendingProps {
   initialData: Partial<OnboardingPlanState>;
-  planId: string;
+  plan: Plan;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
 
-interface RecalculationResult {
-    success: boolean;
-    message: string;
-    earliestPurchaseYear?: number;
-    error?: string;
-    hasWorsened?: boolean; // 🔥 Thêm field để track việc năm mua nhà bị lùi lại
-}
-
 export default function Spending({
   initialData,
-  planId,
+  plan,
   onCompleted,
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
+
+  const defaultValues: Partial<OnboardingPlanState> = {
+    monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
+    currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
+  };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
     setStep("loading");
@@ -53,7 +53,7 @@ export default function Spending({
       currentAnnualInsurancePremium: fullData.currentAnnualInsurancePremium,
     };
 
-    const result = await updateSpendingAndRecalculate(planId, spendingPayload);
+    const result = await updateSpendingAndRecalculate(plan.id, spendingPayload);
     
     if (result.success) {
       setResult(result as RecalculationResult);
@@ -66,7 +66,7 @@ export default function Spending({
 
   const handleContinue = () => {
     // This is where you might call onCompleted or navigate
-    router.push(`/plan/${planId}/assumption`);
+    router.push(`/plan/${plan.id}/assumption`);
   };
 
   if (step === "intro") {
@@ -116,6 +116,7 @@ export default function Spending({
 
   if (step === "result" && result) {
       return <ResultStep 
+        plan={result.plan}
         title="Dòng tiền đi ra "
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
@@ -131,6 +132,7 @@ export default function Spending({
             onSubmit={handleSubmit}
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"
+            defaultValues={defaultValues}
         />
     </div>
   );

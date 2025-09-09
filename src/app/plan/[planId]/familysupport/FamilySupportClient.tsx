@@ -2,42 +2,29 @@
 
 import { useState } from "react";
 import FamilySupport from "@/components/onboarding/sections/FamilySupport";
-import { OnboardingPlanState } from "@/components/onboarding/types";
 import { useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
 
-import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
+import { Plan, PlanFamilySupport } from "@prisma/client";
+
+// Define the Plan with familySupport relation
+type PlanWithFamilySupport = Plan & {
+  familySupport: PlanFamilySupport | null;
+};
 
 interface FamilySupportClientProps {
-  planId: string;
+  plan: PlanWithFamilySupport;
 }
 
-export default function FamilySupportClient({ planId }: FamilySupportClientProps) {
+export default function FamilySupportClient({ plan }: FamilySupportClientProps) {
   const [status, setStatus] = useState<'form' | 'loading' | 'result'>('form');
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
-
-  const handleFormSubmit = async (data: Partial<OnboardingPlanState>) => {
-    setStatus('loading');
-    
-    // Simulate calculation time
-    setTimeout(async () => {
-        const response = await updateAndRecalculateFamilySupport(planId, data);
-        if (response.success) {
-            setResult(response);
-            setStatus('result');
-        } else {
-            toast.error(response.error || "Có lỗi xảy ra.");
-            setStatus('form'); // Go back to form on error
-        }
-    }, 2500); // 2.5 second delay as per PRD
-  };
   
   const handleContinue = () => {
       // Navigate to the next section of the plan
-      router.push(`/plan/${planId}/spending`); // Example next step
+      router.push(`/plan/${plan.id}/spending`); // Example next step
   }
 
   if (status === 'loading') {
@@ -45,14 +32,14 @@ export default function FamilySupportClient({ planId }: FamilySupportClientProps
   }
 
   if (status === 'result' && result) {
-      return <ResultStep title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
+      return <ResultStep plan={result.plan} title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
   }
 
   return (
     <FamilySupport
+      familySupport={plan.familySupport as PlanFamilySupport}
       initialData={{}}
-      planId={planId}
-      onCompleted={handleFormSubmit}
+      planId={plan.id}
     />
   );
 }

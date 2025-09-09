@@ -3,17 +3,8 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { buildPlanForProjection, computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
-import { ProjectionRow } from "@/lib/calculations/affordability";
-import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
-
-async function runProjectionWithEngine(planId: string): Promise<{ projections: ProjectionRow[]; earliestPurchaseYear: number; message: string; }> {
-  const enginePlan = await buildPlanForProjection(planId);
-  const plan = await db.plan.findUnique({ where: { id: planId } });
-  const outcome = await computeOnboardingOutcome(enginePlan);
-  return outcome;
-}
+import { runProjectionWithEngine } from "./projectionHelpers";
 
 export async function updateAndRecalculateAssumption(
   planId: string,

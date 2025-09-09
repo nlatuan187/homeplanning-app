@@ -12,12 +12,13 @@ import { toast } from "react-hot-toast";
 import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
+import { FamilyGiftTiming, FamilyLoanRepaymentType, FamilySupportType, Plan, PlanFamilySupport } from "@prisma/client";
 
 const familySupportQuestions: Question[] = [
-    { key: 'hasFinancialPartner', text: 'Bạn có người đồng hành tài chính (vợ/chồng) khi mua nhà không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
+    { key: 'hasCoApplicant', text: 'Bạn có người đồng hành tài chính (vợ/chồng) khi mua nhà không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
     // @ts-ignore
-    { key: 'partnerMonthlyIncome', text: 'Lương hàng tháng của vợ/chồng bạn là bao nhiêu?', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFinancialPartner === true },
-    { key: 'otherMonthlyIncome', text: 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
+    { key: 'coApplicantMonthlyIncome', text: 'Lương hàng tháng của vợ/chồng bạn là bao nhiêu?', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasCoApplicant === true },
+    { key: 'monthlyOtherIncome', text: 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
     { key: 'hasFamilySupport', text: 'Bạn có nhận được hỗ trợ tài chính từ gia đình (bố mẹ, họ hàng,...) không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
     // @ts-ignore
     { key: 'familySupportType', text: 'Đây là khoản cho TẶNG hay cho VAY?', type: 'options', options: [{label: 'Cho tặng (không cần hoàn lại)', value: 'GIFT'}, {label: 'Cho vay (cần hoàn lại)', value: 'LOAN'}], condition: (ans: any) => ans.hasFamilySupport === true },
@@ -37,39 +38,50 @@ const familySupportQuestions: Question[] = [
 
 interface FamilySupportProps {
   initialData: OnboardingPlanState;
+  familySupport: PlanFamilySupport;
   planId: string;
-  onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
 
-
-
 interface RecalculationResult {
-    success: boolean;
-    message: string;
-    earliestPurchaseYear?: number;
-    error?: string;
-    hasImproved?: boolean;
+  plan: Plan;
+  success: boolean;
+  message: string;
+  earliestPurchaseYear?: number;
+  error?: string;
+  hasImproved?: boolean;
 }
 
 export default function FamilySupport({
   initialData,
+  familySupport,
   planId,
-  onCompleted,
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const router = useRouter();
+
+  const defaultValues: Partial<OnboardingPlanState> = {
+    coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome ?? 0,
+    monthlyOtherIncome: familySupport?.monthlyOtherIncome ?? 0,
+    familySupportType: familySupport?.familySupportType as FamilySupportType,
+    familySupportGiftAmount: (familySupport?.familySupportAmount as number) ?? 0,
+    familySupportGiftTiming: familySupport?.familyGiftTiming as FamilyGiftTiming,
+    familySupportLoanAmount: (familySupport?.familySupportAmount as number) ?? 0,
+    familySupportLoanInterest: (familySupport?.familyLoanInterestRate as number) ?? 0,
+    familySupportLoanRepayment: familySupport?.familyLoanRepaymentType as FamilyLoanRepaymentType,
+    familySupportLoanTerm: (familySupport?.familyLoanTermYears as number) ?? 0,
+  };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
     setStep("loading");
     const fullData = { ...initialData, ...formData };
 
     const familySupportPayload = {
-      hasFinancialPartner: fullData.hasFinancialPartner,
-      partnerMonthlyIncome: (fullData.partnerMonthlyIncome || 0),
-      otherMonthlyIncome: (fullData.otherMonthlyIncome || 0),
+      hasCoApplicant: fullData.hasCoApplicant,
+      coApplicantMonthlyIncome: (fullData.coApplicantMonthlyIncome || 0),
+      monthlyOtherIncome: (fullData.monthlyOtherIncome || 0),
       hasFamilySupport: fullData.hasFamilySupport,
       familySupportType: fullData.familySupportType,
       familySupportGiftAmount: (fullData.familySupportGiftAmount || 0),
@@ -145,6 +157,7 @@ export default function FamilySupport({
 
   if (step === "result" && result) {
       return <ResultStep 
+        plan={result.plan}
         title="Nguồn lực hỗ trợ"
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
@@ -160,7 +173,9 @@ export default function FamilySupport({
             onSubmit={handleSubmit}
             title="Nguồn lực hỗ trợ"
             subtitle="Tôi có thể mua được nhà sớm hơn không?"
+            defaultValues={defaultValues}
         />
     </div>
   );
 }
+
