@@ -16,11 +16,7 @@ export default function ResultsClient({
   firstYearProjection,
 }: ResultsClientProps) {
   const router = useRouter();
-  const isScenarioA = plan.affordabilityOutcome === "ScenarioA";
-  console.log("firstYearProjection", firstYearProjection);
-  console.log("plan.firstViableYear", plan.firstViableYear);
-  console.log("firstYearProjection.year - plan.firstViableYear", firstYearProjection.year - (plan.firstViableYear || 0));
-
+  const isScenarioB = plan.affordabilityOutcome === "ScenarioB"; 
   return (
     <main className="min-h-screen bg-black text-white p-2 md:p-4">
       <div className="container mx-auto max-w-5xl pb-24">
@@ -31,7 +27,7 @@ export default function ResultsClient({
         </div>
 
         <div className="space-y-8">
-          {!isScenarioA ? (
+          {isScenarioB ? (
             <div>
               <div className="rounded-lg p-4 text-center font-semibold text-2xl text-green-500">
                 hoàn toàn khả thi
@@ -57,7 +53,7 @@ export default function ResultsClient({
               <div className="rounded-lg text-center font-semibold text-2xl text-red-500">
                 chưa khả thi
               </div>
-              {plan.firstViableYear && firstYearProjection.year - plan.firstViableYear === 1 ? (
+              {plan.firstViableYear && firstYearProjection && firstYearProjection.year - plan.firstViableYear === 1 ? (
                 <>
                   <div className="rounded-lg p-4 text-center">
                     nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}
