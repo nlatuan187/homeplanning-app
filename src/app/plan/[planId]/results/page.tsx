@@ -36,10 +36,6 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
 
   // Generate the full projection data on the server
   const projectionData = generateProjections(plan as any);
-  console.log("projectionData", projectionData);
-  console.log("plan", plan);
-  const targetYear = new Date().getFullYear() + plan.yearsToPurchase;
-  // The first year projection is simply the first viable year from the projection data.
   const targetYearProjection: ProjectionRow | undefined =
     projectionData.find(p => p.isAffordable)
   

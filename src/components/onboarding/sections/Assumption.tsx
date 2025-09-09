@@ -281,19 +281,21 @@ export default function Assumption({
                     Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
                   </div>
                   <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
-                  <div className="mt-auto pt-4">
-                    <Button 
-                      onClick={() => setStep('form')}
-                      variant="outline" 
-                      className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                    >
-                      Điều chỉnh mong muốn
-                    </Button>
-                  </div>
-                  <div className="mt-auto pt-4">
-                      <Button onClick={() => onFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                        Mua nhà năm {result.earliestPurchaseYear}
+                  <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                    <div className="mt-auto pt-4">
+                      <Button 
+                        onClick={() => setStep('form')}
+                        variant="outline" 
+                        className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                      >
+                        Điều chỉnh mong muốn
                       </Button>
+                    </div>
+                    <div className="mt-auto pt-4">
+                        <Button onClick={() => onFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                          Mua nhà năm {result.earliestPurchaseYear}
+                        </Button>
+                    </div>
                   </div>
                 </div>
               // Case 2: Can purchase earlier or on time
@@ -312,19 +314,21 @@ export default function Assumption({
                   Bạn có thể mua nhà vào năm {plan.firstViableYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
                 </div>
                 <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
-                <div className="mt-auto pt-4">
-                  <Button 
-                    onClick={() => onFinalChoice(result.earliestPurchaseYear)}
-                    variant="outline" 
-                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                  >
-                    Mua nhà năm {result.earliestPurchaseYear}
-                  </Button>
-                </div>
-                <div className="mt-auto pt-4">
-                    <Button onClick={() => onFinalChoice(plan.firstViableYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                      Mua nhà năm {plan.firstViableYear}
+                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                  <div className="mt-auto pt-4">
+                    <Button 
+                      onClick={() => onFinalChoice(result.earliestPurchaseYear)}
+                      variant="outline" 
+                      className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                    >
+                      Mua nhà năm {result.earliestPurchaseYear}
                     </Button>
+                  </div>
+                  <div className="mt-auto pt-4">
+                      <Button onClick={() => onFinalChoice(plan.firstViableYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                        Mua nhà năm {plan.firstViableYear}
+                      </Button>
+                  </div>
                 </div>
     
               </div>
@@ -342,7 +346,7 @@ export default function Assumption({
                 <div className="text-center text-slate-400">
                   Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!
                 </div>
-                <div className="mt-auto pt-4">
+                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
                   <Button onClick={() => setStep('form')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                     Điều chỉnh mong muốn
                   </Button>
