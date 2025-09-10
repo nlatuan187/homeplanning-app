@@ -8,6 +8,7 @@ import { computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { runProjectionWithEngine } from "./projectionHelpers";
+import { createOnboardingProgress } from "./onboardingActions";
 
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
@@ -50,6 +51,7 @@ export async function createPlanFromOnboarding(
 
     const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
 
+    await createOnboardingProgress(existingPlan.id);
     try {
       const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
       const isAffordable = outcome.purchaseProjection?.isAffordable; 

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Plan } from "@prisma/client";
 import { ArrowLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export interface RecalculationResult {
   planId: string;
@@ -54,28 +55,36 @@ export default function ResultStep({
               {message}
             </p>
             
-            {/* Placeholder for the image/card - emoji phù hợp với từng trường hợp */}
-            <div className="w-48 h-64 bg-slate-700 rounded-lg mb-8 flex items-center justify-center">
-                <span className="text-4xl">
-                  {hasImproved ? "🥳" : "💪"}
-                </span>
-            </div>
-            
             {earliestPurchaseYear ? (
               (earliestPurchaseYear > (plan.firstViableYear ?? Infinity) ? (
-                  <p className="text-xl font-bold text-white">
-                    Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
-                  </p>
+                  <>
+                    <div className="rounded-lg mb-8 flex items-center justify-center">
+                      <Image src="/onboarding/resultcase1.png" alt="Result" width={320} height={256} />
+                    </div>
+                    <p className="text-xl font-bold text-white">
+                      Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
+                    </p>
+                  </>
                 ) : (
-                  <p className="text-xl font-bold text-white">
-                    Bạn sẽ mua được nhà vào năm {earliestPurchaseYear}
-                  </p>
+                  <>
+                    <div className="rounded-lg mb-8 flex items-center justify-center">
+                      <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
+                    </div>
+                    <p className="text-xl font-bold text-white">
+                      Bạn sẽ mua được nhà vào năm {earliestPurchaseYear}
+                    </p>
+                  </>
                 )
               )
             ) : (
-              <p className="text-xl font-bold text-white">
-                Bạn muốn khám phá thêm cách để mua được?
-              </p>
+              <>  
+                <div className="rounded-lg mb-8 flex items-center justify-center">
+                  <Image src="/onboarding/resultcase3.png" alt="Result" width={320} height={256} />
+                </div>
+                <p className="text-xl font-bold text-white">
+                  Bạn muốn khám phá thêm cách để mua được?
+                </p>
+              </>
             )}
         </div>
         <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
