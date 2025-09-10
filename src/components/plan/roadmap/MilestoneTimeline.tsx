@@ -52,10 +52,12 @@ export default function MilestoneTimeline({
   plan,
   milestoneGroups,
   currentSavings,
+  setIsLoading,
 }: {
   plan: Plan;
   milestoneGroups: MilestoneGroup[];
   currentSavings: number;
+  setIsLoading: (isLoading: boolean) => void;
 }) {
   const spacingHeight = 150;
 
@@ -84,6 +86,7 @@ export default function MilestoneTimeline({
                     isLast={isLast}
                     currentSavings={currentSavings}
                     milestoneGroups={milestoneGroups}
+                    setIsLoading={setIsLoading}
                   />
                 </div>
               </>
@@ -98,6 +101,7 @@ export default function MilestoneTimeline({
                     isLast={isLast}
                     currentSavings={currentSavings}
                     milestoneGroups={milestoneGroups}
+                    setIsLoading={setIsLoading}
                   />
                 </div>
               </>
@@ -117,6 +121,7 @@ function MilestoneNode({
   isLast,
   currentSavings,
   milestoneGroups,
+  setIsLoading,
 }: {
   plan: Plan;
   group: MilestoneGroup;
@@ -125,6 +130,7 @@ function MilestoneNode({
   isLast: boolean;
   currentSavings: number;
   milestoneGroups: MilestoneGroup[];
+  setIsLoading: (isLoading: boolean) => void;
 }) {
   const router = useRouter();
   
@@ -160,6 +166,7 @@ function MilestoneNode({
   }
 
   const handleClick = () => {
+    setIsLoading(true);
     console.log("MilestoneNode clicked:", group.title, "Goal:", group.id);
     
     if (group.status === "current") {

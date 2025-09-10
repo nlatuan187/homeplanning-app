@@ -13,6 +13,9 @@ import { useUser } from "@clerk/nextjs";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { Plan } from "@prisma/client";
 import router, { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -79,6 +82,7 @@ interface AssumptionProps {
     onSliderChange: (key: keyof AssumptionProps['assumptions'], value: number) => void;
     onFinalChoice: (year: number) => void;
     chartData: ChartMilestone[]; // Receive chart data from client
+    loadingTitle?: string;
 }
 
 interface ResultAccumulationChartProps {
@@ -155,6 +159,7 @@ export default function Assumption({
     onSliderChange,
     onFinalChoice,
     chartData,
+    loadingTitle,
 }: AssumptionProps) {
   const { user, isLoaded } = useUser();
   const currentAssumption = assumptionData[assumptionStep];
@@ -243,7 +248,7 @@ export default function Assumption({
   if (step === "loading") {
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950">
-        <LoadingStep title="Hoàn thiện kế hoạch" />
+        <LoadingStep title={loadingTitle || "Hoàn thiện kế hoạch"} message={"Đang hoàn thiện kế hoạch"} percentage={100} />
       </div>
     );
   }

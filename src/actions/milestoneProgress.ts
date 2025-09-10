@@ -98,24 +98,38 @@ export async function getOrCreateFullMilestoneData(planId: string, userId: strin
       where: { planId },
     });
 
-    let roadmap = await db.planRoadmap.findUnique({
-      where: { planId },
-    });
-
     const purchaseProjection = projections.find((p: ProjectionRow) => p.year === plan.confirmedPurchaseYear) || projections[0];
 
     if (!progress) {
       const currentSavings = plan.initialSavings || 0;
-      progress = await db.milestoneProgress.create({
-        data: {
-          planId: plan.id,
-          currentSavings,
-          housePriceProjected: purchaseProjection.housePriceProjected,
-          savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,
-          lastMilestoneCalculation: new Date(),
-        },
-      });
+      try {
+        progress = await db.milestoneProgress.create({
+          data: {
+            planId: plan.id,
+            currentSavings,
+            housePriceProjected: purchaseProjection.housePriceProjected,
+            savingsPercentage: purchaseProjection.housePriceProjected > 0 ? Math.round((currentSavings / purchaseProjection.housePriceProjected) * 100) : 0,
+            lastMilestoneCalculation: new Date(),
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          // Race condition: another request created the record. We can now safely fetch it.
+          progress = await db.milestoneProgress.findUnique({ where: { planId } });
+          if (!progress) {
+            // This should not happen in normal circumstances.
+            throw new Error(`Failed to retrieve milestone progress for plan ${planId} after a race condition.`);
+          }
+        } else {
+          // Re-throw any other errors.
+          throw error;
+        }
+      }
     }
+
+    let roadmap = await db.planRoadmap.findUnique({
+      where: { planId },
+    });
 
     if (!roadmap) {
       const currentSavings = progress.currentSavings; // Lấy savings từ progress đã có
@@ -131,13 +145,26 @@ export async function getOrCreateFullMilestoneData(planId: string, userId: strin
       const serializedMilestoneGroups = JSON.parse(JSON.stringify(milestoneGroups));
       const currentMilestoneData = findCurrentSubMilestone(milestoneGroups);
 
-      roadmap = await db.planRoadmap.create({
-        data: {
-          planId,
-          milestoneGroups: serializedMilestoneGroups,
-          currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
-        },
-      });
+      try {
+        roadmap = await db.planRoadmap.create({
+          data: {
+            planId,
+            milestoneGroups: serializedMilestoneGroups,
+            currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          // Race condition: another request created the record. We can now safely fetch it.
+          roadmap = await db.planRoadmap.findUnique({ where: { planId } });
+          if (!roadmap) {
+            throw new Error(`Failed to retrieve plan roadmap for plan ${planId} after a race condition.`);
+          }
+        } else {
+          // Re-throw any other errors.
+          throw error;
+        }
+      }
     }
 
     return { progress, roadmap };

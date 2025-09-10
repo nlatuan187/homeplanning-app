@@ -152,7 +152,7 @@ export default function FamilySupport({
   if (step === "loading") {
       return (
         <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
-            <LoadingStep title="Nguồn lực hỗ trợ" />
+            <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ"/>
         </div>
       )
   }
@@ -169,7 +169,7 @@ export default function FamilySupport({
   }
 
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm 
             questions={familySupportQuestions} 
             onSubmit={handleSubmit}

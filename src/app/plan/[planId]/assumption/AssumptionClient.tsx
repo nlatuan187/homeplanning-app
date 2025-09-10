@@ -34,11 +34,14 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   const router = useRouter();
 
   if (!plan) {
-    return <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950"><LoadingStep title="Đang tải dữ liệu..." /></div>;
+    return <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950">
+      <LoadingStep title="Đang tải dữ liệu" message="Đang tải dữ liệu..." percentage={100} />
+    </div>;
   }
 
   // State for controlling the UI steps (intro, form, loading, result)
   const [step, setStep] = useState<"intro" | "form" | "loading" | "result">("intro");
+  const [loadingTitle, setLoadingTitle] = useState("Hoàn thiện kế hoạch");
   
   // State for controlling the assumption substep (0, 1, 2)
   const [assumptionStep, setAssumptionStep] = useState(0);
@@ -104,6 +107,8 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
   
   const handleFinalChoice = async (year: number) => {
+    setLoadingTitle("Đang tạo lộ trình...");
+    setStep("loading");
     
     try {
       const result = await confirmPurchaseYear(plan.id, year);
@@ -113,9 +118,11 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
         router.push(`/plan/${plan.id}/roadmap`);
       } else {
         toast.error(result.error || "Có lỗi xảy ra khi lưu năm mua nhà");
+        setStep("result");
       }
     } catch (error) {
       toast.error("Có lỗi xảy ra, vui lòng thử lại");
+      setStep("result");
     }
   };
 
@@ -175,6 +182,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
       onSliderChange={handleSliderChange}
       onFinalChoice={handleFinalChoice}
       chartData={chartData}
+      loadingTitle={loadingTitle}
     />
   );
 }

@@ -28,7 +28,7 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
   }
 
   if (status === 'loading') {
-      return <LoadingStep title="Nguồn lực hỗ trợ" />;
+      return <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100}/>;
   }
 
   if (status === 'result' && result) {

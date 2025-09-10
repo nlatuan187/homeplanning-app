@@ -9,6 +9,7 @@ import { Plan, MilestoneProgress } from "@prisma/client";
 import { UserButton } from "@clerk/nextjs";
 import BottomNavbar from "@/components/layout/BottomNavbar";
 import { MilestoneGroup } from "@/lib/isMilestoneUnlocked";
+import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 
 interface RoadmapClientProps {
   plan: Plan;
@@ -31,6 +32,20 @@ export default function RoadmapClient({
   
   const [progressPercentage, setProgressPercentage] = useState(savingsPercentage);
   const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
+        <LoadingStep 
+          title="Vui lòng chờ" 
+          message="Đang chuyển hướng" 
+          percentage={100}
+        />
+      </div>    
+    );
+  }
 
   return (
     <>
@@ -108,6 +123,7 @@ export default function RoadmapClient({
                 plan={plan} 
                 milestoneGroups={milestoneGroups} 
                 currentSavings={currentSavings} 
+                setIsLoading={setIsLoading}
               />
             </div>
 

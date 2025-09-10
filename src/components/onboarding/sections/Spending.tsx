@@ -111,7 +111,7 @@ export default function Spending({
   if (step === "loading") {
       return (
         <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
-            <LoadingStep title="Dòng tiền đi ra" />
+            <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>
         </div>
       )
   }
@@ -128,7 +128,7 @@ export default function Spending({
   }
 
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm 
             questions={spendingQuestions} 
             onSubmit={handleSubmit}

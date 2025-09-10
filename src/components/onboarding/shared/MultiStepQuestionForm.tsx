@@ -107,7 +107,7 @@ export default function MultiStepQuestionForm({
         <div className="relative w-full">
             <Input
               type="number"
-              value={currentValue as number || ''}
+              value={currentValue as string || ''}
               onChange={(e) => handleInputChange(parseInt(e.target.value, 10) || 0)}
               className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
               placeholder={placeholderText}
@@ -156,7 +156,7 @@ export default function MultiStepQuestionForm({
 
       {/* Question Content */}
       <div className="flex-grow flex flex-col items-center text-center px-4">
-        <h2 className="text-2xl font-semibold text-white mb-8 max-w-5xl">
+        <h2 className="text-2xl font-semibold text-white mb-12 max-w-5xl">
           {currentQuestion.text}
         </h2>
         {renderInput}

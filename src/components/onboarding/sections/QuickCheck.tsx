@@ -132,13 +132,20 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
   }
 
   if (step === "form") {
+    const defaultQuickCheckValues: Partial<OnboardingPlanState> = {
+      propertyValue: 0,
+      initialSavings: 0,
+      personalMonthlyIncome: 0,
+      personalMonthlyExpenses: 0,
+    };
     return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10 bg-slate-950">
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm
           questions={quickCheckQuestions}
           onSubmit={handleSubmit}
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
+          defaultValues={defaultQuickCheckValues}
         />
       </div>
     );

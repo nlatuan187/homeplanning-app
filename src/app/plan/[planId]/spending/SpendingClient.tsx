@@ -26,11 +26,11 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
   }
 
   if (status === 'loading') {
-      return <LoadingStep title="Nguồn lực hỗ trợ" />;
+      return <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>;
   }
 
   if (status === 'result' && result) {
-      return <ResultStep plan={result.plan} title="Nguồn lực hỗ trợ" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
+      return <ResultStep plan={result.plan} title="Dòng tiền đi ra" message={result.message} earliestPurchaseYear={result.earliestPurchaseYear} onContinue={handleContinue} />;
   }
 
   return (
