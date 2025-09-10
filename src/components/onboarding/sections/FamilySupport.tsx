@@ -38,8 +38,9 @@ const familySupportQuestions: Question[] = [
 
 interface FamilySupportProps {
   initialData: OnboardingPlanState;
-  familySupport: PlanFamilySupport;
+  familySupport: OnboardingPlanState;
   planId: string;
+  onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
@@ -57,6 +58,7 @@ export default function FamilySupport({
   initialData,
   familySupport,
   planId,
+  onCompleted,
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
@@ -66,12 +68,12 @@ export default function FamilySupport({
     coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome ?? 0,
     monthlyOtherIncome: familySupport?.monthlyOtherIncome ?? 0,
     familySupportType: familySupport?.familySupportType as FamilySupportType,
-    familySupportGiftAmount: (familySupport?.familySupportAmount as number) ?? 0,
-    familySupportGiftTiming: familySupport?.familyGiftTiming as FamilyGiftTiming,
-    familySupportLoanAmount: (familySupport?.familySupportAmount as number) ?? 0,
-    familySupportLoanInterest: (familySupport?.familyLoanInterestRate as number) ?? 0,
-    familySupportLoanRepayment: familySupport?.familyLoanRepaymentType as FamilyLoanRepaymentType,
-    familySupportLoanTerm: (familySupport?.familyLoanTermYears as number) ?? 0,
+    familySupportGiftAmount: (familySupport?.familySupportGiftAmount as number) ?? 0,
+    familySupportGiftTiming: familySupport?.familySupportGiftTiming as FamilyGiftTiming,
+    familySupportLoanAmount: (familySupport?.familySupportLoanAmount as number) ?? 0,
+    familySupportLoanInterest: (familySupport?.familySupportLoanInterest as number) ?? 0,
+    familySupportLoanRepayment: familySupport?.familySupportLoanRepayment as FamilyLoanRepaymentType,
+    familySupportLoanTerm: (familySupport?.familySupportLoanTerm as number) ?? 0,
   };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {

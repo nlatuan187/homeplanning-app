@@ -9,7 +9,7 @@ import logger from "@/lib/logger";
 // Helper function to compare values, handling null/undefined/0 equivalence for some fields
 const areValuesEqual = (val1: any, val2: any) => {
   // Treat null, undefined, and 0 as equal for numeric fields
-  if ((val1 === null || val1 === undefined || val1 === 0) && (val2 === null || val2 === undefined || val2 === 0)) {
+  if ((val1 === null || val1 === undefined) && (val2 === null || val2 === undefined)) {
     return true;
   }
   return val1 === val2;
@@ -51,33 +51,19 @@ export async function updateAndRecalculateFamilySupport(
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
 
     const previousFirstViableYear = plan.firstViableYear;
-
-    const familySupportData = {
-        hasCoApplicant: formData.hasCoApplicant,
-        coApplicantMonthlyIncome: formData.coApplicantMonthlyIncome,
-        monthlyOtherIncome: formData.monthlyOtherIncome,
-        hasFamilySupport: formData.hasFamilySupport,
-        familySupportType: formData.familySupportType,
-        familySupportAmount: formData.familySupportType === 'GIFT' ? formData.familySupportGiftAmount : formData.familySupportLoanAmount,
-        familyGiftTiming: formData.familySupportGiftTiming,
-        familyLoanInterestRate: formData.familySupportLoanInterest,
-        familyLoanRepaymentType: formData.familySupportLoanRepayment,
-        familyLoanTermYears: formData.familySupportLoanTerm,
-    };
     
-    // 2. Use a transaction to update both tables
-    await db.$transaction([
-        db.planFamilySupport.upsert({
-            where: { planId },
-            update: familySupportData,
-            create: { planId, ...familySupportData },
-        })
-    ]);
-
     let result = { earliestPurchaseYear: 0, message: "" };
     let customMessage = "";
     
     if (hasChanged) {
+      await db.$transaction([
+        db.planFamilySupport.upsert({
+            where: { planId },
+            update: formData,
+            create: { planId, ...formData },
+        })
+      ]);
+      console.log("change: true");
       result = await runProjectionWithEngine(planId);
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪"
@@ -90,8 +76,14 @@ export async function updateAndRecalculateFamilySupport(
         where: { id: planId },
         data: { projectionCache: result }
       });
+
+      await db.plan.update({
+        where: { id: planId },
+        data: { firstViableYear: result.earliestPurchaseYear }
+      });
     } else {
       result = existingResult;
+      console.log("change: true");
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Bạn vẫn sẽ chưa mua được căn nhà vào năm mong muốn.";
       } else {

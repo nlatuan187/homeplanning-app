@@ -6,6 +6,14 @@ import { revalidatePath } from "next/cache";
 import logger from "@/lib/logger";
 import { runProjectionWithEngine } from "./projectionHelpers";
 
+const areValuesEqual = (val1: any, val2: any) => {
+  // Treat null, undefined, and 0 as equal for numeric fields
+  if ((val1 === null || val1 === undefined) && (val2 === null || val2 === undefined)) {
+    return true;
+  }
+  return val1 === val2;
+};
+
 export async function updateAndRecalculateAssumption(
   planId: string,
   formData: any
@@ -17,26 +25,37 @@ export async function updateAndRecalculateAssumption(
     const plan = await db.plan.findUnique({ where: { id: planId, userId: user.id } });
     if (!plan) return { success: false, error: "Plan not found." };
 
-    const assumptionData = {
-        pctSalaryGrowth: formData.pctSalaryGrowth,
-        pctHouseGrowth: formData.pctHouseGrowth,
-        pctInvestmentReturn: formData.pctInvestmentReturn,
+    const planReport = await db.planReport.findUnique({ where: { planId } });
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+
+    const currentData = {
+      pctSalaryGrowth: plan.pctSalaryGrowth,
+      pctHouseGrowth: plan.pctHouseGrowth,
+      pctInvestmentReturn: plan.pctInvestmentReturn,
     };
-    
-    // 2. Use a transaction to update both tables
-    await db.$transaction([
+
+    const hasChanged = Object.keys(currentData).some(key => !areValuesEqual(currentData[key as keyof typeof currentData], formData[key as keyof typeof formData]));
+
+    let result;
+    if (hasChanged) {
+      await db.$transaction([
         db.plan.update({
             where: { id: planId },
-            data: assumptionData,
+            data: formData,
         }),
-    ]);
-
-    const result = await runProjectionWithEngine(planId);
-
-    await db.plan.update({
+      ]);
+      result = await runProjectionWithEngine(planId);
+      await db.planReport.update({
+        where: { id: planId },
+        data: { projectionCache: result }
+      });
+      await db.plan.update({
         where: { id: planId },
         data: { firstViableYear: result.earliestPurchaseYear }
     });
+    } else {
+      result = existingResult;
+    }
 
     revalidatePath(`/plan/${planId}`);
     return { success: true, ...result };
