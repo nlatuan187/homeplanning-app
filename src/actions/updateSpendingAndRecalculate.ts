@@ -56,10 +56,13 @@ export async function updateSpendingAndRecalculate(
       } else {
         customMessage = `Ấn tượng đấy 😀`;
       }
-      await db.planReport.update({
-        where: { id: plan.id },
-        data: { projectionCache: result }
-      });
+      await db.$transaction([
+        db.planReport.upsert({
+            where: { planId: plan.id },
+            update: { projectionCache: result },
+            create: { planId: plan.id, projectionCache: result },
+        })
+      ]);
       await db.plan.update({
         where: { id: plan.id },
         data: { firstViableYear: result.earliestPurchaseYear }

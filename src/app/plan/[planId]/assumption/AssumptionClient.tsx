@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Plan } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -13,6 +13,8 @@ import { updateAndRecalculateAssumption } from "@/actions/updateAndRecalculateAs
 import { cachePlaygroundProjections, upsertInteractionLogEntry } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
 import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
+import { completeOnboardingSection, updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface AssumptionData {
   pctSalaryGrowth: number;
@@ -51,6 +53,20 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
     pctHouseGrowth: plan.pctHouseGrowth ?? 10,
     pctInvestmentReturn: plan.pctInvestmentReturn ?? 11,
   });
+  // State mới để theo dõi các trường đã tương tác
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  // Debounce cả 2 state để gửi lên server
+  const debouncedAssumptions = useDebounce(assumptions, 500);
+  const debouncedTouchedFields = useDebounce(touchedFields, 500);
+
+  // useEffect để tự động cập nhật tiến độ
+  useEffect(() => {
+    if (Object.keys(debouncedTouchedFields).length > 0) {
+      console.log("Updating assumption section with:", debouncedAssumptions);
+      updateOnboardingSectionProgress(plan.id, "assumption", debouncedAssumptions, debouncedTouchedFields);
+    }
+  }, [debouncedAssumptions, debouncedTouchedFields, plan.id]);
 
   const chartData = useMemo(() => {
     const tempPlan = {
@@ -68,6 +84,10 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
 
   const handleSliderChange = (key: keyof typeof assumptions, value: number) => {
     setAssumptions((prev) => ({ ...prev, [key]: value }));
+    // Đánh dấu trường đã tương tác
+    if (!touchedFields[key]) {
+      setTouchedFields((prev) => ({ ...prev, [key]: true }));
+    }
   };
 
   const handleNext = () => {
@@ -107,6 +127,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
   
   const handleFinalChoice = async (year: number) => {
+    completeOnboardingSection(plan.id, "assumption");
     setLoadingTitle("Đang tạo lộ trình...");
     setStep("loading");
     

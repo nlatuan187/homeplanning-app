@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -13,6 +13,8 @@ import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculat
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { FamilyGiftTiming, FamilyLoanRepaymentType, FamilySupportType, Plan, PlanFamilySupport } from "@prisma/client";
+import { useDebounce } from "@/hooks/useDebounce";
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 const familySupportQuestions: Question[] = [
     { key: 'hasCoApplicant', text: 'Bạn có người đồng hành tài chính (vợ/chồng) khi mua nhà không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
@@ -62,7 +64,39 @@ export default function FamilySupport({
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
+  const [formState, setFormState] = useState<{
+    formData: Partial<OnboardingPlanState>;
+    touchedFields: Record<string, boolean>;
+  }>({ formData: {}, touchedFields: {} });
   const router = useRouter();
+
+  // Sử dụng debounce cho state của form
+  const debouncedFormState = useDebounce(formState, 500); // 500ms delay
+
+  // useEffect để gọi server action khi state đã debounce thay đổi
+  useEffect(() => {
+    // Chỉ chạy khi có dữ liệu đã được tương tác
+    if (debouncedFormState && Object.keys(debouncedFormState.touchedFields).length > 0) {
+      console.log("Updating family support section with:", debouncedFormState);
+      
+      const payload = {
+        hasCoApplicant: debouncedFormState.formData.hasCoApplicant,
+        coApplicantMonthlyIncome: debouncedFormState.formData.coApplicantMonthlyIncome,
+        monthlyOtherIncome: debouncedFormState.formData.monthlyOtherIncome,
+        hasFamilySupport: debouncedFormState.formData.hasFamilySupport,
+        familySupportType: debouncedFormState.formData.familySupportType,
+        familySupportAmount: debouncedFormState.formData.familySupportLoanAmount || debouncedFormState.formData.familySupportGiftAmount,
+        familyGiftTiming: debouncedFormState.formData.familySupportGiftTiming,
+        familyLoanInterestRate: debouncedFormState.formData.familySupportLoanInterest,
+        familyLoanRepaymentType: debouncedFormState.formData.familySupportLoanRepayment,
+        familyLoanTermYears: debouncedFormState.formData.familySupportLoanTerm,
+      };
+
+      // Gọi action mới, truyền cả formData và touchedFields
+      updateOnboardingSectionProgress(planId, "familySupport", payload, debouncedFormState.touchedFields);
+    }
+  }, [debouncedFormState, planId]);
+
 
   const defaultValues: Partial<OnboardingPlanState> = {
     coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome ?? 0,
@@ -86,12 +120,11 @@ export default function FamilySupport({
       monthlyOtherIncome: (fullData.monthlyOtherIncome || 0),
       hasFamilySupport: fullData.hasFamilySupport,
       familySupportType: fullData.familySupportType,
-      familySupportGiftAmount: (fullData.familySupportGiftAmount || 0),
       familySupportGiftTiming: fullData.familySupportGiftTiming,
-      familySupportLoanAmount: (fullData.familySupportLoanAmount || 0),
-      familySupportLoanInterest: fullData.familySupportLoanInterest,
-      familySupportLoanRepayment: fullData.familySupportLoanRepayment,
-      familySupportLoanTerm: fullData.familySupportLoanTerm,
+      familySupportAmount: (fullData.familySupportLoanAmount || fullData.familySupportGiftAmount),
+      familyLoanInterestRate: fullData.familySupportLoanInterest,
+      familyLoanRepaymentType: fullData.familySupportLoanRepayment,
+      familyLoanTermYears: fullData.familySupportLoanTerm,
     };
 
     const result = await updateAndRecalculateFamilySupport(planId, familySupportPayload);
@@ -107,6 +140,7 @@ export default function FamilySupport({
 
   const handleContinue = () => {
     // This is where you might call onCompleted or navigate
+    // completeOnboardingSection(planId, "familySupport"); // This line was removed as per the new_code
     router.push(`/plan/${planId}/spending`);
   };
 
@@ -176,6 +210,7 @@ export default function FamilySupport({
             title="Nguồn lực hỗ trợ"
             subtitle="Tôi có thể mua được nhà sớm hơn không?"
             defaultValues={defaultValues}
+            onDataChange={setFormState}
         />
     </div>
   );

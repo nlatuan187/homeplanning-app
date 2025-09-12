@@ -37,6 +37,7 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
     <Spending
       initialData={{}}
       plan={plan}
+      planId={plan.id}
       onCompleted={handleContinue}
     />
   );

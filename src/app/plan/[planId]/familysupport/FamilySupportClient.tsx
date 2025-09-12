@@ -8,6 +8,7 @@ import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
 import { Plan, PlanFamilySupport } from "@prisma/client";
 import { OnboardingPlanState } from "@/components/onboarding/types";
+import { completeOnboardingSection } from "@/actions/onboardingActions";
 // Define the Plan with familySupport relation
 type PlanWithFamilySupport = Plan & {
   familySupport: PlanFamilySupport | null;
@@ -24,6 +25,7 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
   
   const handleContinue = () => {
       // Navigate to the next section of the plan
+      completeOnboardingSection(plan.id, "familySupport");
       router.push(`/plan/${plan.id}/spending`); // Example next step
   }
 

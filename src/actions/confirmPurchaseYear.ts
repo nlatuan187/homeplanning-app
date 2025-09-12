@@ -24,6 +24,12 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       throw new Error("Unauthorized");
     }
 
+    await db.onboardingProgress.delete({
+      where: {
+        planId: planId,
+      },
+    });
+
     // Verify plan ownership
     const plan = await db.plan.findUnique({
       where: {

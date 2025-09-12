@@ -32,7 +32,7 @@ export interface OnboardingPlanState {
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;
-  propertyGrowthRate?: number; // Fixed at 10%
+  propertyGrowthRate?: number;
   investmentReturnRate?: number;
 }
 

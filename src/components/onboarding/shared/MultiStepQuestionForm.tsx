@@ -5,8 +5,9 @@ import { OnboardingPlanState } from "../types";
 import ProgressBar from "./ProgressBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Home } from "lucide-react"; // Thêm 'Home' vào đây
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 // Define the structure for a single question
 export interface Question {
@@ -24,6 +25,11 @@ interface MultiStepQuestionFormProps {
   title: string;
   subtitle?: string;
   defaultValues?: Partial<OnboardingPlanState>; // Prop mới để nhận giá trị mặc định
+  onDataChange?: (data: {
+    formData: Partial<OnboardingPlanState>;
+    touchedFields: Record<string, boolean>;
+  }) => void; // Cập nhật để gửi cả touchedFields
+  showDashboardButton?: boolean; // Prop to control dashboard button visibility
 }
 
 export default function MultiStepQuestionForm({
@@ -32,12 +38,21 @@ export default function MultiStepQuestionForm({
   title,
   subtitle,
   defaultValues = {}, // Gán giá trị mặc định là object rỗng
+  onDataChange, // Thêm vào destructuring
+  showDashboardButton = true, // Default to true for backward compatibility
 }: MultiStepQuestionFormProps) {
+  const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   // Khởi tạo formData với giá trị từ defaultValues
   const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(defaultValues);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
 
-  console.log("defaultValues", defaultValues);
+  // useEffect để gọi onDataChange khi formData hoặc touchedFields thay đổi
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange({ formData, touchedFields });
+    }
+  }, [formData, touchedFields, onDataChange]);
 
   const visibleQuestions = useMemo(() => {
     return questions.filter((q) => !q.condition || q.condition(formData));
@@ -54,6 +69,10 @@ export default function MultiStepQuestionForm({
 
   const handleInputChange = (value: any) => {
     setFormData((prev) => ({ ...prev, [currentQuestion.key]: value }));
+    // Đánh dấu trường này là đã được tương tác
+    if (!touchedFields[currentQuestion.key]) {
+      setTouchedFields((prev) => ({ ...prev, [currentQuestion.key]: true }));
+    }
   };
 
   const goToNext = () => {
@@ -128,7 +147,7 @@ export default function MultiStepQuestionForm({
   return (
     <div className="flex flex-col h-full flex-grow w-full">
       {/* Header Section */}
-      <div className="mb-4">
+      <div>
         {/* Navigation: Uses absolute positioning for perfect centering */}
         <div className="relative flex items-center h-10 mb-4 mx-4">
           <div className="absolute left-0 top-1/2 -translate-y-1/2">
@@ -145,14 +164,27 @@ export default function MultiStepQuestionForm({
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
             {title}
           </div>
-        </div>
 
-        {/* Progress Bar */}
-        <ProgressBar
-          current={currentQuestionIndex + 1}
-          total={visibleQuestions.length}
-        />
+          {showDashboardButton && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <Button 
+                variant="outline"
+                size="sm" 
+                className="absolute bg-slate-700 right-0 top-1/2 -translate-y-1/2 border-slate-600 hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                onClick={() => router.push(`/dashboard`)}
+              >
+                <span className="hidden md:inline">Dashboard</span>
+                <Home className="h-4 w-4 md:hidden" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
+
+      <ProgressBar
+        current={currentQuestionIndex + 1}
+        total={visibleQuestions.length}
+      />
 
       {/* Question Content */}
       <div className="flex-grow flex flex-col items-center text-center px-4">

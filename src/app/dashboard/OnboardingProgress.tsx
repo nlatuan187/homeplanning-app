@@ -1,10 +1,11 @@
 "use client"; // Mark as a client component as it's used within one
 
-import Link from 'next/link';
 import { OnboardingProgress, OnboardingSectionState } from '@prisma/client';
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Rocket } from 'lucide-react';
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
+import { toast } from "react-hot-toast"; // Added for toast notifications
+import { cn } from "@/lib/utils"; // Added for conditional class names
 
 interface OnboardingProgressDisplayProps {
   planId: string;
@@ -16,19 +17,19 @@ const sectionConfig = {
   familySupport: {
     title: "Nguồn lực hỗ trợ",
     image: "/icons/suitcase 2.png",
-    link: (planId: string) => `/plan/${planId}/familysupport`,
+    link: "familysupport",
     backgroundImage: "url('/onboarding/card2bg.png')", 
   },
   spending: {
     title: "Dòng tiền đi ra",
     image: "/icons/suitcase 3.png",
-    link: (planId: string) => `/plan/${planId}/spending`,
+    link: "spending",
     backgroundImage: "url('/onboarding/card3bg.png')", 
   },
   assumption: {
     title: "Giả định & Chiến lược",
     image: "/icons/suitcase 4.png",
-    link: (planId: string) => `/plan/${planId}/assumption`,
+    link: "assumption",
     backgroundImage: "url('/onboarding/card4bg.png')", 
   },
 };
@@ -40,23 +41,21 @@ const StatusButton = ({ state, percent }: { state: OnboardingSectionState, perce
   switch (state) {
     case 'COMPLETED':
       return (
-        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-green-500/20 text-green-300 px-4 py-2 rounded-lg w-full">
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Đã hoàn thành
+        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-white text-black px-4 py-2 rounded-lg w-full">
+          ✅ Đã hoàn thành
         </div>
       );
     case 'IN_PROGRESS':
       return (
-        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-slate-200 text-slate-800 px-4 py-2 rounded-lg w-full font-semibold">
+        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-white text-black px-4 py-2 rounded-lg w-full font-semibold">
           Tiếp tục - {percent}% hoàn thành
         </div>
       );
     case 'NOT_STARTED':
     default:
       return (
-        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-slate-200 text-slate-800 px-4 py-2 rounded-lg w-full font-semibold">
-          <Rocket className="h-4 w-4 mr-2" />
-          Bắt đầu
+        <div className="mt-4 flex items-center justify-center text-sm font-medium bg-white text-black px-4 py-2 rounded-lg w-full font-semibold">
+          🚀 Bắt đầu
         </div>
       );
   }
@@ -65,11 +64,41 @@ const StatusButton = ({ state, percent }: { state: OnboardingSectionState, perce
 /**
  * A reusable card component for displaying a single onboarding section.
  */
-const ProgressCard = ({ config, state, percent, planId }: { config: typeof sectionConfig.familySupport, state: OnboardingSectionState, percent: number, planId: string }) => {
+const ProgressCard = ({ 
+  config, 
+  state, 
+  percent, 
+  planId,
+  isLocked // Prop mới để xác định trạng thái khóa
+}: { 
+  config: typeof sectionConfig.familySupport, 
+  state: OnboardingSectionState, 
+  percent: number, 
+  planId: string,
+  isLocked: boolean 
+}) => {
   const { title, image, link, backgroundImage } = config;
+  const router = useRouter();
   
+  const handleClick = (link: string, planId: string) => {
+    // Nếu bị khóa, không làm gì cả
+    if (isLocked) {
+      toast("Vui lòng hoàn thành mục trước đó!", {
+        icon: '🔒',
+      });
+      return;
+    };
+    router.push(`/plan/${planId}/${link}`);
+  }
+  
+  const cardClasses = cn(
+    "block transition-transform duration-200 ease-in-out h-full group",
+    !isLocked && "hover:scale-[1.02]", // Chỉ cho phép hover effect khi không bị khóa
+    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer" // Thêm style cho trạng thái khóa
+  );
+
   return (
-    <Link href={link(planId)} className="block hover:scale-[1.02] transition-transform duration-200 ease-in-out h-full group">
+    <div onClick={() => handleClick(link, planId)} className={cardClasses}>
       <Card 
         className="border-slate-700/50 overflow-hidden h-full relative bg-cover bg-center"
         style={{ backgroundImage: backgroundImage }}
@@ -78,15 +107,15 @@ const ProgressCard = ({ config, state, percent, planId }: { config: typeof secti
         {/* Nội dung của thẻ */}
         <CardContent className="relative z-10 p-6 flex flex-col items-center text-center justify-between h-full">
           <div>
-            <div className="p-4 bg-black/30 backdrop-blur-sm rounded-full inline-block mb-4">
-              <Image src={image} alt={title} width={32} height={32} />
+            <div className="backdrop-blur-sm rounded-full inline-block">
+              <Image src={image} alt={title} width={50} height={50} />
             </div>
-            <h3 className="text-xl font-bold text-white drop-shadow-lg">{title}</h3>
+            <h3 className="text-xl font-bold text-white drop-shadow-lg mb-4">{title}</h3>
+            <StatusButton state={state} percent={percent} />
           </div>
-          <StatusButton state={state} percent={percent} />
         </CardContent>
       </Card>
-    </Link>
+    </div>
   );
 };
 
@@ -98,27 +127,33 @@ export default function OnboardingProgressDisplay({ planId, progress }: Onboardi
     return <div className="text-slate-400 text-center py-4">Đang tải tiến độ onboarding...</div>;
   }
 
+  // Logic để xác định trạng thái khóa của các section
+  const isSpendingLocked = progress.familySupportState !== 'COMPLETED';
+  const isAssumptionLocked = progress.spendingState !== 'COMPLETED';
+
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-slate-100">Bắt đầu kế hoạch</h2>
        <div className="grid grid-rows-1 md:grid-rows-3 gap-4">
         <ProgressCard
           planId={planId}
           config={sectionConfig.familySupport}
           state={progress.familySupportState}
           percent={progress.familySupportPercent}
+          isLocked={false} // Section đầu tiên không bao giờ bị khóa
         />
         <ProgressCard
           planId={planId}
           config={sectionConfig.spending}
           state={progress.spendingState}
           percent={progress.spendingPercent}
+          isLocked={isSpendingLocked}
         />
         <ProgressCard
           planId={planId}
           config={sectionConfig.assumption}
           state={progress.assumptionState}
           percent={progress.assumptionPercent}
+          isLocked={isAssumptionLocked}
         />
       </div>
     </div>

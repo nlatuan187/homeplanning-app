@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import LoadingStep from "../shared/LoadingStep";
 import ProgressBar from "../shared/ProgressBar";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, Home } from "lucide-react";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, LineChart, Line, ReferenceLine } from 'recharts';
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
@@ -13,7 +13,7 @@ import { useUser } from "@clerk/nextjs";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import { Plan } from "@prisma/client";
 import router, { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
 
@@ -166,6 +166,9 @@ export default function Assumption({
   const isLastStep = assumptionStep === assumptionData.length - 1;
   const router = useRouter();
 
+  // This useEffect block is redundant and causes the error, so it will be removed.
+  // The logic is correctly handled in the parent component AssumptionClient.tsx.
+
   if (step === "intro") {
     return (
       <>
@@ -198,7 +201,7 @@ export default function Assumption({
         <div className=" z-10 bg-slate-950">
           {/* Header Section */}
           <div className="mb-4">
-            <div className="relative flex items-center h-10 mb-4">
+            <div className="relative flex items-center h-10 mb-4 mt-2">
               <div className="absolute left-0 top-1/2 -translate-y-1/2">
                 <Button variant="ghost" size="icon" onClick={onPrev} disabled={assumptionStep === 0}>
                   <ArrowLeftIcon className="w-6 h-6 text-white" />
@@ -207,6 +210,18 @@ export default function Assumption({
 
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
                 Giả định & chiến lược
+              </div>
+
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                <Button 
+                  variant="outline"
+                  size="sm" 
+                  className="absolute bg-slate-700 right-0 top-1/2 -translate-y-1/2 border-slate-600 hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                  onClick={() => router.push(`/dashboard`)}
+                >
+                  <span className="hidden md:inline">Dashboard</span>
+                  <Home className="h-4 w-4 md:hidden" />
+                </Button>
               </div>
             </div>
             <ProgressBar current={assumptionStep + 1} total={assumptionData.length} />
@@ -330,9 +345,9 @@ export default function Assumption({
                     </Button>
                   </div>
                   <div className="mt-auto pt-4">
-                      <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                        Mua nhà năm {plan.confirmedPurchaseYear}
-                      </Button>
+                    <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                      Mua nhà năm {plan.confirmedPurchaseYear}
+                    </Button>
                   </div>
                 </div>
     

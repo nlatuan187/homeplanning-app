@@ -165,7 +165,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
     return (
       <main className="min-h-screen bg-slate-950 text-slate-100 pb-20">
         <header className="container mx-auto max-w-5xl px-4 pt-8 py-6 flex justify-between items-center sticky top-0 bg-slate-950 z-40 border-b border-slate-800">
-          <div className="text-2xl font-bold">Lập kế hoạch mua nhà</div>
+          <div className="text-2xl font-bold">Xin chào, {user?.firstName || "Bạn"}!</div>
           <UserButton afterSignOutUrl="/" />
         </header>
         <div className="container mx-auto max-w-5xl p-4 pt-6 space-y-8">

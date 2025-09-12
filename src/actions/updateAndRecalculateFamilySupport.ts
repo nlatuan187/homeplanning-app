@@ -39,7 +39,6 @@ export async function updateAndRecalculateFamilySupport(
       monthlyOtherIncome: familySupport?.monthlyOtherIncome,
       hasFamilySupport: familySupport?.hasFamilySupport ?? false,
       familySupportType: familySupport?.familySupportType,
-      familySupportGiftAmount: familySupport?.familySupportType === 'GIFT' ? familySupport?.familySupportAmount : 0,
       familySupportLoanAmount: familySupport?.familySupportType === 'LOAN' ? familySupport?.familySupportAmount : 0,
       familySupportGiftTiming: familySupport?.familyGiftTiming,
       familySupportLoanInterest: familySupport?.familyLoanInterestRate,
@@ -72,11 +71,15 @@ export async function updateAndRecalculateFamilySupport(
       } else {
         customMessage = `Sự hỗ trợ của gia đình và người thân đã giúp bạn mua nhà sớm hơn trong năm ${result.earliestPurchaseYear}`;
       }
-      await db.planReport.update({
-        where: { id: planId },
-        data: { projectionCache: result }
-      });
 
+      await db.$transaction([
+        db.planReport.upsert({
+            where: { planId: plan.id },
+            update: { projectionCache: result },
+            create: { planId: plan.id, projectionCache: result },
+        })
+      ]);
+      
       await db.plan.update({
         where: { id: planId },
         data: { firstViableYear: result.earliestPurchaseYear }

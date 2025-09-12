@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -13,10 +13,14 @@ import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 import { RecalculationResult } from "../shared/ResultStep";
+import { useDebounce } from "@/hooks/useDebounce";
+import { completeOnboardingSection, updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+
 
 interface SpendingProps {
   initialData: Partial<OnboardingPlanState>;
   plan: OnboardingPlanState;
+  planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
@@ -25,11 +29,27 @@ type Step = "intro" | "form" | "loading" | "result";
 export default function Spending({
   initialData,
   plan,
+  planId,
   onCompleted,
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
+  const [formState, setFormState] = useState<{
+    formData: Partial<OnboardingPlanState>;
+    touchedFields: Record<string, boolean>;
+  }>({ formData: {}, touchedFields: {} });
   const router = useRouter();
+
+  // Debounce form state to avoid excessive server calls
+  const debouncedFormState = useDebounce(formState, 500);
+
+  // Effect to update progress when debounced form state changes
+  useEffect(() => {
+    if (debouncedFormState && Object.keys(debouncedFormState.touchedFields).length > 0) {
+      console.log("Updating spending section with:", debouncedFormState);
+      updateOnboardingSectionProgress(plan.id, "spending", debouncedFormState.formData, debouncedFormState.touchedFields);
+    }
+  }, [debouncedFormState, plan.id]);
 
   const spendingQuestions: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
@@ -43,6 +63,11 @@ export default function Spending({
       condition: () => plan.hasFamilySupport === true
     },
   ];
+
+  const handleContinue = () => {
+    completeOnboardingSection(planId, "spending");
+    router.push(`/plan/${planId}/assumption`);
+  }
 
   const defaultValues: Partial<OnboardingPlanState> = {
     monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
@@ -122,7 +147,7 @@ export default function Spending({
         title="Dòng tiền đi ra "
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
-        onContinue={() => {router.push(`/plan/${result.planId}/assumption`);}}
+        onContinue={handleContinue}
         hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
       />
   }
@@ -135,6 +160,7 @@ export default function Spending({
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"
             defaultValues={defaultValues}
+            onDataChange={setFormState}
         />
     </div>
   );

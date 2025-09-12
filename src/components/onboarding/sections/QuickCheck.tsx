@@ -146,6 +146,7 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
           defaultValues={defaultQuickCheckValues}
+          showDashboardButton={false}
         />
       </div>
     );

@@ -45,10 +45,13 @@ export async function updateAndRecalculateAssumption(
         }),
       ]);
       result = await runProjectionWithEngine(planId);
-      await db.planReport.update({
-        where: { id: planId },
-        data: { projectionCache: result }
-      });
+      await db.$transaction([
+        db.planReport.upsert({
+            where: { planId: plan.id },
+            update: { projectionCache: result },
+            create: { planId: plan.id, projectionCache: result },
+        })
+      ]);
       await db.plan.update({
         where: { id: planId },
         data: { firstViableYear: result.earliestPurchaseYear }
