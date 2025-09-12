@@ -47,9 +47,9 @@ export default function Spending({
   useEffect(() => {
     if (debouncedFormState && Object.keys(debouncedFormState.touchedFields).length > 0) {
       console.log("Updating spending section with:", debouncedFormState);
-      updateOnboardingSectionProgress(plan.id, "spending", debouncedFormState.formData, debouncedFormState.touchedFields);
+      updateOnboardingSectionProgress(planId, "spending", debouncedFormState.formData, debouncedFormState.touchedFields);
     }
-  }, [debouncedFormState, plan.id]);
+  }, [debouncedFormState, planId]);
 
   const spendingQuestions: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
