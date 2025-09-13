@@ -5,7 +5,7 @@ import { ChartMilestone } from "@/lib/calculations/projections/generateChartData
 
 interface AccumulationChartProps {
   data: ChartMilestone[];
-  dataKey: "cumulativeSavings" | "housePriceProjected" | "primaryIncome"; // Thêm primaryIncome
+  dataKey: "pctSalaryGrowth" | "pctHouseGrowth" | "pctInvestmentReturn"; // Thêm pctSalaryGrowth, pctHouseGrowth, pctInvestmentReturn
   name: string;
 }
 

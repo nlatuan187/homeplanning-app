@@ -6,16 +6,13 @@ import LoadingStep from "../shared/LoadingStep";
 import ProgressBar from "../shared/ProgressBar";
 import { ArrowLeftIcon, Home } from "lucide-react";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, LineChart, Line, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, ReferenceLine } from 'recharts';
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
 import FinancialSliders from "@/components/plan/playground/FinancialSliders";
 import { useUser } from "@clerk/nextjs";
-import { ProjectionRow } from "@/lib/calculations/affordability";
-import { Plan } from "@prisma/client";
-import router, { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast";
-import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
+import { OnboardingSectionState, Plan } from "@prisma/client";
+import { useRouter } from "next/navigation";
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -25,7 +22,7 @@ const formatNumber = (value: number) => {
 const assumptionData = [
   {
     key: "pctSalaryGrowth" as const,
-    chartDataKey: "primaryIncome" as const,
+    chartDataKey: "pctSalaryGrowth" as const,
     name: "Tiền lương",
     title: "Tốc độ tăng lương",
     label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu?",
@@ -38,7 +35,7 @@ const assumptionData = [
   },
   {
     key: "pctHouseGrowth" as const,
-    chartDataKey: "housePriceProjected" as const,
+    chartDataKey: "pctHouseGrowth" as const,
     name: "Giá nhà",
     title: "Tốc độ tăng giá nhà",
     label: "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
@@ -51,7 +48,7 @@ const assumptionData = [
   },
   {
     key: "pctInvestmentReturn" as const,
-    chartDataKey: "cumulativeSavings" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
     name: "Lợi nhuận đầu tư",
     title: "Tỷ suất đầu tư",
     label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
@@ -90,7 +87,7 @@ interface ResultAccumulationChartProps {
     desiredPurchaseYear: number | null | undefined;
 }
   
-function ResultAccumulationChart({ earliestPurchaseYear, desiredPurchaseYear }: ResultAccumulationChartProps) {
+export function ResultAccumulationChart({ earliestPurchaseYear, desiredPurchaseYear }: ResultAccumulationChartProps) {
     const centerYear = desiredPurchaseYear || earliestPurchaseYear;
 
     // Simple 3-year data with a nice curve shape
@@ -187,7 +184,7 @@ export default function Assumption({
               Hãy thử tư duy như một nhà hoạch định chiến lược. Bằng cách điều chỉnh các giả định, bạn sẽ thấy tác động của từng quyết định đến tốc độ chạm tay vào ngôi nhà mơ ước.
             </p>
           </div>
-          <Button onClick={() => setStep("form")} className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
+          <Button onClick={() => {setStep("form"); updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.IN_PROGRESS);}} className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
             Bắt đầu thôi
           </Button>
         </div>
@@ -210,18 +207,6 @@ export default function Assumption({
 
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
                 Giả định & chiến lược
-              </div>
-
-              <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                <Button 
-                  variant="outline"
-                  size="sm" 
-                  className="absolute bg-slate-700 right-0 top-1/2 -translate-y-1/2 border-slate-600 hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                  onClick={() => router.push(`/dashboard`)}
-                >
-                  <span className="hidden md:inline">Dashboard</span>
-                  <Home className="h-4 w-4 md:hidden" />
-                </Button>
               </div>
             </div>
             <ProgressBar current={assumptionStep + 1} total={assumptionData.length} />

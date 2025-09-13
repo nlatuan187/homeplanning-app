@@ -4,13 +4,13 @@
  */
 export interface OnboardingPlanState {
   // Section 1: Quick Check
-  purchaseYear?: number;
-  propertyValue?: number;
-  propertyType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
-  city?: string;
+  yearToPurchase?: number;
+  targetHousePriceN0?: number;
+  targetHouseType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
+  targetLocation?: string;
   initialSavings?: number;
-  personalMonthlyIncome?: number;
-  personalMonthlyExpenses?: number;
+  userMonthlyIncome?: number;
+  monthlyLivingExpenses?: number;
 
   // Section 2: Family Support
   hasCoApplicant?: boolean;

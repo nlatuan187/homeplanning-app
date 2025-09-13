@@ -154,7 +154,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
         <CardTitle className="text-slate-100 text-lg">Trò chuyện về kế hoạch mua nhà của bạn?</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-slate-400 text-sm leading-relaxed">
+        <p className="text-slate-400 text-xs leading-relaxed">
           Bạn đang nghiêm túc với kế hoạch mua nhà và đã dùng Finful? Chúng tôi rất muốn lắng nghe hành trình, trăn trở của bạn và cách Finful có thể đồng hành tốt hơn. Những chia sẻ sâu sắc sẽ giúp chúng tôi phát triển sản phẩm thực sự giá trị. Dành thời gian trò chuyện và nhận ngay <strong>100.000 VNĐ</strong> như một lời cảm ơn!
         </p>
       </CardContent>
@@ -163,14 +163,20 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
 
   if (initialProgress) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+      <main className="min-h-screen bg-slate-950 text-slate-100">
         <header className="container mx-auto max-w-5xl px-4 pt-8 py-6 flex justify-between items-center sticky top-0 bg-slate-950 z-40 border-b border-slate-800">
           <div className="text-2xl font-bold">Xin chào, {user?.firstName || "Bạn"}!</div>
           <UserButton afterSignOutUrl="/" />
         </header>
         <div className="container mx-auto max-w-5xl p-4 pt-6 space-y-8">
           <OnboardingProgressDisplay planId={initialPlan?.id || ""} progress={initialProgress} />
+          <SupportCard />
         </div>
+        <Sheet open={isSupportSheetOpen} onOpenChange={setIsSupportSheetOpen}>
+          <SheetContent side="right" className="bg-slate-900 text-slate-100 border-slate-700 sm:max-w-lg">
+            <SupportSheetContent />
+          </SheetContent>
+        </Sheet>
       </main>
     );
   }
@@ -253,9 +259,12 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
                         <span>Giá trị căn nhà: {plan.targetHousePriceN0.toLocaleString()} tỷ VNĐ</span>
                       </div>
                     </CardContent>
-                    <CardFooter>
-                      <Button asChild variant="outline" className="w-full border-slate-600 hover:bg-slate-700 text-slate-200">
+                    <CardFooter className="gap-4">
+                      <Button asChild variant="outline" className="flex-1 border-slate-600 hover:bg-slate-700 text-slate-200">
                         <Link href={detailLink}>Xem chi tiết</Link>
+                      </Button>
+                      <Button asChild variant="outline" className="flex-1 border-slate-600 hover:bg-slate-700 text-slate-200">
+                        <Link href={`/plan/${plan.id}/edit`}>Chỉnh sửa</Link>
                       </Button>
                     </CardFooter>
                   </Card>

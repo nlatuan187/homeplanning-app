@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { toast } from "react-hot-toast"; // Added for toast notifications
 import { cn } from "@/lib/utils"; // Added for conditional class names
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 interface OnboardingProgressDisplayProps {
   planId: string;
@@ -14,10 +15,16 @@ interface OnboardingProgressDisplayProps {
 
 // Configuration for each onboarding section card
 const sectionConfig = {
+  quickCheck: {
+    title: "Căn nhà mong muốn",
+    image: "/icons/suitcase 1.png",
+    link: "quickcheck",
+    backgroundImage: "url('/onboarding/card1bg.png')", 
+  },
   familySupport: {
     title: "Nguồn lực hỗ trợ",
     image: "/icons/suitcase 2.png",
-    link: "familysupport",
+    link: "familySupport",
     backgroundImage: "url('/onboarding/card2bg.png')", 
   },
   spending: {
@@ -37,7 +44,7 @@ const sectionConfig = {
 /**
  * Renders the status button based on the section's state and progress percentage.
  */
-const StatusButton = ({ state, percent }: { state: OnboardingSectionState, percent: number }) => {
+const StatusButton = ({ state }: { state: OnboardingSectionState}) => {
   switch (state) {
     case 'COMPLETED':
       return (
@@ -48,7 +55,7 @@ const StatusButton = ({ state, percent }: { state: OnboardingSectionState, perce
     case 'IN_PROGRESS':
       return (
         <div className="mt-4 flex items-center justify-center text-sm font-medium bg-white text-black px-4 py-2 rounded-lg w-full font-semibold">
-          Tiếp tục - {percent}% hoàn thành
+          ⏳️ Tiếp tục
         </div>
       );
     case 'NOT_STARTED':
@@ -67,13 +74,11 @@ const StatusButton = ({ state, percent }: { state: OnboardingSectionState, perce
 const ProgressCard = ({ 
   config, 
   state, 
-  percent, 
   planId,
   isLocked // Prop mới để xác định trạng thái khóa
 }: { 
   config: typeof sectionConfig.familySupport, 
   state: OnboardingSectionState, 
-  percent: number, 
   planId: string,
   isLocked: boolean 
 }) => {
@@ -81,7 +86,7 @@ const ProgressCard = ({
   const router = useRouter();
   
   const handleClick = (link: string, planId: string) => {
-    // Nếu bị khóa, không làm gì cả
+    updateOnboardingSectionProgress(planId, link as "familySupport" | "spending" | "assumption" | "quickCheck", OnboardingSectionState.IN_PROGRESS);
     if (isLocked) {
       toast("Vui lòng hoàn thành mục trước đó!", {
         icon: '🔒',
@@ -92,9 +97,9 @@ const ProgressCard = ({
   }
   
   const cardClasses = cn(
-    "block transition-transform duration-200 ease-in-out h-full group",
+    "block transition-transform duration-200 ease-in-out h-56 w-[75%] md:w-72 flex-shrink-0 group",
     !isLocked && "hover:scale-[1.02]", // Chỉ cho phép hover effect khi không bị khóa
-    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer" // Thêm style cho trạng thái khóa
+    isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer", // Thêm style cho trạng thái khóa
   );
 
   return (
@@ -110,8 +115,10 @@ const ProgressCard = ({
             <div className="backdrop-blur-sm rounded-full inline-block">
               <Image src={image} alt={title} width={50} height={50} />
             </div>
-            <h3 className="text-xl font-bold text-white drop-shadow-lg mb-4">{title}</h3>
-            <StatusButton state={state} percent={percent} />
+            <h3 className="text-lg font-semibold text-white mb-4">
+              {title}
+            </h3>
+            <StatusButton state={state} />
           </div>
         </CardContent>
       </Card>
@@ -128,33 +135,40 @@ export default function OnboardingProgressDisplay({ planId, progress }: Onboardi
   }
 
   // Logic để xác định trạng thái khóa của các section
-  const isSpendingLocked = progress.familySupportState !== 'COMPLETED';
-  const isAssumptionLocked = progress.spendingState !== 'COMPLETED';
+  const isQuickCheckLocked = progress.quickCheckState === 'COMPLETED';
+  const isFamilySupportLocked = progress.familySupportState === 'COMPLETED' || progress.quickCheckState !== 'COMPLETED';
+  const isSpendingLocked = progress.spendingState === 'COMPLETED' || progress.familySupportState !== 'COMPLETED';
+  const isAssumptionLocked = progress.assumptionState === 'COMPLETED' || progress.spendingState !== 'COMPLETED';
 
   return (
     <div className="space-y-4">
-       <div className="grid grid-rows-1 md:grid-rows-3 gap-4">
-        <ProgressCard
-          planId={planId}
-          config={sectionConfig.familySupport}
-          state={progress.familySupportState}
-          percent={progress.familySupportPercent}
-          isLocked={false} // Section đầu tiên không bao giờ bị khóa
-        />
-        <ProgressCard
-          planId={planId}
-          config={sectionConfig.spending}
-          state={progress.spendingState}
-          percent={progress.spendingPercent}
-          isLocked={isSpendingLocked}
-        />
-        <ProgressCard
-          planId={planId}
-          config={sectionConfig.assumption}
-          state={progress.assumptionState}
-          percent={progress.assumptionPercent}
-          isLocked={isAssumptionLocked}
-        />
+      <div className="overflow-x-auto pb-4 -mb-4">
+        <div className="flex gap-4">
+          <ProgressCard
+            planId={planId}
+            config={sectionConfig.quickCheck}
+            state={progress.quickCheckState}
+            isLocked={isQuickCheckLocked} // Section đầu tiên không bao giờ bị khóa
+          />
+          <ProgressCard
+            planId={planId}
+            config={sectionConfig.familySupport}
+            state={progress.familySupportState}
+            isLocked={isFamilySupportLocked} // Section đầu tiên không bao giờ bị khóa
+          />
+          <ProgressCard
+            planId={planId}
+            config={sectionConfig.spending}
+            state={progress.spendingState}
+            isLocked={isSpendingLocked}
+          />
+          <ProgressCard
+            planId={planId}
+            config={sectionConfig.assumption}
+            state={progress.assumptionState}
+            isLocked={isAssumptionLocked}
+          />
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { OnboardingPlanState } from "../types";
 import ProgressBar from "./ProgressBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Home } from "lucide-react"; // Thêm 'Home' vào đây
+import { ArrowLeftIcon, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -21,7 +21,8 @@ export interface Question {
 
 interface MultiStepQuestionFormProps {
   questions: Question[];
-  onSubmit: (data: Partial<OnboardingPlanState>) => void;
+  onSubmit?: (data: Partial<OnboardingPlanState>) => void;
+  onEdit?: (data: Partial<OnboardingPlanState>) => void;
   title: string;
   subtitle?: string;
   defaultValues?: Partial<OnboardingPlanState>; // Prop mới để nhận giá trị mặc định
@@ -29,30 +30,21 @@ interface MultiStepQuestionFormProps {
     formData: Partial<OnboardingPlanState>;
     touchedFields: Record<string, boolean>;
   }) => void; // Cập nhật để gửi cả touchedFields
-  showDashboardButton?: boolean; // Prop to control dashboard button visibility
 }
 
 export default function MultiStepQuestionForm({
   questions,
   onSubmit,
+  onEdit,
   title,
   subtitle,
   defaultValues = {}, // Gán giá trị mặc định là object rỗng
-  onDataChange, // Thêm vào destructuring
-  showDashboardButton = true, // Default to true for backward compatibility
 }: MultiStepQuestionFormProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   // Khởi tạo formData với giá trị từ defaultValues
   const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(defaultValues);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
-
-  // useEffect để gọi onDataChange khi formData hoặc touchedFields thay đổi
-  useEffect(() => {
-    if (onDataChange) {
-      onDataChange({ formData, touchedFields });
-    }
-  }, [formData, touchedFields, onDataChange]);
 
   const visibleQuestions = useMemo(() => {
     return questions.filter((q) => !q.condition || q.condition(formData));
@@ -79,7 +71,7 @@ export default function MultiStepQuestionForm({
     if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      onSubmit(formData);
+      onSubmit?.(formData) || onEdit?.(formData);
     }
   };
 
@@ -157,27 +149,13 @@ export default function MultiStepQuestionForm({
               onClick={goToPrev}
               disabled={currentQuestionIndex === 0}
             >
-              <ChevronLeft className="h-12 w-12" />
+              <ArrowLeftIcon className="h-12 w-12" />
             </Button>
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
             {title}
           </div>
-
-          {showDashboardButton && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
-              <Button 
-                variant="outline"
-                size="sm" 
-                className="absolute bg-slate-700 right-0 top-1/2 -translate-y-1/2 border-slate-600 hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                onClick={() => router.push(`/dashboard`)}
-              >
-                <span className="hidden md:inline">Dashboard</span>
-                <Home className="h-4 w-4 md:hidden" />
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -212,7 +190,7 @@ export default function MultiStepQuestionForm({
         )}
         {currentQuestion.type === 'options' && isLastQuestion && (
           <Button
-            onClick={() => onSubmit(formData)}
+            onClick={() => onSubmit?.(formData) || onEdit?.(formData)}
             className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
             disabled={Object.keys(formData).length < visibleQuestions.length}
           >
