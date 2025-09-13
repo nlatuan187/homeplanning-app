@@ -9,7 +9,6 @@ import { toast } from "react-hot-toast";
 import QuickCheck from "@/components/onboarding/sections/QuickCheck";
 import FamilySupport from "@/components/onboarding/sections/FamilySupport";
 import Spending from "@/components/onboarding/sections/Spending";
-import { ResultAccumulationChart } from "@/components/onboarding/sections/Assumption";
 import { OnboardingPlanState } from "@/components/onboarding/types";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { OnboardingSectionState } from "@prisma/client";
@@ -426,11 +425,9 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                         <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                         của bạn đã sẵn sàng.
                       </div>
-    
-                      <ResultAccumulationChart 
-                        earliestPurchaseYear={result.earliestPurchaseYear}
-                        desiredPurchaseYear={planData.confirmedPurchaseYear}
-                      />
+                      <div className="flex items-center justify-center text-center">
+                        <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                      </div>
                       <div className="text-center text-slate-400">
                         Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
                       </div>
@@ -460,10 +457,9 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                       <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
                       của bạn đã sẵn sàng.
                     </div>
-                    <ResultAccumulationChart 
-                      earliestPurchaseYear={result.earliestPurchaseYear}
-                      desiredPurchaseYear={planData.confirmedPurchaseYear}
-                    />
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
                     <div className="text-center text-slate-400">
                       Bạn có thể mua nhà vào năm {planData.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
                     </div>
@@ -493,10 +489,9 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                       Bạn sẽ cần điều chỉnh nhiều để<br/> 
                       <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                     </div>
-                    <ResultAccumulationChart 
-                      earliestPurchaseYear={result.earliestPurchaseYear}
-                      desiredPurchaseYear={planData.confirmedPurchaseYear}
-                    />
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
                     <div className="text-center text-slate-400">
                       Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!
                     </div>

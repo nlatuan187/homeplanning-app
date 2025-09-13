@@ -21,24 +21,22 @@ export interface Question {
 
 interface MultiStepQuestionFormProps {
   questions: Question[];
-  onSubmit?: (data: Partial<OnboardingPlanState>) => void;
-  onEdit?: (data: Partial<OnboardingPlanState>) => void;
+  onSubmit: (data: Partial<OnboardingPlanState>) => void;
   title: string;
-  subtitle?: string;
-  defaultValues?: Partial<OnboardingPlanState>; // Prop mới để nhận giá trị mặc định
-  onDataChange?: (data: {
-    formData: Partial<OnboardingPlanState>;
-    touchedFields: Record<string, boolean>;
-  }) => void; // Cập nhật để gửi cả touchedFields
+  subtitle: string;
+  defaultValues?: Partial<OnboardingPlanState>;
+  onDataChange?: (state: { formData: Partial<OnboardingPlanState>, touchedFields: Record<string, boolean> }) => void;
+  onBackFromFirst?: () => void;
 }
 
 export default function MultiStepQuestionForm({
   questions,
   onSubmit,
-  onEdit,
   title,
   subtitle,
   defaultValues = {}, // Gán giá trị mặc định là object rỗng
+  onDataChange,
+  onBackFromFirst,
 }: MultiStepQuestionFormProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -71,7 +69,7 @@ export default function MultiStepQuestionForm({
     if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      onSubmit?.(formData) || onEdit?.(formData);
+      onSubmit?.(formData);
     }
   };
 
@@ -136,6 +134,22 @@ export default function MultiStepQuestionForm({
     return null;
   }
 
+  const handleBack = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    } else if (onBackFromFirst) {
+      onBackFromFirst();
+    }
+  };
+
+  const handleNext = async () => {
+    if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+      onSubmit?.(formData);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full flex-grow w-full">
       {/* Header Section */}
@@ -146,7 +160,7 @@ export default function MultiStepQuestionForm({
             <Button
               variant="ghost"
               size="icon"
-              onClick={goToPrev}
+              onClick={handleBack}
               disabled={currentQuestionIndex === 0}
             >
               <ArrowLeftIcon className="h-12 w-12" />
@@ -176,7 +190,7 @@ export default function MultiStepQuestionForm({
       <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto px-4 bg-slate-950 border-t border-slate-800 z-10">
         {currentQuestion.type === 'number' && (
           <Button
-            onClick={goToNext}
+            onClick={handleNext}
             className={cn(
               'w-full py-3.5 text-base rounded-sm mb-4',
               isLastQuestion ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]' : 'text-slate-900 bg-white hover:bg-slate-200',
@@ -190,7 +204,7 @@ export default function MultiStepQuestionForm({
         )}
         {currentQuestion.type === 'options' && isLastQuestion && (
           <Button
-            onClick={() => onSubmit?.(formData) || onEdit?.(formData)}
+            onClick={() => onSubmit?.(formData)}
             className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
             disabled={Object.keys(formData).length < visibleQuestions.length}
           >

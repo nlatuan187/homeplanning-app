@@ -26,9 +26,12 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
   const handleContinue = () => {
       // Navigate to the next section of the plan
       updateOnboardingSectionProgress(plan.id, "familySupport", OnboardingSectionState.COMPLETED);
-      updateOnboardingSectionProgress(plan.id, "spending", OnboardingSectionState.IN_PROGRESS);
       router.push(`/plan/${plan.id}/spending`); // Example next step
   }
+
+  const handleBackFromFirst = () => {
+    router.push('/dashboard');
+  };
 
   if (status === 'loading') {
       return <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100}/>;
@@ -44,6 +47,7 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
       initialData={{}}
       planId={plan.id}
       onCompleted={handleContinue}
+      onBackFromFirst={handleBackFromFirst}
     />
   );
 }

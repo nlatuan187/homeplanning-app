@@ -25,9 +25,12 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
   
   const handleContinue = () => {
     updateOnboardingSectionProgress(plan.id, "spending", OnboardingSectionState.COMPLETED);
-    updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.IN_PROGRESS);
     router.push(`/plan/${plan.id}/assumption`); // Example next step
   }
+
+  const handleBackFromFirst = () => {
+    router.push(`/plan/${plan.id}/familysupport`);
+  };
 
   if (status === 'loading') {
       return <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>;
@@ -43,7 +46,7 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
       plan={plan as OnboardingPlanState}
       planId={plan.id}
       onCompleted={handleContinue}
-      isEditMode={false}
+      onBackFromFirst={handleBackFromFirst}
     />
   );
 }

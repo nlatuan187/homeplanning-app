@@ -22,7 +22,8 @@ interface SpendingProps {
   plan: OnboardingPlanState;
   planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
-  isEditMode: boolean; // <-- THÊM PROP MỚI
+  isEditMode?: boolean;
+  onBackFromFirst?: () => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
@@ -32,7 +33,8 @@ export default function Spending({
   plan,
   planId,
   onCompleted,
-  isEditMode,
+  isEditMode = false,
+  onBackFromFirst,
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
@@ -163,6 +165,7 @@ export default function Spending({
             subtitle="Thời gian mua nhà có ảnh hưởng không"
             defaultValues={defaultValues}
             onDataChange={setFormState}
+            onBackFromFirst={onBackFromFirst}
         />
     </div>
   );

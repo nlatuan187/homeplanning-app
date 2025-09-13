@@ -89,8 +89,12 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
 
   const handlePrev = () => {
+    // Nếu chúng ta không ở slider đầu tiên, chỉ cần quay lại slider trước đó.
     if (assumptionStep > 0) {
       setAssumptionStep(prev => prev - 1);
+    } else {
+      // Nếu đang ở slider đầu tiên, điều hướng về section Spending.
+      router.push(`/plan/${plan.id}/spending`);
     }
   };
 

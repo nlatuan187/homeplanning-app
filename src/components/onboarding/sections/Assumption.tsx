@@ -86,62 +86,6 @@ interface ResultAccumulationChartProps {
     earliestPurchaseYear: number;
     desiredPurchaseYear: number | null | undefined;
 }
-  
-export function ResultAccumulationChart({ earliestPurchaseYear, desiredPurchaseYear }: ResultAccumulationChartProps) {
-    const centerYear = desiredPurchaseYear || earliestPurchaseYear;
-
-    // Simple 3-year data with a nice curve shape
-    const data = [
-      { name: (centerYear - 1).toString(), cumulativeSavings: 110 },
-      { name: centerYear.toString(), cumulativeSavings: 140 },
-      { name: (centerYear + 1).toString(), cumulativeSavings: 170 }
-    ];
-
-    const CustomDot = (props: any) => {
-      const { cx, cy, payload } = props;
-      const year = parseInt(payload.name, 10);
-  
-      if (year === earliestPurchaseYear) {
-        return (
-          <g>
-            <text x={cx} y={cy - 25} textAnchor="middle" fill="#e5e7eb" fontSize="12" fontWeight="bold">Năm khả thi sớm nhất</text>
-            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="#FFC107" transform={`translate(${cx - 12}, ${cy - 12}) scale(0.6)`} />
-          </g>
-        );
-      }
-  
-      if (year === desiredPurchaseYear) {
-        return (
-          <g>
-            <text x={cx} y={cy - 25} textAnchor="middle" fill="#e5e7eb" fontSize="12" fontWeight="bold">Năm mong muốn</text>
-            <circle cx={cx} cy={cy} r={6} fill="#FFFFFF" stroke="#22d3ee" strokeWidth={2} />
-          </g>
-        );
-      }
-      return null;
-    };
-  
-    return (
-      <ResponsiveContainer width="100%" height={250}>
-        <AreaChart data={data} margin={{ top: 50, right: 30, left: 20, bottom: 5 }}>
-          <defs>
-            <linearGradient id="colorSavingsResult" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/>
-              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="name" stroke="#9ca3af" axisLine={false} tickLine={false} />
-          <YAxis hide={true} domain={['auto', 'dataMax * 1.2']} />
-          
-          {desiredPurchaseYear && <ReferenceLine x={desiredPurchaseYear.toString()} stroke="rgba(255, 255, 255, 0.2)" />}
-  
-          <Area type="monotone" dataKey="cumulativeSavings" stroke="transparent" fill="url(#colorSavingsResult)" />
-          <Line type="monotone" dataKey="cumulativeSavings" stroke="#06b6d4" strokeWidth={2} dot={<CustomDot />} />
-        </AreaChart>
-      </ResponsiveContainer>
-    );
-}
 
 export default function Assumption({ 
     plan,
@@ -200,7 +144,7 @@ export default function Assumption({
           <div className="mb-4">
             <div className="relative flex items-center h-10 mb-4 mt-2">
               <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                <Button variant="ghost" size="icon" onClick={onPrev} disabled={assumptionStep === 0}>
+                <Button variant="ghost" size="icon" onClick={onPrev}>
                   <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </Button>
               </div>
@@ -261,7 +205,7 @@ export default function Assumption({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push(`/dashboard`)}
+                onClick={() => setStep('form')}
               >
                 <ArrowLeftIcon className="w-6 h-6 text-white" />
               </Button>
@@ -277,11 +221,9 @@ export default function Assumption({
                     <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                     của bạn đã sẵn sàng.
                   </div>
-
-                  <ResultAccumulationChart 
-                    earliestPurchaseYear={result.earliestPurchaseYear}
-                    desiredPurchaseYear={plan.confirmedPurchaseYear}
-                  />
+                  <div className="flex items-center justify-center text-center">
+                    <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                  </div>
                   <div className="text-center text-slate-400">
                     Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
                   </div>
@@ -311,10 +253,9 @@ export default function Assumption({
                   <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
                   của bạn đã sẵn sàng.
                 </div>
-                <ResultAccumulationChart 
-                  earliestPurchaseYear={result.earliestPurchaseYear}
-                  desiredPurchaseYear={plan.confirmedPurchaseYear}
-                />
+                <div className="flex items-center justify-center text-center">
+                  <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                </div>
                 <div className="text-center text-slate-400">
                   Bạn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
                 </div>
@@ -344,10 +285,9 @@ export default function Assumption({
                   Bạn sẽ cần điều chỉnh nhiều để<br/> 
                   <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                 </div>
-                <ResultAccumulationChart 
-                  earliestPurchaseYear={result.earliestPurchaseYear}
-                  desiredPurchaseYear={plan.confirmedPurchaseYear}
-                />
+                <div className="flex items-center justify-center text-center">
+                  <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                </div>
                 <div className="text-center text-slate-400">
                   Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!
                 </div>

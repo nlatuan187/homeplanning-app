@@ -43,6 +43,7 @@ interface FamilySupportProps {
   planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
   isEditMode?: boolean; // <-- THÊM PROP MỚI
+  onBackFromFirst?: () => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
@@ -62,6 +63,7 @@ export default function FamilySupport({
   planId,
   onCompleted,
   isEditMode = false, // <-- Gán giá trị mặc định
+  onBackFromFirst,
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
@@ -116,8 +118,7 @@ export default function FamilySupport({
 
   const handleContinue = () => {
     // This is where you might call onCompleted or navigate
-    updateOnboardingSectionProgress(planId, "familySupport", OnboardingSectionState.COMPLETED); // This line was removed as per the new_code
-    updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.IN_PROGRESS);
+    updateOnboardingSectionProgress(planId, "familySupport", OnboardingSectionState.COMPLETED);
     router.push(`/plan/${planId}/spending`);
   };
 
@@ -187,6 +188,7 @@ export default function FamilySupport({
           title="Nguồn lực hỗ trợ"
           subtitle="Tôi có thể mua được nhà sớm hơn không?"
           defaultValues={defaultValues}
+          onBackFromFirst={onBackFromFirst}
         />
     </div>
   );
