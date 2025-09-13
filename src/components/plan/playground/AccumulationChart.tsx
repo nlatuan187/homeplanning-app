@@ -5,7 +5,8 @@ import { ChartMilestone } from "@/lib/calculations/projections/generateChartData
 
 interface AccumulationChartProps {
   data: ChartMilestone[];
-  dataKey: "pctSalaryGrowth" | "pctHouseGrowth" | "pctInvestmentReturn"; // Thêm pctSalaryGrowth, pctHouseGrowth, pctInvestmentReturn
+  // dataKey không còn cần thiết để vẽ, nhưng có thể giữ lại nếu dùng cho mục đích khác
+  dataKey: "pctSalaryGrowth" | "pctHouseGrowth" | "pctInvestmentReturn";
   name: string;
 }
 
@@ -42,8 +43,9 @@ export default function AccumulationChart({ data, dataKey, name }: AccumulationC
            formatter={(value: number) => new Intl.NumberFormat('vi-VN').format(value)}
         />
         <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: 20 }}/>
-        <Area type="monotone" dataKey={dataKey} name={name} stroke="#22d3ee" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2}>
-           <LabelList dataKey={dataKey} position="top" formatter={formatNumber} fill="#e5e7eb" fontSize={12} />
+        {/* SỬA Ở ĐÂY: Luôn dùng "value" làm dataKey để vẽ */}
+        <Area type="monotone" dataKey="value" name={name} stroke="#22d3ee" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2}>
+           <LabelList dataKey="value" position="top" formatter={formatNumber} fill="#e5e7eb" fontSize={12} />
         </Area>
       </AreaChart>
     </ResponsiveContainer>
