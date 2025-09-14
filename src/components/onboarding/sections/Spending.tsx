@@ -15,6 +15,7 @@ import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalcu
 import { RecalculationResult } from "../shared/ResultStep";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { OnboardingSectionState } from "@prisma/client";
+import { ArrowLeftIcon } from "lucide-react";
 
 
 interface SpendingProps {
@@ -26,7 +27,7 @@ interface SpendingProps {
   onBackFromFirst?: () => void;
 }
 
-type Step = "intro" | "form" | "loading" | "result";
+type Step = "intro" | "form1" | "analysis" | "form2" | "loading" | "result";
 
 export default function Spending({
   initialData,
@@ -38,15 +39,16 @@ export default function Spending({
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
-  const [formState, setFormState] = useState<{
-    formData: Partial<OnboardingPlanState>;
-    touchedFields: Record<string, boolean>;
-  }>({ formData: {}, touchedFields: {} });
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
   const router = useRouter();
 
+  const currentYear = new Date().getFullYear();
 
-  const spendingQuestions: Question[] = [
+  const spendingQuestionsPart1: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
+  ];
+
+  const spendingQuestionsPart2: Question[] = [
     // @ts-ignore
     { key: 'currentAnnualInsurancePremium', text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
     { 
@@ -55,6 +57,18 @@ export default function Spending({
       type: 'number', 
       unit: 'triệu VNĐ',  
       condition: () => plan.hasFamilySupport === true
+    },
+    { key: 'hasNewChild', text: 'Bạn có dự định sinh thêm em bé không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
+    {
+      key: "yearToHaveChild",
+      text: "Bạn dự định mua nhà vào thời điểm nào?",
+      type: "options",
+      options: [
+        { label: `Năm nay (${currentYear})`, value: currentYear },
+        { label: `1 năm nữa (${currentYear + 1})`, value: currentYear + 1 },
+        { label: `2 năm nữa (${currentYear + 2})`, value: currentYear + 2 },
+      ],
+      condition: (ans: any) => ans.hasNewChild === true,
     },
   ];
 
@@ -68,25 +82,39 @@ export default function Spending({
     monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
     currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
     currentAnnualOtherExpenses: plan.currentAnnualOtherExpenses,
+    hasNewChild: plan.hasNewChild,
+    yearToHaveChild: plan.yearToHaveChild,
   };
 
-  const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
+  const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
+    setFormData({ ...formData, ...data });
+    setStep("analysis");
+  };
+
+  const handleContinueFromAnalysis = () => {
+    setStep("form2");
+  };
+
+  const handleSubmit = async (data: Partial<OnboardingPlanState>) => {
+    const finalData = { ...formData, ...data };
     // THÊM LẠI KHỐI LỆNH NÀY
     // Nếu đang ở luồng chỉnh sửa, chỉ cần thu thập dữ liệu và báo cáo lên cha
     if (isEditMode) {
-      onCompleted(formData);
+      onCompleted(finalData);
       
       return; // Dừng hàm tại đây
     }
 
     // --- Logic của luồng onboarding gốc giữ nguyên ---
     setStep("loading");
-    const fullData = { ...initialData, ...formData };
+    const fullData = { ...initialData, ...finalData };
 
     const spendingPayload = {
       monthlyNonHousingDebt: fullData.monthlyNonHousingDebt,
       currentAnnualInsurancePremium: fullData.currentAnnualInsurancePremium,
       currentAnnualOtherExpenses: fullData.currentAnnualOtherExpenses,
+      hasNewChild: fullData.hasNewChild,
+      yearToHaveChild: fullData.yearToHaveChild,
     };
 
     const result = await updateSpendingAndRecalculate(plan, spendingPayload);
@@ -96,7 +124,7 @@ export default function Spending({
       setStep("result");
     } else {
       toast.error(result.error || "Có lỗi xảy ra, vui lòng thử lại.");
-      setStep("form"); // Go back to form on error
+      setStep("form1"); // Go back to form on error
     }
   };
 
@@ -127,13 +155,87 @@ export default function Spending({
             </p>
           </div>
           <Button
-            onClick={() => {setStep("form"); updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.IN_PROGRESS);}}
+            onClick={() => {setStep("form1"); updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.IN_PROGRESS);}}
             className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Tôi sẵn sàng rồi
           </Button>
         </div>
       </>
+    );
+  }
+
+  if (step === "form1") {
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
+        <MultiStepQuestionForm
+          key="spending1"
+          questions={spendingQuestionsPart1}
+          onSubmit={handleSubmitPart1}
+          title="Dòng tiền đi ra"
+          subtitle="Tiếp tục"
+          defaultValues={defaultValues}
+          onBackFromFirst={() => setStep("intro")}
+        />
+      </div>
+    );
+  }
+
+  if (step === "analysis") {
+    return (
+      <div className="flex flex-col h-full flex-grow max-w-5xl mx-auto text-white">
+        <div className="relative flex items-center h-10 mb-4">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setStep("form1")}
+            >
+              <ArrowLeftIcon className="h-12 w-12" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-grow flex flex-col items-center text-center pb-17 px-4">
+          <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
+          <h2 className="text-2xl font-bold mb-6 max-w-sm">Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến</h2>
+          <Image
+            src="/onboarding/baby.png" // Placeholder image
+            alt="Analysis"
+            width={150}
+            height={150}
+            className="mb-6"
+          />
+          <p className="text-white/90 max-w-md">
+            Hãy cân nhắc thật kỹ về thời điểm sinh em bé để đảm bảo bạn vững vàng nhất về tài chính cũng như kế hoạch mua nhà không bị thay đổi đột ngột ngoài dự kiến.
+          </p>
+        </div>
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto p-4">
+            <Button
+              onClick={handleContinueFromAnalysis}
+              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+            >
+              Tiếp tục
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "form2") {
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
+        <MultiStepQuestionForm
+          key="spending2"
+          questions={spendingQuestionsPart2}
+          onSubmit={handleSubmit}
+          title="Dòng tiền đi ra"
+          subtitle="Thời gian mua nhà có ảnh hưởng không"
+          defaultValues={formData}
+          onBackFromFirst={() => setStep("analysis")}
+        />
+      </div>
     );
   }
 
@@ -159,12 +261,11 @@ export default function Spending({
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm 
-            questions={spendingQuestions} 
+            questions={spendingQuestionsPart2} 
             onSubmit={handleSubmit}
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"
             defaultValues={defaultValues}
-            onDataChange={setFormState}
             onBackFromFirst={onBackFromFirst}
         />
     </div>

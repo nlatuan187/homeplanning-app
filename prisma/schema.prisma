@@ -44,6 +44,7 @@ model Plan {
   targetLocation     String?
 
   // Page 2: Income Inputs
+  hasCoApplicant            Boolean  @default(false)
   userMonthlyIncome         Float    @default(0)
 
   pctSalaryGrowth           Float    @default(7.0)
@@ -59,6 +60,8 @@ model Plan {
   pctHouseGrowth                Float   @default(10.0)
   pctExpenseGrowth              Float   @default(4.0)
   pctInvestmentReturn           Float   @default(9.0)
+  hasNewChild                   Boolean @default(false)
+  yearToHaveChild               Int?
 
   // Page 4: Loan & Support Inputs
   loanInterestRate              Float?   @default(11.0)
@@ -113,7 +116,6 @@ model PlanFamilySupport {
   planId                    String                   @unique
   plan                      Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
   monthlyOtherIncome        Float                    @default(0)
-  hasCoApplicant            Boolean                  @default(false)
   coApplicantMonthlyIncome  Float?
   hasFamilySupport          Boolean                  @default(false)
   familySupportType         FamilySupportType?

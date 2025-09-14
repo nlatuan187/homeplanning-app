@@ -7,12 +7,12 @@ import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
 } from "../shared/MultiStepQuestionForm";
-import { CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeftIcon, CheckCircle, XCircle } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
 // Define the 7 questions for the Quick Check section
-const quickCheckQuestions: Question[] = [
+const quickCheckQuestionsPart1: Question[] = [
   {
     key: "yearToPurchase",
     text: "Bạn dự định mua nhà vào thời điểm nào?",
@@ -50,25 +50,111 @@ const quickCheckQuestions: Question[] = [
       { label: "Tỉnh/Thành phố khác", value: "Tỉnh/Thành phố khác" },
     ],
   },
+];
+
+const quickCheckQuestionsPart2: Question[] = [
+  {
+    key: "hasCoApplicant",
+    text: "Bạn có người đồng hành tài chính (vợ/chồng/anh chị em) khi mua nhà không?",
+    type: "options",
+    options: [
+      { label: "Có", value: true },
+      { label: "Không", value: false },
+    ],
+  },
   {
     key: "initialSavings",
-    text: "Bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?",
+    text: (ans) =>
+      ans.hasCoApplicant
+        ? "CẢ HAI BẠN đã tích lũy được bao nhiêu tiền để mua nhà rồi?"
+        : "Bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?",
     type: "number",
     unit: "triệu VNĐ",
   },
   {
     key: "userMonthlyIncome",
-    text: "Lương hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
+    text: (ans) =>
+      ans.hasCoApplicant
+        ? "TỔNG thu nhập hàng tháng của CẢ HAI BẠN là bao nhiêu?"
+        : "Lương hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
   {
     key: "monthlyLivingExpenses",
-    text: "Chi phí hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
+    text: (ans) =>
+      ans.hasCoApplicant
+        ? "TỔNG chi phí hàng tháng của CẢ HAI BẠN là bao nhiêu?"
+        : "Chi phí hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
 ];
+
+const analysisContent: any = {
+  "Hà Nội": {
+    "Chung cư": {
+      summary:
+        "Lựa chọn của bạn đang tập trung vào sự an toàn và tăng trưởng ổn định.",
+      image: "/onboarding/hanoi-chungcu.png", // Placeholder image
+      points: {
+        "Bức tranh toàn cảnh":
+          "Trong 5 năm qua, chung cư Hà Nội đã chứng tỏ là một tài sản tăng trưởng rất bền bỉ, với mức tăng tổng thể từ 70% đến 90%. Điều đáng nói là sự tăng trưởng này diễn ra một cách ổn định, không trải qua những cú sốc giảm giá sâu như các phân khúc khác.",
+        "Động lực chính":
+          "Sức mạnh của phân khúc này đến từ nhu cầu ở thực. Ngay cả trong giai đoạn thị trường khó khăn nhất (2022-2023), giá chung cư vẫn được neo giữ vững chắc vì người mua để ở không dễ dàng bán cắt lỗ. Khi thị trường phục hồi, sự khan hiếm nguồn cung mới càng đẩy giá trị của các dự án hiện hữu tăng lên.",
+        "Ý nghĩa với bạn (người mua nhà)":
+          "Việc lựa chọn chung cư mang lại một nền tảng vững chắc cho kế hoạch của bạn. Sự ổn định về giá giúp bạn an tâm tập trung vào việc tích lũy mà không phải quá lo lắng về những biến động ngắn hạn của thị trường. Đây là một lựa chọn ưu tiên sự an toàn và tăng trưởng dài hạn, rất phù hợp với mục tiêu an cư.",
+      },
+    },
+    "Nhà mặt đất": {
+      summary:
+        "Lựa chọn của bạn đòi hỏi sự kiên nhẫn và am hiểu sâu sắc về chu kỳ.",
+      image: "/onboarding/hanoi-nhadat.png", // Placeholder image
+      points: {
+        "Bức tranh toàn cảnh":
+          "Nhà đất là một phân khúc có sự biến động lớn hơn. Nó đã trải qua một giai đoạn tăng trưởng rất nóng (2020-2022), đặc biệt là đất nền ven đô (tăng 100-150%), nhưng sau đó cũng điều chỉnh giảm 30-40% so với đỉnh. Tuy vậy, nếu nhìn cả chặng đường 5 năm, mặt bằng giá hiện tại vẫn cao hơn năm 2020 khoảng 40% đến 60%.",
+        "Động lực chính":
+          "Sự tăng trưởng của nhà đất trong giai đoạn sốt phụ thuộc nhiều vào dòng tiền đầu cơ và lãi suất thấp. Khi các yếu tố này thay đổi, thị trường sẽ cần thời gian để tìm lại điểm cân bằng dựa trên giá trị sử dụng thực tế.",
+        "Ý nghĩa với bạn (người mua nhà)":
+          "Lựa chọn nhà đất đòi hỏi một tầm nhìn dài hạn và sự kiên nhẫn. Tiềm năng của nó nằm ở giá trị đất đai lâu dài và sự tự do trong việc xây dựng tổ ấm. Tuy nhiên, bạn cần chuẩn bị tâm lý cho những biến động của chu kỳ và không nên kỳ vọng vào việc tăng giá nhanh chóng trong ngắn hạn. Hãy tập trung vào giá trị sử dụng và khả năng tài chính của mình thay vì chạy theo các cơn sốt.",
+      },
+    },
+  },
+  "TP. Hồ Chí Minh": {
+    "Chung cư": {
+      summary: "Bạn đang lựa chọn một thị trường của giá trị thực và bền vững.",
+      image: "/onboarding/hcmc-chungcu.png", // Placeholder image
+      points: {
+        "Bức tranh toàn cảnh":
+          "Tương tự Hà Nội, chung cư TP.HCM là một kênh giữ giá trị tốt với mức tăng trưởng tổng thể 35% đến 50% trong 5 năm, chủ yếu là do sự khan hiếm nguồn cung sơ cấp. Đà tăng có phần chậm hơn so với Hà Nội do mặt bằng giá ban đầu đã ở mức cao.",
+        "Động lực chính":
+          "Yếu tố quyết định đến giá trị chung cư tại TP.HCM là sự khan hiếm nguồn cung các dự án mới. Khi nguồn cung sơ cấp hạn chế, nhu cầu sẽ dồn về thị trường thứ cấp (mua đi bán lại), từ đó giúp các dự án hiện hữu duy trì và gia tăng giá trị.",
+        "Ý nghĩa với bạn (người mua nhà)":
+          "Lựa chọn chung cư tại TP.HCM là một quyết định đầu tư vào giá trị thực và sự khan hiếm. Sự ổn định của phân khúc này giúp bạn dễ dàng lập kế hoạch tài chính hơn. Việc giá trị tài sản được bảo chứng bởi các yếu tố nền tảng (nguồn cung, nhu cầu ở thực) sẽ giúp bạn tự tin hơn rằng ngôi nhà của mình là một tài sản bền vững theo thời gian.",
+      },
+    },
+    "Nhà mặt đất": {
+      summary: "Đây là một thị trường có sự biến động mạnh.",
+      image: "/onboarding/hcmc-nhadat.png", // Placeholder image
+      points: {
+        "Bức tranh toàn cảnh":
+          "Phân khúc nhà đất tại TP.HCM cũng trải qua một chu kỳ biến động mạnh, với mức tăng trưởng tổng thể 5 năm khoảng 30% đến 40%. Một đặc điểm quan trọng là sự liên kết chặt chẽ với các thị trường vệ tinh như Bình Dương, Đồng Nai.",
+        "Động lực chính":
+          "Các cơn sốt đất nền vùng ven (2020-2022) được thúc đẩy bởi dòng tiền đầu cơ và các thông tin quy hoạch hạ tầng. Khi thị trường trầm lắng (2022-2023), phân khúc này đã điều chỉnh đáng kể và đang trong giai đoạn phục hồi chậm.",
+        "Ý nghĩa với bạn (người mua nhà)":
+          "Việc mua nhà đất là một cam kết lâu dài với giá trị cốt lõi nằm ở quyền sở hữu đất. Kế hoạch của bạn cần tính đến các yếu tố chu kỳ và không nên quá phụ thuộc vào các đòn bẩy tài chính ngắn hạn. Hãy tập trung vào các khu vực có tiềm năng phát triển hạ tầng thực sự và xác định đây là một tài sản để 'an cư' và tích lũy giá trị trong dài hạn, thay vì kỳ vọng lợi nhuận nhanh chóng.",
+      },
+    },
+  },
+};
+
+const getAnalysisContent = (
+  city: string | undefined,
+  propertyType: string | undefined,
+) => {
+  if (!city || !propertyType) return analysisContent.default;
+  return analysisContent[city]?.[propertyType] || analysisContent.default;
+};
 
 interface QuickCheckProps {
   quickCheck?: OnboardingPlanState;
@@ -78,21 +164,42 @@ interface QuickCheckProps {
 }
 
 export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps) {
-  const [step, setStep] = useState<"intro" | "form">("intro");
+  const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2">(
+    "intro",
+  );
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
 
-  const handleStart = () => setStep("form");
+  const handleStart = () => setStep("form1");
 
-  const handleSubmit = (formData: Partial<OnboardingPlanState>) => {
+  const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
+    setFormData(data);
+    const city = data.targetLocation as string;
+    const propertyType = data.targetHouseType as string;
+
+    // If there's specific analysis content for the selected city and property type,
+    // show the analysis screen. Otherwise, skip to the second part of the form.
+    if (city && propertyType && analysisContent[city]?.[propertyType]) {
+      setStep("analysis");
+    } else {
+      setStep("form2");
+    }
+  };
+
+  const handleContinueFromAnalysis = () => {
+    setStep("form2");
+  };
+
+  const handleSubmitPart2 = (data: Partial<OnboardingPlanState>) => {
+    const finalData = { ...formData, ...data };
     // Convert units from triệu VNĐ to VNĐ and pass to the parent component
     const processedData: Partial<OnboardingPlanState> = {
-      ...formData,
-      targetHousePriceN0: (formData.targetHousePriceN0 || 0),
-      initialSavings: (formData.initialSavings || 0),
-      userMonthlyIncome: (formData.userMonthlyIncome || 0),
-      monthlyLivingExpenses:
-        (formData.monthlyLivingExpenses || 0),
+      ...finalData,
+        hasCoApplicant: (finalData.hasCoApplicant || false),
+        targetHousePriceN0: (finalData.targetHousePriceN0 || 0),
+        initialSavings: (finalData.initialSavings || 0),
+        userMonthlyIncome: (finalData.userMonthlyIncome || 0),
+        monthlyLivingExpenses: (finalData.monthlyLivingExpenses || 0),
     };
-
     onCompleted(processedData);
   };
 
@@ -114,7 +221,7 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
               Người đồng hành cùng bạn mua nhà
             </p>
             <Image
-              src="/icons/suitcase 1.png"
+              src="/icons/suitcase 0.png"
               alt="Kiểm tra khả năng mua nhà"
               width={150}
               height={150}
@@ -179,31 +286,91 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
     );
   }
 
-  if (step === "form") {
-    // Sử dụng dữ liệu từ initialData nếu có, nếu không thì mặc định là 0
-    const defaultQuickCheckValues: Partial<OnboardingPlanState> = {
-      // Sửa các key cho khớp với schema của Prisma
-      targetHousePriceN0: initialData?.targetHousePriceN0 ?? 0,
-      initialSavings: initialData?.initialSavings ?? 0,
-      userMonthlyIncome: initialData?.userMonthlyIncome ?? 0,
-      monthlyLivingExpenses: initialData?.monthlyLivingExpenses ?? 0,
-      // Tính toán lại năm mua nhà để hiển thị trên form
-      yearToPurchase: initialData?.yearToPurchase 
-        ? new Date().getFullYear() + initialData.yearToPurchase 
-        : new Date().getFullYear() + 5, // Mặc định 5 năm tới
-    };
+  if (step === "form1") {
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm
-          questions={quickCheckQuestions}
-          onSubmit={handleSubmit}
+          key="form1"
+          questions={quickCheckQuestionsPart1}
+          onSubmit={handleSubmitPart1}
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
-          defaultValues={defaultQuickCheckValues}
+          defaultValues={{}}
+          onBackFromFirst={() => setStep("intro")}
         />
       </div>
     );
   }
 
+  if (step === "analysis") {
+    const { targetLocation, targetHouseType } = formData;
+    const content = getAnalysisContent(
+      targetLocation as string,
+      targetHouseType as string,
+    );
+    return (
+      <div className="flex flex-col h-full flex-grow max-w-5xl mx-auto">
+        <div className="relative flex items-center h-10 mb-4">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setStep("form1")}
+            >
+              <ArrowLeftIcon className="h-12 w-12" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-grow flex flex-col items-center text-center pb-20">
+          <p className="text-lg mb-2">
+            Bạn muốn mua {targetHouseType} tại {targetLocation}
+          </p>
+          <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
+            {content.summary}
+          </p>
+          <Image
+            src={content.image}
+            alt={`${targetHouseType} tại ${targetLocation}`}
+            width={400}
+            height={400}
+            className="mb-6"
+          />
+          <div className="space-y-4 w-full max-w-5xl text-left text-sm">
+            {Object.entries(content.points).map(([key, value]) => (
+              <div key={key}>
+                <h3 className="font-semibold text-cyan-400 mb-1">{key}</h3>
+                <p className="text-white/80">{value as string}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto p-2">
+            <Button
+              onClick={handleContinueFromAnalysis}
+              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+            >
+              Tiếp tục
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "form2") {
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
+        <MultiStepQuestionForm
+          key="form2"
+          questions={quickCheckQuestionsPart2}
+          onSubmit={handleSubmitPart2}
+          title="Kiểm tra"
+          subtitle="Tôi có mua được nhà không?"
+          defaultValues={{}}
+        />
+      </div>
+    );
+  }
   return null;
 }
