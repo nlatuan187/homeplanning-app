@@ -8,12 +8,12 @@ export interface OnboardingPlanState {
   targetHousePriceN0?: number;
   targetHouseType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
   targetLocation?: string;
+  hasCoApplicant?: boolean;
   initialSavings?: number;
   userMonthlyIncome?: number;
   monthlyLivingExpenses?: number;
 
   // Section 2: Family Support
-  hasCoApplicant?: boolean;
   coApplicantMonthlyIncome?: number;
   monthlyOtherIncome?: number;
   hasFamilySupport?: boolean;
@@ -29,6 +29,8 @@ export interface OnboardingPlanState {
   monthlyNonHousingDebt?: number;
   currentAnnualInsurancePremium?: number;
   currentAnnualOtherExpenses?: number;
+  hasNewChild?: boolean;
+  yearToHaveChild?: number;
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;

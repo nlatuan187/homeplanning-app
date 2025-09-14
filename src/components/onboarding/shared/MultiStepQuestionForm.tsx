@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 // Define the structure for a single question
 export interface Question {
   key: keyof OnboardingPlanState;
-  text: string;
+  text: string | ((answers: Partial<OnboardingPlanState>) => string);
   type: "options" | "number";
   options?: { label: string; value: any }[];
   unit?: string;
@@ -74,9 +74,18 @@ export default function MultiStepQuestionForm({
   };
 
   const handleOptionClick = (value: any) => {
-    handleInputChange(value);
+    const newFormData = { ...formData, [currentQuestion.key]: value };
+    setFormData(newFormData);
+    if (!touchedFields[currentQuestion.key]) {
+      setTouchedFields((prev) => ({ ...prev, [currentQuestion.key]: true }));
+    }
+
     setTimeout(() => {
-      goToNext();
+      if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else {
+        onSubmit?.(newFormData);
+      }
     }, 150);
   };
 
@@ -110,7 +119,7 @@ export default function MultiStepQuestionForm({
     if (currentQuestion.type === 'number') {
       // Lấy giá trị mặc định cho câu hỏi hiện tại
       const defaultValue = defaultValues[currentQuestion.key];
-      const placeholderText = String(defaultValue);
+      const placeholderText = String(defaultValue ?? 0);
 
       return (
         <div className="relative w-full">
@@ -181,7 +190,9 @@ export default function MultiStepQuestionForm({
       {/* Question Content */}
       <div className="flex-grow flex flex-col items-center text-center px-4">
         <h2 className="text-2xl font-semibold text-white mb-12 max-w-5xl">
-          {currentQuestion.text}
+          {typeof currentQuestion.text === 'function'
+            ? currentQuestion.text(formData)
+            : currentQuestion.text}
         </h2>
         {renderInput}
       </div>

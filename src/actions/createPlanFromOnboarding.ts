@@ -41,6 +41,7 @@ export async function createPlanFromOnboarding(
     const updates = {
       planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
+      hasCoApplicant: onboardingData.hasCoApplicant || false,
       targetHousePriceN0: onboardingData.targetHousePriceN0,
       targetHouseType: onboardingData.targetHouseType,
       targetLocation: onboardingData.targetLocation,
@@ -80,6 +81,7 @@ export async function createPlanFromOnboarding(
       userEmail: userEmail,
       planName: "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
+      hasCoApplicant: onboardingData.hasCoApplicant || false,
       targetHousePriceN0: onboardingData.targetHousePriceN0,
       targetHouseType: onboardingData.targetHouseType,
       targetLocation: onboardingData.targetLocation,
@@ -97,6 +99,8 @@ export async function createPlanFromOnboarding(
       loanInterestRate: 11.0,
       loanTermYears: 25,
       paymentMethod: "BankLoan",
+      hasNewChild: onboardingData.hasNewChild || false,
+      yearToHaveChild: onboardingData.yearToHaveChild || 0,
     };
 
     let newPlan = await db.plan.create({
@@ -116,7 +120,6 @@ export async function createPlanFromOnboarding(
         familyLoanRepaymentType: null,
         familyLoanInterestRate: 0, 
         familyLoanTermYears: 0,
-        hasCoApplicant: false,
         coApplicantMonthlyIncome: 0,
         monthlyOtherIncome: 0,
       },

@@ -292,7 +292,7 @@ export default function Assumption({
                   Bạn hoàn toàn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn của mình
                 </div>
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-                  <Button onClick={() => setStep('form')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                  <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                     Lập kế hoạch mua nha nhà
                   </Button>
                 </div>
