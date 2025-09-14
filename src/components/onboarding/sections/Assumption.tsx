@@ -214,7 +214,7 @@ export default function Assumption({
           <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
               {
                 // Case 1: Can purchase, but later than planned
-                result.earliestPurchaseYear >= (plan.confirmedPurchaseYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.confirmedPurchaseYear! >= 1) ? (
+                result.earliestPurchaseYear > (plan.confirmedPurchaseYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - plan.confirmedPurchaseYear! >= 1) ? (
                 <div className="flex flex-col mx-4">
                   <div className="text-lg mb-4">
                     Kế hoạch <br/> 
@@ -279,7 +279,25 @@ export default function Assumption({
     
               </div>
               // Case 3: Cannot purchase
-              ) : (
+              ) : (result.earliestPurchaseYear === plan.confirmedPurchaseYear) ? (
+              <div className="flex flex-col mx-4">
+                <div className="text-lg mb-4">
+                  Bạn sẽ cần điều chỉnh nhiều để<br/> 
+                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
+                </div>
+                <div className="flex items-center justify-center text-center">
+                  <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                </div>
+                <div className="text-center text-slate-400">
+                  Bạn hoàn toàn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn của mình
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                  <Button onClick={() => setStep('form')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                    Lập kế hoạch mua nha nhà
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
                   Bạn sẽ cần điều chỉnh nhiều để<br/> 
