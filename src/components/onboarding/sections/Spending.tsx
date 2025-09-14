@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -13,8 +13,8 @@ import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
 import { updateSpendingAndRecalculate } from "@/actions/updateSpendingAndRecalculate";
 import { RecalculationResult } from "../shared/ResultStep";
-import { useDebounce } from "@/hooks/useDebounce";
-import { completeOnboardingSection, updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+import { OnboardingSectionState } from "@prisma/client";
 
 
 interface SpendingProps {
@@ -22,6 +22,8 @@ interface SpendingProps {
   plan: OnboardingPlanState;
   planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  isEditMode?: boolean;
+  onBackFromFirst?: () => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
@@ -31,6 +33,8 @@ export default function Spending({
   plan,
   planId,
   onCompleted,
+  isEditMode = false,
+  onBackFromFirst,
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
@@ -40,16 +44,6 @@ export default function Spending({
   }>({ formData: {}, touchedFields: {} });
   const router = useRouter();
 
-  // Debounce form state to avoid excessive server calls
-  const debouncedFormState = useDebounce(formState, 500);
-
-  // Effect to update progress when debounced form state changes
-  useEffect(() => {
-    if (debouncedFormState && Object.keys(debouncedFormState.touchedFields).length > 0) {
-      console.log("Updating spending section with:", debouncedFormState);
-      updateOnboardingSectionProgress(planId, "spending", debouncedFormState.formData, debouncedFormState.touchedFields);
-    }
-  }, [debouncedFormState, planId]);
 
   const spendingQuestions: Question[] = [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
@@ -65,7 +59,8 @@ export default function Spending({
   ];
 
   const handleContinue = () => {
-    completeOnboardingSection(planId, "spending");
+    updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.COMPLETED);
+    updateOnboardingSectionProgress(planId, "assumption", OnboardingSectionState.IN_PROGRESS);
     router.push(`/plan/${planId}/assumption`);
   }
 
@@ -76,6 +71,15 @@ export default function Spending({
   };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
+    // THÊM LẠI KHỐI LỆNH NÀY
+    // Nếu đang ở luồng chỉnh sửa, chỉ cần thu thập dữ liệu và báo cáo lên cha
+    if (isEditMode) {
+      onCompleted(formData);
+      
+      return; // Dừng hàm tại đây
+    }
+
+    // --- Logic của luồng onboarding gốc giữ nguyên ---
     setStep("loading");
     const fullData = { ...initialData, ...formData };
 
@@ -123,7 +127,7 @@ export default function Spending({
             </p>
           </div>
           <Button
-            onClick={() => setStep("form")}
+            onClick={() => {setStep("form"); updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.IN_PROGRESS);}}
             className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Tôi sẵn sàng rồi
@@ -133,7 +137,7 @@ export default function Spending({
     );
   }
 
-  if (step === "loading") {
+  if (step === "loading" && !isEditMode) {
       return (
         <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
             <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>
@@ -141,7 +145,7 @@ export default function Spending({
       )
   }
 
-  if (step === "result" && result) {
+  if (step === "result" && result && !isEditMode) {
       return <ResultStep 
         plan={result.plan}
         title="Dòng tiền đi ra "
@@ -161,6 +165,7 @@ export default function Spending({
             subtitle="Thời gian mua nhà có ảnh hưởng không"
             defaultValues={defaultValues}
             onDataChange={setFormState}
+            onBackFromFirst={onBackFromFirst}
         />
     </div>
   );

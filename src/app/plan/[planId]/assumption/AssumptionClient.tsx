@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Plan } from "@prisma/client";
+import { OnboardingSectionState, Plan } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Assumption from "@/components/onboarding/sections/Assumption";
@@ -13,14 +13,15 @@ import { updateAndRecalculateAssumption } from "@/actions/updateAndRecalculateAs
 import { cachePlaygroundProjections, upsertInteractionLogEntry } from "@/actions/updatePlayground";
 import { confirmPlaygroundAssumptions } from "@/actions/confirmPlaygroundAssumptions";
 import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
-import { completeOnboardingSection, updateOnboardingSectionProgress } from "@/actions/onboardingActions";
-import { useDebounce } from "@/hooks/useDebounce";
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 interface AssumptionData {
   pctSalaryGrowth: number;
   pctHouseGrowth: number;
   pctInvestmentReturn: number;
 }
+
+type DataKey = 'pctSalaryGrowth' | 'pctHouseGrowth' | 'pctInvestmentReturn';
 
 interface AssumptionClientProps {
   plan: Plan;
@@ -34,6 +35,7 @@ type InteractionLogEntry = {
 
 export default function AssumptionClient({ plan }: AssumptionClientProps) {
   const router = useRouter();
+  const [dataKey, setDataKey] = useState<DataKey>('pctSalaryGrowth');
 
   if (!plan) {
     return <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950">
@@ -56,18 +58,6 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   // State mới để theo dõi các trường đã tương tác
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Debounce cả 2 state để gửi lên server
-  const debouncedAssumptions = useDebounce(assumptions, 500);
-  const debouncedTouchedFields = useDebounce(touchedFields, 500);
-
-  // useEffect để tự động cập nhật tiến độ
-  useEffect(() => {
-    if (Object.keys(debouncedTouchedFields).length > 0) {
-      console.log("Updating assumption section with:", debouncedAssumptions);
-      updateOnboardingSectionProgress(plan.id, "assumption", debouncedAssumptions, debouncedTouchedFields);
-    }
-  }, [debouncedAssumptions, debouncedTouchedFields, plan.id]);
-
   const chartData = useMemo(() => {
     const tempPlan = {
       ...plan,
@@ -75,9 +65,8 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
       pctHouseGrowth: assumptions.pctHouseGrowth,
       pctInvestmentReturn: assumptions.pctInvestmentReturn,
     };
-    const projections = generateProjections(tempPlan as PlanWithDetails);
-    return generateAccumulationMilestones(projections, tempPlan as PlanWithDetails);
-  }, [plan, assumptions]);
+    return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey);
+  }, [plan, assumptions, dataKey]);
   
   // State to store the result from the server
   const [result, setResult] = useState<any | null>(null);
@@ -100,8 +89,12 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
 
   const handlePrev = () => {
+    // Nếu chúng ta không ở slider đầu tiên, chỉ cần quay lại slider trước đó.
     if (assumptionStep > 0) {
       setAssumptionStep(prev => prev - 1);
+    } else {
+      // Nếu đang ở slider đầu tiên, điều hướng về section Spending.
+      router.push(`/plan/${plan.id}/spending`);
     }
   };
 
@@ -127,13 +120,12 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
   
   const handleFinalChoice = async (year: number) => {
-    completeOnboardingSection(plan.id, "assumption");
+    updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.COMPLETED);
     setLoadingTitle("Đang tạo lộ trình...");
     setStep("loading");
     
     try {
       const result = await confirmPurchaseYear(plan.id, year);
-      
       if (result.success) {
         toast.success(`Đã chốt kế hoạch mua nhà vào năm ${year}!`);
         router.push(`/plan/${plan.id}/roadmap`);

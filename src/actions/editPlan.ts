@@ -1,126 +1,246 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
+import { currentUser } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
+import { OnboardingPlanState } from "@/components/onboarding/types";
+import { runProjectionWithEngine } from "./projectionHelpers";
+import { PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
+import { Plan } from "@prisma/client";
 
 /**
- * Server Action: Edit an existing plan
- * 
- * This action:
- * 1. Verifies the user owns the plan
- * 2. Stores the current plan data in revisionHistory
- * 3. Increments revisionCount
- * 4. Redirects to the plan form with the plan data pre-populated
- * 5. Optionally starts at a specific section
+ * Helper function to get the current user and plan, ensuring ownership.
  */
-export async function editPlan(planId: string, redirectPath?: string, startSection?: string) {
+async function getUserAndPlan(planId: string) {
+  const user = await currentUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const plan = await db.plan.findUnique({
+    where: { id: planId, userId: user.id },
+  });
+
+  if (!plan) {
+    throw new Error("Plan not found or user does not have access.");
+  }
+
+  return { user, plan };
+}
+
+/**
+ * SECTION 1: Cập nhật dữ liệu từ QuickCheck
+ */
+export async function updateQuickCheckSection(planId: string, data: Partial<OnboardingPlanState>) {
   try {
-    // Get authenticated user
-    const { userId } = await auth();
+    await getUserAndPlan(planId);
 
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Get the plan
-    const plan = await db.plan.findUnique({
-      where: {
-        id: planId,
-      },
-    });
-
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
-
-    // Verify the user owns the plan
-    if (plan.userId !== userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Create a copy of the current plan data for revision history
-    const currentPlanData = { ...plan };
-    
-    // Get only revisionHistory and revisionCount for updating
-    const existingHistoryData = await db.planHistory.findUnique({
-      where: { id: planId },
-      select: { revisionHistory: true, revisionCount: true }
-    });
-    
-    // Don't include revisionHistory in the history snapshot itself
-    delete (currentPlanData as Record<string, unknown>).revisionHistory;
-    delete (currentPlanData as Record<string, unknown>).revisionCount;
-
-
-    let newRevisionHistory: Array<{ timestamp: string; data: unknown }> = [];
-    if (existingHistoryData?.revisionHistory && Array.isArray(existingHistoryData.revisionHistory)) {
-      // Ensure it's an array before treating it as such
-      newRevisionHistory = existingHistoryData.revisionHistory as Array<{ timestamp: string; data: unknown }>;
-    }
-
-    // Add the current plan data to the revision history
-    newRevisionHistory.push({
-      timestamp: new Date().toISOString(),
-      data: currentPlanData, // This is the plan state *before* this edit
-    });
-
-    // Update the plan with the new revision history and increment the revision count
     await db.plan.update({
-      where: {
-        id: planId,
+      where: { id: planId },
+      data: {
+        targetHousePriceN0: data.targetHousePriceN0,
+        initialSavings: data.initialSavings,
+        userMonthlyIncome: data.userMonthlyIncome,
+        monthlyLivingExpenses: data.monthlyLivingExpenses,
+        yearsToPurchase: data.yearToPurchase ? data.yearToPurchase - new Date().getFullYear() : undefined,
       },
-      data: {
-        // Also clear confirmed purchase year and affordability results as they might become stale
-        confirmedPurchaseYear: null,
-        affordabilityOutcome: null,
-        firstViableYear: null,
-        buffer: null,
-      } as Prisma.PlanUpdateInput,
     });
 
-    await db.planHistory.update({
-      where: { planId: planId },
-      data: {
-        revisionCount: (existingHistoryData?.revisionCount || 0) + 1,
-        revisionHistory: newRevisionHistory as unknown as Prisma.InputJsonValue, // Cast to Prisma.InputJsonValue
-      }
-    });
-
-    await db.planReport.update({
-      where: { planId: planId },
-      data: {
-        generatedAt: null,
-        assetEfficiency: null,
-        capitalStructure: null,
-        spendingPlan: null,
-        insurance: null,
-        backupPlans: null,
-        projectionCache: Prisma.JsonNull,
-      }
-    });
-
-    // Thêm logic xóa milestoneProgress và roadmap khi edit
-    await db.milestoneProgress.deleteMany({
-      where: { planId: planId }
-    });
-
-    await db.planRoadmap.deleteMany({
-      where: { planId: planId }
-    });
-
-    // Redirect to the specified path or default to the plan form
-    if (redirectPath) {
-      redirect(redirectPath);
-    } else {
-      // Default: Redirect to the plan form with the plan ID
-      // The form will load the plan data and pre-populate the form
-      const sectionParam = startSection ? `&section=${startSection}` : '';
-      redirect(`/plan/new?edit=${planId}${sectionParam}`);
-    }
+    revalidatePath(`/plan/${planId}/edit`);
+    return { success: true };
   } catch (error) {
-    console.error("[EDIT_PLAN]", error);
-    throw error;
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * SECTION 2: Cập nhật dữ liệu từ FamilySupport
+ */
+export async function updateFamilySupportSection(planId: string, data: Partial<OnboardingPlanState>) {
+  try {
+    await getUserAndPlan(planId);
+
+    const familySupportData = {
+      hasCoApplicant: data.hasCoApplicant,
+      coApplicantMonthlyIncome: data.coApplicantMonthlyIncome,
+      monthlyOtherIncome: data.monthlyOtherIncome,
+      hasFamilySupport: data.hasFamilySupport,
+      familySupportType: data.familySupportType,
+      familySupportAmount: data.familySupportLoanAmount || data.familySupportGiftAmount,
+      familyGiftTiming: data.familySupportGiftTiming,
+      familyLoanRepaymentType: data.familySupportLoanRepayment,
+      familyLoanInterestRate: data.familySupportLoanInterest,
+      familyLoanTermYears: data.familySupportLoanTerm,
+    };
+
+    await db.planFamilySupport.upsert({
+      where: { planId },
+      update: familySupportData,
+      create: {
+        planId,
+        ...familySupportData,
+      },
+    });
+
+    revalidatePath(`/plan/${planId}/edit`);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * SECTION 3: Cập nhật dữ liệu từ Spending
+ */
+export async function updateSpendingSection(planId: string, data: Partial<OnboardingPlanState>) {
+  try {
+    await getUserAndPlan(planId);
+
+    await db.plan.update({
+      where: { id: planId },
+      data: {
+        monthlyNonHousingDebt: data.monthlyNonHousingDebt,
+        currentAnnualInsurancePremium: data.currentAnnualInsurancePremium,
+        currentAnnualOtherExpenses: data.currentAnnualOtherExpenses,
+      },
+    });
+
+    revalidatePath(`/plan/${planId}/edit`);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * SECTION 4: Cập nhật dữ liệu từ Assumption VÀ TÍNH TOÁN LẠI
+ * Hàm này sẽ được gọi ở bước cuối cùng để vừa lưu, vừa tính toán và trả về kết quả.
+ */
+export async function updateAssumptionSectionAndRecalculate(planId: string, data: Partial<OnboardingPlanState>) {
+  try {
+    const { plan } = await getUserAndPlan(planId);
+
+    // 1. Cập nhật các giả định mới
+    const updatedPlan = await db.plan.update({
+      where: { id: planId },
+      data: {
+        pctSalaryGrowth: data.salaryGrowthRate,
+        pctHouseGrowth: data.propertyGrowthRate,
+        pctInvestmentReturn: data.investmentReturnRate,
+      },
+      include: { familySupport: true },
+    });
+
+    // 2. Chạy lại engine tính toán với dữ liệu đã được cập nhật
+    const calculationResult = await runProjectionWithEngine(planId);
+
+    // 3. Cập nhật cache và năm khả thi
+    await db.planReport.upsert({
+      where: { planId },
+      update: { projectionCache: calculationResult as any },
+      create: { planId, projectionCache: calculationResult as any },
+    });
+    await db.plan.update({
+        where: { id: planId },
+        data: { firstViableYear: calculationResult.earliestPurchaseYear }
+    });
+    
+    revalidatePath(`/plan/${planId}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      plan: updatedPlan,
+      earliestPurchaseYear: calculationResult.earliestPurchaseYear,
+      message: calculationResult.message,
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Cập nhật một trường dữ liệu duy nhất trong Plan.
+ * Rất hiệu quả cho các thay đổi nhỏ, tức thời như slider.
+ */
+export async function updateSinglePlanField(
+  planId: string,
+  fieldName: keyof Plan, // Chỉ cho phép các key hợp lệ của model Plan
+  value: number | string | boolean | Date | null
+) {
+  try {
+    // Không cần getUserAndPlan đầy đủ vì revalidatePath không cần user
+    const user = await currentUser();
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Đảm bảo chỉ chủ sở hữu mới có thể sửa
+    const plan = await db.plan.findFirst({
+        where: { id: planId, userId: user.id }
+    });
+    if (!plan) {
+        return { success: false, error: "Plan not found." };
+    }
+
+    await db.plan.update({
+      where: { id: planId },
+      data: {
+        [fieldName]: value,
+      },
+    });
+
+    // Revalidate lại trang edit để đảm bảo dữ liệu luôn mới
+    revalidatePath(`/plan/${planId}/edit`);
+    return { success: true };
+
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Chỉ chạy lại engine tính toán cho một plan đã có, dựa trên dữ liệu mới nhất trong DB.
+ * Rất hữu ích sau khi đã cập nhật các trường riêng lẻ bằng debounce.
+ */
+export async function runProjectionForPlan(planId: string) {
+  try {
+    // Xác thực người dùng và quyền sở hữu plan
+    const { plan } = await getUserAndPlan(planId);
+
+    // Chạy lại engine tính toán
+    const calculationResult = await runProjectionWithEngine(plan.id);
+
+    // Cập nhật lại cache và năm khả thi sớm nhất để đồng bộ dữ liệu
+    await db.planReport.upsert({
+      where: { planId: plan.id },
+      update: { projectionCache: calculationResult as any },
+      create: { planId: plan.id, projectionCache: calculationResult as any },
+    });
+
+    await db.plan.update({
+        where: { id: plan.id },
+        data: { firstViableYear: calculationResult.earliestPurchaseYear }
+    });
+    
+    // Lấy lại plan đã cập nhật đầy đủ để trả về cho client
+    const updatedPlan = await db.plan.findUnique({
+        where: { id: plan.id },
+        include: { familySupport: true }
+    });
+
+    revalidatePath(`/plan/${plan.id}`);
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      plan: updatedPlan,
+      earliestPurchaseYear: calculationResult.earliestPurchaseYear,
+      message: calculationResult.message,
+    };
+
+  } catch (error) {
+    console.error(`[ACTION_ERROR] Failed to run projection for plan ${planId}:`, error);
+    return { success: false, error: (error as Error).message };
   }
 }

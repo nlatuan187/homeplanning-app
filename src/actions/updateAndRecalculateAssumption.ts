@@ -55,7 +55,7 @@ export async function updateAndRecalculateAssumption(
       await db.plan.update({
         where: { id: planId },
         data: { firstViableYear: result.earliestPurchaseYear }
-    });
+      });
     } else {
       result = existingResult;
     }

@@ -99,7 +99,7 @@ export default function ResultsClient({
         <div className="container mx-auto max-w-5xl">
           <Button
             className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"
-            onClick={() => router.push(`/plan/${plan.id}/familysupport`)}
+            onClick={() => router.push(`/plan/${plan.id}/familySupport`)}
           >
             Khám phá ngay
           </Button>

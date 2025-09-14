@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import ResultStep, { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
-import { Plan, PlanFamilySupport } from "@prisma/client";
+import { OnboardingSectionState, Plan, PlanFamilySupport } from "@prisma/client";
 import { OnboardingPlanState } from "@/components/onboarding/types";
-import { completeOnboardingSection } from "@/actions/onboardingActions";
+import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 // Define the Plan with familySupport relation
 type PlanWithFamilySupport = Plan & {
   familySupport: PlanFamilySupport | null;
@@ -25,9 +25,13 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
   
   const handleContinue = () => {
       // Navigate to the next section of the plan
-      completeOnboardingSection(plan.id, "familySupport");
+      updateOnboardingSectionProgress(plan.id, "familySupport", OnboardingSectionState.COMPLETED);
       router.push(`/plan/${plan.id}/spending`); // Example next step
   }
+
+  const handleBackFromFirst = () => {
+    router.push('/dashboard');
+  };
 
   if (status === 'loading') {
       return <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100}/>;
@@ -43,6 +47,7 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
       initialData={{}}
       planId={plan.id}
       onCompleted={handleContinue}
+      onBackFromFirst={handleBackFromFirst}
     />
   );
 }

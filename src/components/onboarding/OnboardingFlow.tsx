@@ -8,6 +8,7 @@ import FamilySupport from "./sections/FamilySupport";
 import Spending from "./sections/Spending";
 import Assumption from "./sections/Assumption";
 import { Plan } from "@prisma/client";
+import { useUser } from "@clerk/nextjs";
 
 type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
@@ -19,10 +20,15 @@ interface OnboardingFlowProps {
 export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const [currentSection, setCurrentSection] = useState<OnboardingSection>('quickCheck');
   const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
+  const { isSignedIn } = useUser();
 
   const handleQuickCheckCompleted = (data: Partial<OnboardingPlanState>) => {
     setPlanState(prev => ({ ...prev, ...data }));
-    setCurrentSection('signupPrompt');
+    if (isSignedIn) {
+      setCurrentSection('familySupport');
+    } else {
+      setCurrentSection('signupPrompt');
+    }
   };
 
   const handleFamilySupportCompleted = (data: Partial<OnboardingPlanState>) => {
@@ -49,7 +55,7 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
         // Now we pass the correct planId from props
         return <FamilySupport initialData={planState} familySupport={planState} planId={planId} onCompleted={handleFamilySupportCompleted} />;
       case 'spending':
-        return <Spending initialData={planState} plan={planState} onCompleted={handleSpendingCompleted} />;
+        return <Spending initialData={planState} plan={planState} onCompleted={handleSpendingCompleted} planId={planId} isEditMode={false}/>;
       case 'assumptions':
         return <Assumption plan={planState as Plan} onFinalChoice={() => {}} onConfirm={() => {}} step="intro" setStep={() => {}} assumptionStep={0} onNext={() => {}} onPrev={() => {}} result={null} assumptions={{pctSalaryGrowth: 0, pctHouseGrowth: 0, pctInvestmentReturn: 0}} onSliderChange={() => {}} chartData={[]}/>;
       default:

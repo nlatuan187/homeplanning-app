@@ -11,7 +11,7 @@ export async function calculateOnboardingProjection(
   const {
     purchaseYear, propertyValue, initialSavings,
     personalMonthlyIncome, personalMonthlyExpenses,
-    partnerMonthlyIncome, otherMonthlyIncome,
+    coApplicantMonthlyIncome, monthlyOtherIncome,
     hasFamilySupport, familySupportType, familySupportGiftAmount, familySupportGiftTiming,
     familySupportLoanAmount,
   } = data;
@@ -28,9 +28,9 @@ export async function calculateOnboardingProjection(
     targetHousePriceN0: propertyValue,
     initialSavings: initialSavings || 0,
     userMonthlyIncome: personalMonthlyIncome || 0,
-    monthlyOtherIncome: otherMonthlyIncome || 0,
-    hasCoApplicant: !!(partnerMonthlyIncome && partnerMonthlyIncome > 0),
-    coApplicantMonthlyIncome: partnerMonthlyIncome || 0,
+    monthlyOtherIncome: monthlyOtherIncome || 0,
+    hasCoApplicant: !!(coApplicantMonthlyIncome && coApplicantMonthlyIncome > 0),
+    coApplicantMonthlyIncome: coApplicantMonthlyIncome || 0,
     monthlyLivingExpenses: personalMonthlyExpenses || 0,
     monthlyNonHousingDebt: 0,
     currentAnnualInsurancePremium: 0,

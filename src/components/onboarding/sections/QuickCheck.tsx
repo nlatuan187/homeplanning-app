@@ -13,7 +13,7 @@ const currentYear = new Date().getFullYear();
 // Define the 7 questions for the Quick Check section
 const quickCheckQuestions: Question[] = [
   {
-    key: "purchaseYear",
+    key: "yearToPurchase",
     text: "Bạn dự định mua nhà vào thời điểm nào?",
     type: "options",
     options: [
@@ -24,13 +24,13 @@ const quickCheckQuestions: Question[] = [
     ],
   },
   {
-    key: "propertyValue",
+    key: "targetHousePriceN0",
     text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
   {
-    key: "propertyType",
+    key: "targetHouseType",
     text: "Căn nhà đó là loại nhà gì?",
     type: "options",
     options: [
@@ -40,7 +40,7 @@ const quickCheckQuestions: Question[] = [
     ],
   },
   {
-    key: "city",
+    key: "targetLocation",
     text: "Bạn dự định sẽ mua nhà ở tỉnh/thành phố nào?",
     type: "options",
     options: [
@@ -56,13 +56,13 @@ const quickCheckQuestions: Question[] = [
     unit: "triệu VNĐ",
   },
   {
-    key: "personalMonthlyIncome",
+    key: "userMonthlyIncome",
     text: "Lương hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
   {
-    key: "personalMonthlyExpenses",
+    key: "monthlyLivingExpenses",
     text: "Chi phí hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
@@ -70,10 +70,13 @@ const quickCheckQuestions: Question[] = [
 ];
 
 interface QuickCheckProps {
+  quickCheck?: OnboardingPlanState;
+  initialData?: OnboardingPlanState;
+  planId?: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
-export default function QuickCheck({ onCompleted }: QuickCheckProps) {
+export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps) {
   const [step, setStep] = useState<"intro" | "form">("intro");
 
   const handleStart = () => setStep("form");
@@ -82,11 +85,11 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
     // Convert units from triệu VNĐ to VNĐ and pass to the parent component
     const processedData: Partial<OnboardingPlanState> = {
       ...formData,
-      propertyValue: (formData.propertyValue || 0),
+      targetHousePriceN0: (formData.targetHousePriceN0 || 0),
       initialSavings: (formData.initialSavings || 0),
-      personalMonthlyIncome: (formData.personalMonthlyIncome || 0),
-      personalMonthlyExpenses:
-        (formData.personalMonthlyExpenses || 0),
+      userMonthlyIncome: (formData.userMonthlyIncome || 0),
+      monthlyLivingExpenses:
+        (formData.monthlyLivingExpenses || 0),
     };
 
     onCompleted(processedData);
@@ -132,11 +135,17 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
   }
 
   if (step === "form") {
+    // Sử dụng dữ liệu từ initialData nếu có, nếu không thì mặc định là 0
     const defaultQuickCheckValues: Partial<OnboardingPlanState> = {
-      propertyValue: 0,
-      initialSavings: 0,
-      personalMonthlyIncome: 0,
-      personalMonthlyExpenses: 0,
+      // Sửa các key cho khớp với schema của Prisma
+      targetHousePriceN0: initialData?.targetHousePriceN0 ?? 0,
+      initialSavings: initialData?.initialSavings ?? 0,
+      userMonthlyIncome: initialData?.userMonthlyIncome ?? 0,
+      monthlyLivingExpenses: initialData?.monthlyLivingExpenses ?? 0,
+      // Tính toán lại năm mua nhà để hiển thị trên form
+      yearToPurchase: initialData?.yearToPurchase 
+        ? new Date().getFullYear() + initialData.yearToPurchase 
+        : new Date().getFullYear() + 5, // Mặc định 5 năm tới
     };
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
@@ -146,7 +155,6 @@ export default function QuickCheck({ onCompleted }: QuickCheckProps) {
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
           defaultValues={defaultQuickCheckValues}
-          showDashboardButton={false}
         />
       </div>
     );

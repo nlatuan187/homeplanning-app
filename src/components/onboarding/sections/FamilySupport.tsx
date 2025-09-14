@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -12,8 +12,7 @@ import { toast } from "react-hot-toast";
 import { updateAndRecalculateFamilySupport } from "@/actions/updateAndRecalculateFamilySupport";
 import LoadingStep from "../shared/LoadingStep";
 import ResultStep from "../shared/ResultStep";
-import { FamilyGiftTiming, FamilyLoanRepaymentType, FamilySupportType, Plan, PlanFamilySupport } from "@prisma/client";
-import { useDebounce } from "@/hooks/useDebounce";
+import { FamilyGiftTiming, FamilyLoanRepaymentType, FamilySupportType, OnboardingSectionState, Plan } from "@prisma/client";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 const familySupportQuestions: Question[] = [
@@ -43,6 +42,8 @@ interface FamilySupportProps {
   familySupport: OnboardingPlanState;
   planId: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  isEditMode?: boolean; // <-- THÊM PROP MỚI
+  onBackFromFirst?: () => void;
 }
 
 type Step = "intro" | "form" | "loading" | "result";
@@ -61,42 +62,12 @@ export default function FamilySupport({
   familySupport,
   planId,
   onCompleted,
+  isEditMode = false, // <-- Gán giá trị mặc định
+  onBackFromFirst,
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
-  const [formState, setFormState] = useState<{
-    formData: Partial<OnboardingPlanState>;
-    touchedFields: Record<string, boolean>;
-  }>({ formData: {}, touchedFields: {} });
   const router = useRouter();
-
-  // Sử dụng debounce cho state của form
-  const debouncedFormState = useDebounce(formState, 500); // 500ms delay
-
-  // useEffect để gọi server action khi state đã debounce thay đổi
-  useEffect(() => {
-    // Chỉ chạy khi có dữ liệu đã được tương tác
-    if (debouncedFormState && Object.keys(debouncedFormState.touchedFields).length > 0) {
-      console.log("Updating family support section with:", debouncedFormState);
-      
-      const payload = {
-        hasCoApplicant: debouncedFormState.formData.hasCoApplicant,
-        coApplicantMonthlyIncome: debouncedFormState.formData.coApplicantMonthlyIncome,
-        monthlyOtherIncome: debouncedFormState.formData.monthlyOtherIncome,
-        hasFamilySupport: debouncedFormState.formData.hasFamilySupport,
-        familySupportType: debouncedFormState.formData.familySupportType,
-        familySupportAmount: debouncedFormState.formData.familySupportLoanAmount || debouncedFormState.formData.familySupportGiftAmount,
-        familyGiftTiming: debouncedFormState.formData.familySupportGiftTiming,
-        familyLoanInterestRate: debouncedFormState.formData.familySupportLoanInterest,
-        familyLoanRepaymentType: debouncedFormState.formData.familySupportLoanRepayment,
-        familyLoanTermYears: debouncedFormState.formData.familySupportLoanTerm,
-      };
-
-      // Gọi action mới, truyền cả formData và touchedFields
-      updateOnboardingSectionProgress(planId, "familySupport", payload, debouncedFormState.touchedFields);
-    }
-  }, [debouncedFormState, planId]);
-
 
   const defaultValues: Partial<OnboardingPlanState> = {
     coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome ?? 0,
@@ -111,6 +82,13 @@ export default function FamilySupport({
   };
 
   const handleSubmit = async (formData: Partial<OnboardingPlanState>) => {
+    // Nếu đang ở luồng chỉnh sửa, chỉ cần thu thập dữ liệu và báo cáo lên cha
+    if (isEditMode) {
+      onCompleted(formData);
+      return; // Dừng hàm tại đây
+    }
+
+    // --- Logic của luồng onboarding gốc giữ nguyên ---
     setStep("loading");
     const fullData = { ...initialData, ...formData };
 
@@ -140,7 +118,7 @@ export default function FamilySupport({
 
   const handleContinue = () => {
     // This is where you might call onCompleted or navigate
-    // completeOnboardingSection(planId, "familySupport"); // This line was removed as per the new_code
+    updateOnboardingSectionProgress(planId, "familySupport", OnboardingSectionState.COMPLETED);
     router.push(`/plan/${planId}/spending`);
   };
 
@@ -172,7 +150,7 @@ export default function FamilySupport({
           </div>
           <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 z-10">
             <Button
-              onClick={() => setStep("form")}
+              onClick={() => {setStep("form"); updateOnboardingSectionProgress(planId, "familySupport", OnboardingSectionState.IN_PROGRESS);}}
               className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
             >
               Đi tìm nguồn lực hỗ trợ
@@ -183,7 +161,7 @@ export default function FamilySupport({
     );
   }
 
-  if (step === "loading") {
+  if (step === "loading" && familySupport) {
       return (
         <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
             <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ"/>
@@ -191,7 +169,7 @@ export default function FamilySupport({
       )
   }
 
-  if (step === "result" && result) {
+  if (step === "result" && result && familySupport) {
       return <ResultStep 
         plan={result.plan}
         title="Nguồn lực hỗ trợ"
@@ -205,12 +183,12 @@ export default function FamilySupport({
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
         <MultiStepQuestionForm 
-            questions={familySupportQuestions} 
-            onSubmit={handleSubmit}
-            title="Nguồn lực hỗ trợ"
-            subtitle="Tôi có thể mua được nhà sớm hơn không?"
-            defaultValues={defaultValues}
-            onDataChange={setFormState}
+          questions={familySupportQuestions} 
+          onSubmit={handleSubmit}
+          title="Nguồn lực hỗ trợ"
+          subtitle="Tôi có thể mua được nhà sớm hơn không?"
+          defaultValues={defaultValues}
+          onBackFromFirst={onBackFromFirst}
         />
     </div>
   );

@@ -22,9 +22,9 @@ export async function createPlanFromOnboarding(
   // This ensures data integrity before we attempt to write to the database.
   if (
     !onboardingData ||
-    onboardingData.propertyValue === undefined ||
-    onboardingData.personalMonthlyExpenses === undefined ||
-    !onboardingData.purchaseYear
+    onboardingData.targetHousePriceN0 === undefined ||
+    onboardingData.monthlyLivingExpenses === undefined ||
+    !onboardingData.yearToPurchase
   ) {
     const errorMessage = "Invalid onboarding data: Required fields are missing.";
     console.error(errorMessage, onboardingData);
@@ -37,16 +37,16 @@ export async function createPlanFromOnboarding(
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
     // If user already has a plan, update its core fields from onboarding
-    const yearsToPurchase = onboardingData.purchaseYear - new Date().getFullYear();
+    const yearsToPurchase = onboardingData.yearToPurchase - new Date().getFullYear();
     const updates = {
       planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
-      targetHousePriceN0: onboardingData.propertyValue,
-      targetHouseType: onboardingData.propertyType,
-      targetLocation: onboardingData.city,
+      targetHousePriceN0: onboardingData.targetHousePriceN0,
+      targetHouseType: onboardingData.targetHouseType,
+      targetLocation: onboardingData.targetLocation,
       initialSavings: onboardingData.initialSavings || 0,
-      userMonthlyIncome: onboardingData.personalMonthlyIncome || 0,
-      monthlyLivingExpenses: onboardingData.personalMonthlyExpenses,
+      userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+      monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
     } as const;
 
     const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
@@ -74,22 +74,22 @@ export async function createPlanFromOnboarding(
     // Keep initial lightweight check for UX; real projection will be used after create
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
-      onboardingData.purchaseYear - new Date().getFullYear();
+      onboardingData.yearToPurchase - new Date().getFullYear();
 
     const planPayload: Omit<Prisma.PlanCreateInput, "user"> = {
       userEmail: userEmail,
       planName: "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
-      targetHousePriceN0: onboardingData.propertyValue,
-      targetHouseType: onboardingData.propertyType,
-      targetLocation: onboardingData.city,
+      targetHousePriceN0: onboardingData.targetHousePriceN0,
+      targetHouseType: onboardingData.targetHouseType,
+      targetLocation: onboardingData.targetLocation,
       initialSavings: onboardingData.initialSavings || 0,
-      userMonthlyIncome: onboardingData.personalMonthlyIncome || 0,
-      monthlyLivingExpenses: onboardingData.personalMonthlyExpenses,
+      userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+      monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
-      confirmedPurchaseYear: onboardingData.purchaseYear,
+      confirmedPurchaseYear: onboardingData.yearToPurchase,
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,
