@@ -7,6 +7,7 @@ import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
 } from "../shared/MultiStepQuestionForm";
+import { CheckCircle, XCircle } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -104,31 +105,75 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
           style={{ backgroundImage: "url('/onboarding/section1bg.png')" }}
         />
         {/* Content */}
-        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10">
-          <div className="flex-grow flex flex-col items-center justify-center text-center">
+        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 text-white z-10">
+          <div className="flex flex-col items-center text-center pt-7">
+            <h1 className="text-3xl font-bold mb-2">
+              Chào mừng bạn đến với Finful
+            </h1>
+            <p className="text-lg text-white/90 mb-8 italic">
+              Người đồng hành cùng bạn mua nhà
+            </p>
             <Image
               src="/icons/suitcase 1.png"
               alt="Kiểm tra khả năng mua nhà"
-              width={80}
-              height={80}
+              width={150}
+              height={150}
               className="mb-6"
             />
-            <h1 className="text-4xl max-md:text-3xl font-bold text-white mb-3">
-              Kiểm tra
-              <br />
-              khả năng mua nhà
-            </h1>
-            <p className="text-lg text-white/90 max-w-sm">
-              Chỉ trong 1 phút, bạn sẽ biết mình có thể mua được căn nhà mơ ước
-              hay không?
-            </p>
+            <div className="space-y-4 w-full text-left">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 flex items-center">
+                <div className="flex-grow">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">
+                      Chúng tôi có thể
+                    </h3>
+                    <CheckCircle className="max-md:w-4 max-md:h-4 w-6 h-6 flex-shrink-0" />
+                  </div>
+                  <p className="text-lg max-md:text-xs text-white/80">
+                    Tính toán và chỉ ra tất cả các con đường giúp bạn mua được
+                    nhà, từ tiết kiệm đến đầu tư, vay vốn.
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 flex items-center">
+                <div className="flex-grow">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">
+                      Chúng tôi không thể
+                    </h3>
+                    <XCircle className="max-md:w-4 max-md:h-4 w-6 h-6 flex-shrink-0" />
+                  </div>
+                  <p className="text-lg max-md:text-xs text-white/80">
+                    Quyết định thay bạn. Chúng tôi chỉ nhận nhu cầu, tình hình
+                    và để bạn tự chọn con đường phù hợp.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <Button
-            onClick={handleStart}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
-          >
-            Bắt đầu ngay
-          </Button>
+          <div className="fixed bottom-0 left-0 right-0 z-20">
+            <div className="max-w-5xl mx-auto p-4">
+              <div className="space-y-3">
+                <Button
+                  onClick={handleStart}
+                  className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                >
+                  Bắt đầu ngay
+                </Button>
+                <Button
+                  onClick={() =>
+                    window.open(
+                      "https://cal.com/tuan-nguyen-finful/45min",
+                      "_blank",
+                    )
+                  }
+                  className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
+                >
+                  Trò chuyện với chuyên gia trước
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </>
     );
