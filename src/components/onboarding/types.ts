@@ -4,7 +4,7 @@
  */
 export interface OnboardingPlanState {
   // Section 1: Quick Check
-  yearToPurchase?: number;
+  yearsToPurchase?: number;
   targetHousePriceN0?: number;
   targetHouseType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
   targetLocation?: string;
@@ -31,6 +31,7 @@ export interface OnboardingPlanState {
   currentAnnualOtherExpenses?: number;
   hasNewChild?: boolean;
   yearToHaveChild?: number;
+  monthlyChildExpenses?: number;
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;

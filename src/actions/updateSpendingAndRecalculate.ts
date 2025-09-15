@@ -32,7 +32,9 @@ export async function updateSpendingAndRecalculate(
     const currentData = {
         monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
         currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
-        currentAnnualOtherExpenses: plan.currentAnnualOtherExpenses,
+        hasNewChild: plan.hasNewChild,
+        yearToHaveChild: plan.yearToHaveChild,
+        monthlyChildExpenses: plan.monthlyChildExpenses,
     };
 
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));

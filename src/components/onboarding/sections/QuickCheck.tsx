@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { OnboardingPlanState } from "../types";
@@ -14,7 +14,7 @@ const currentYear = new Date().getFullYear();
 // Define the 7 questions for the Quick Check section
 const quickCheckQuestionsPart1: Question[] = [
   {
-    key: "yearToPurchase",
+    key: "yearsToPurchase",
     text: "Bạn dự định mua nhà vào thời điểm nào?",
     type: "options",
     options: [
@@ -46,7 +46,7 @@ const quickCheckQuestionsPart1: Question[] = [
     type: "options",
     options: [
       { label: "Hà Nội", value: "Hà Nội" },
-      { label: "TP. Hồ Chí Minh", value: "TP. Hồ Chí Minh" },  
+      { label: "TP. Hồ Chí Minh", value: "TP. Hồ Chí Minh" },
       { label: "Tỉnh/Thành phố khác", value: "Tỉnh/Thành phố khác" },
     ],
   },
@@ -152,8 +152,8 @@ const getAnalysisContent = (
   city: string | undefined,
   propertyType: string | undefined,
 ) => {
-  if (!city || !propertyType) return analysisContent.default;
-  return analysisContent[city]?.[propertyType] || analysisContent.default;
+  if (!city || !propertyType) return null;
+  return analysisContent[city]?.[propertyType] || null;
 };
 
 interface QuickCheckProps {
@@ -163,25 +163,73 @@ interface QuickCheckProps {
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
 }
 
-export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps) {
+export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheckProps) {
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2">(
     "intro",
   );
-  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(initialData);
+  const [progress, setProgress] = useState({ current: 0, total: 1 });
+  const [form1InitialIndex, setForm1InitialIndex] = useState(0);
 
-  const handleStart = () => setStep("form1");
+  const defaultValues = useMemo(() => initialData, [initialData]);
+
+  const questions1 = useMemo(() => quickCheckQuestionsPart1, []);
+  const questions2 = useMemo(() => quickCheckQuestionsPart2, []);
+
+  const visibleQuestionsPart1 = useMemo(() => {
+    return questions1.filter((q) => !q.condition || q.condition(formData));
+  }, [questions1, formData]);
+
+  const visibleQuestionsPart2 = useMemo(() => {
+    const combinedData = { ...defaultValues, ...formData };
+    return questions2.filter((q) => !q.condition || q.condition(combinedData));
+  }, [questions2, formData, defaultValues]);
+  
+  const totalSteps = useMemo(() => {
+    const hasAnalysisStep = getAnalysisContent(
+      formData.targetLocation,
+      formData.targetHouseType,
+    );
+    return visibleQuestionsPart1.length + (hasAnalysisStep ? 1 : 0) + visibleQuestionsPart2.length;
+  }, [visibleQuestionsPart1, visibleQuestionsPart2, formData.targetLocation, formData.targetHouseType]);
+
+  const handleStep1Change = useCallback((current: number) => {
+    setProgress({ current: current + 1, total: totalSteps });
+  }, [totalSteps]);
+
+  const handleStep2Change = useCallback((current: number) => {
+    const hasAnalysisStep = getAnalysisContent(
+      formData.targetLocation,
+      formData.targetHouseType,
+    );
+    const baseProgress = visibleQuestionsPart1.length + (hasAnalysisStep ? 1 : 0);
+    setProgress({ current: baseProgress + current + 1, total: totalSteps });
+  }, [
+    totalSteps,
+    visibleQuestionsPart1.length,
+    formData.targetLocation,
+    formData.targetHouseType,
+  ]);
+
+  const handleStart = () => {
+    setForm1InitialIndex(0);
+    setStep("form1");
+  };
 
   const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
-    setFormData(data);
-    const city = data.targetLocation as string;
-    const propertyType = data.targetHouseType as string;
+    const newFormData = { ...formData, ...data };
+    setFormData(newFormData);
+    const content = getAnalysisContent(
+      data.targetLocation as string,
+      data.targetHouseType as string,
+    );
 
-    // If there's specific analysis content for the selected city and property type,
-    // show the analysis screen. Otherwise, skip to the second part of the form.
-    if (city && propertyType && analysisContent[city]?.[propertyType]) {
+    if (content) {
       setStep("analysis");
+      setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
     } else {
       setStep("form2");
+      setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
     }
   };
 
@@ -191,7 +239,6 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
 
   const handleSubmitPart2 = (data: Partial<OnboardingPlanState>) => {
     const finalData = { ...formData, ...data };
-    // Convert units from triệu VNĐ to VNĐ and pass to the parent component
     const processedData: Partial<OnboardingPlanState> = {
       ...finalData,
         hasCoApplicant: (finalData.hasCoApplicant || false),
@@ -206,12 +253,10 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
   if (step === "intro") {
     return (
       <>
-        {/* Background Gradient */}
         <div
           className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/onboarding/section1bg.png')" }}
         />
-        {/* Content */}
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 text-white z-10">
           <div className="flex flex-col items-center text-center pt-7">
             <h1 className="text-3xl font-bold mb-2">
@@ -286,91 +331,131 @@ export default function QuickCheck({ onCompleted, initialData }: QuickCheckProps
     );
   }
 
-  if (step === "form1") {
-    return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
+  return (
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+      {step === "form1" && (
         <MultiStepQuestionForm
           key="form1"
-          questions={quickCheckQuestionsPart1}
+          questions={questions1}
           onSubmit={handleSubmitPart1}
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
-          defaultValues={{}}
+          defaultValues={formData}
           onBackFromFirst={() => setStep("intro")}
+          onStepChange={handleStep1Change}
+          progressCurrent={progress.current}
+          progressTotal={totalSteps}
+          initialQuestionIndex={form1InitialIndex}
         />
-      </div>
-    );
-  }
+      )}
 
-  if (step === "analysis") {
-    const { targetLocation, targetHouseType } = formData;
-    const content = getAnalysisContent(
-      targetLocation as string,
-      targetHouseType as string,
-    );
-    return (
-      <div className="flex flex-col h-full flex-grow max-w-5xl mx-auto">
-        <div className="relative flex items-center h-10 mb-4">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setStep("form1")}
-            >
-              <ArrowLeftIcon className="h-12 w-12" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex-grow flex flex-col items-center text-center pb-20">
-          <p className="text-lg mb-2">
-            Bạn muốn mua {targetHouseType} tại {targetLocation}
-          </p>
-          <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
-            {content.summary}
-          </p>
-          <Image
-            src={content.image}
-            alt={`${targetHouseType} tại ${targetLocation}`}
-            width={400}
-            height={400}
-            className="mb-6"
-          />
-          <div className="space-y-4 w-full max-w-5xl text-left text-sm">
-            {Object.entries(content.points).map(([key, value]) => (
-              <div key={key}>
-                <h3 className="font-semibold text-cyan-400 mb-1">{key}</h3>
-                <p className="text-white/80">{value as string}</p>
+      {step === "analysis" && (
+        (() => {
+          const { targetLocation, targetHouseType } = formData;
+          const content = getAnalysisContent(
+            targetLocation as string,
+            targetHouseType as string,
+          );
+          if (!content) return null;
+
+          return (
+            <div className="flex flex-col h-full flex-grow">
+              <div>
+                <div className="relative flex items-center h-10 mb-4 mx-4">
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setForm1InitialIndex(visibleQuestionsPart1.length - 1);
+                        setStep("form1");
+                        setProgress({
+                          current: visibleQuestionsPart1.length,
+                          total: totalSteps,
+                        });
+                      }}
+                      disabled={progress.current === 0}
+                    >
+                      <ArrowLeftIcon className="h-12 w-12" />
+                    </Button>
+                  </div>
+
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
+                    Kiểm tra
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
-          <div className="max-w-5xl mx-auto p-2">
-            <Button
-              onClick={handleContinueFromAnalysis}
-              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
-            >
-              Tiếp tục
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+              <div className="relative flex-grow flex flex-col items-center text-center pb-20">
+                <p className="text-lg mb-2">
+                  Bạn muốn mua {targetHouseType} tại {targetLocation}
+                </p>
+                <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
+                  {content.summary}
+                </p>
+                <Image
+                  src={content.image}
+                  alt={`${targetHouseType} tại ${targetLocation}`}
+                  width={400}
+                  height={400}
+                  className="mb-6"
+                />
+                <div className="space-y-4 w-full max-w-5xl text-left text-sm">
+                  {Object.entries(content.points).map(([key, value]) => (
+                    <div key={key}>
+                      <h3 className="font-semibold text-cyan-400 mb-1">{key}</h3>
+                      <p className="text-white/80">{value as string}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+                <div className="max-w-5xl mx-auto p-2">
+                  <Button
+                    onClick={handleContinueFromAnalysis}
+                    className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                  >
+                    Tiếp tục
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      )}
 
-  if (step === "form2") {
-    return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
+      {step === "form2" && (
         <MultiStepQuestionForm
           key="form2"
-          questions={quickCheckQuestionsPart2}
+          questions={questions2}
           onSubmit={handleSubmitPart2}
           title="Kiểm tra"
           subtitle="Tôi có mua được nhà không?"
-          defaultValues={{}}
+          defaultValues={formData}
+          onBackFromFirst={() => {
+            const hasAnalysisStep = getAnalysisContent(
+              formData.targetLocation,
+              formData.targetHouseType,
+            );
+            if (hasAnalysisStep) {
+              setStep("analysis");
+              setProgress({
+                current: visibleQuestionsPart1.length + 1,
+                total: totalSteps,
+              });
+            } else {
+              setStep("form1");
+              setProgress({
+                current: visibleQuestionsPart1.length,
+                total: totalSteps,
+              });
+            }
+          }}
+          onStepChange={handleStep2Change}
+          progressCurrent={progress.current}
+          progressTotal={totalSteps}
+          isFinalForm={true}
         />
-      </div>
-    );
-  }
-  return null;
+      )}
+    </div>
+  );
 }

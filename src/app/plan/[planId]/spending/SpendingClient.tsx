@@ -29,7 +29,7 @@ export default function SpendingClient({ plan }: SpendingClienttProps) {
   }
 
   const handleBackFromFirst = () => {
-    router.push(`/plan/${plan.id}/familysupport`);
+    router.push(`/plan/${plan.id}/familySupport`);
   };
 
   if (status === 'loading') {

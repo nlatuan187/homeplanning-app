@@ -1,5 +1,5 @@
 import { Plan } from "@prisma/client";
-import { generateProjections } from "./projections/generateProjections";
+import { generateProjections, PlanWithDetails } from "./projections/generateProjections";
 import { generateComparisonData, determineAffordabilityOutcome } from "./projections/generateComparisonData";
 import { calculateLoanSummary } from "./projections/calculateLoanSummary";
 import type { LoanSummary } from "./projections/calculateLoanSummary";
@@ -20,6 +20,9 @@ export type ProjectionRow = {
   isAffordable: boolean;
   loanTermYears: number; // Add this to ensure it's passed through
   familyLoanRepayment: number; // Annual family loan repayment amount
+  monthlyChildExpenses: number;
+  hasNewChild: boolean;
+  yearToHaveChild: number;
 
   baseExpenses: number;
 
@@ -79,7 +82,7 @@ export function calculateAffordability(plan: Plan): ProjectionResult {
   const targetPurchaseYear = currentYear + plan.yearsToPurchase;
 
   // 1. Generate projections
-  const projectionData = generateProjections(plan);
+  const projectionData = generateProjections(plan as Partial<PlanWithDetails>);
 
   // 2. Determine affordability outcome using corrected logic
   const { affordabilityOutcome, firstViableYear } = determineAffordabilityOutcome(

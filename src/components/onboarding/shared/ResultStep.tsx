@@ -59,7 +59,7 @@ export default function ResultStep({
               (earliestPurchaseYear > (plan.firstViableYear ?? Infinity) ? (
                   <>
                     <div className="rounded-lg mb-8 flex items-center justify-center">
-                      <Image src="/onboarding/resultcase1.png" alt="Result" width={320} height={256} />
+                      <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
                     </div>
                     <p className="text-xl font-bold text-white">
                       Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
@@ -68,7 +68,7 @@ export default function ResultStep({
                 ) : (
                   <>
                     <div className="rounded-lg mb-8 flex items-center justify-center">
-                      <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
+                      <Image src="/onboarding/resultcase1.png" alt="Result" width={320} height={256} />
                     </div>
                     <p className="text-xl font-bold text-white">
                       Bạn sẽ mua được nhà vào năm {earliestPurchaseYear}

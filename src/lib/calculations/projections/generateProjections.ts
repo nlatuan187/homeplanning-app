@@ -13,6 +13,8 @@ type PlanWithPaymentMethod = Plan & {
 export type PlanWithDetails = Plan & {
   paymentMethod: "fixed" | "decreasing";
   familySupport?: {
+    coApplicantMonthlyIncome: number | null;
+    monthlyOtherIncome: number | null;
     familySupportType: 'GIFT' | 'LOAN' | null;
     familySupportAmount: number | null;
     familyGiftTiming: 'NOW' | 'AT_PURCHASE' | null;
@@ -77,6 +79,9 @@ function preparePlanForProjection(partialPlanData: Partial<PlanWithDetails>): Pl
     pctInvestmentReturn: 9.0,
     loanInterestRate: 11.0,
     loanTermYears: 25,
+    hasNewChild: false,
+    yearToHaveChild: 0,
+    monthlyChildExpenses: 0,
     paymentMethod: "fixed" as "fixed" | "decreasing",
   };
   
@@ -109,11 +114,14 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
   const monthlyRate = Math.pow(1 + annualReturnRate, 1 / 12) - 1;
 
   const userMonthlyIncomeN0 = plan.userMonthlyIncome;
-  const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? plan.coApplicantMonthlyIncome : 0;
-  const totalMonthlyIncomeN0 = userMonthlyIncomeN0 + coApplicantMonthlyIncomeN0 + plan.monthlyOtherIncome;
+  const coApplicantMonthlyIncomeN0 = plan.hasCoApplicant ? plan.familySupport?.coApplicantMonthlyIncome : 0;
+  const totalMonthlyIncomeN0 = userMonthlyIncomeN0 + (coApplicantMonthlyIncomeN0 || 0) + (plan.familySupport?.monthlyOtherIncome || 0);
   const annualIncomeN0 = totalMonthlyIncomeN0 * 12;
 
-  const monthlyExpensesN0 = plan.monthlyLivingExpenses + plan.monthlyNonHousingDebt + (plan.currentAnnualInsurancePremium / 12);
+  let monthlyExpensesN0 = plan.monthlyLivingExpenses + plan.monthlyNonHousingDebt + (plan.currentAnnualInsurancePremium / 12);
+  if (plan.hasNewChild && plan.yearToHaveChild && plan.monthlyChildExpenses && plan.yearToHaveChild === currentYear) {
+    monthlyExpensesN0 += plan.monthlyChildExpenses;
+  }
   const annualExpensesN0 = monthlyExpensesN0 * 12;
   const annualSavingsN0 = annualIncomeN0 - annualExpensesN0;
 
@@ -125,17 +133,17 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     n: 0,
     housePriceProjected: plan.targetHousePriceN0,
     primaryIncome: userMonthlyIncomeN0 * 12,
-    spouseIncome: coApplicantMonthlyIncomeN0 * 12,
-    otherIncome: plan.monthlyOtherIncome * 12,
+    spouseIncome: (coApplicantMonthlyIncomeN0 || 0) * 12,
+    otherIncome: (plan.familySupport?.monthlyOtherIncome || 0) * 12,
     annualIncome: annualIncomeN0,
     annualExpenses: annualExpensesN0,
     annualSavings: annualSavingsN0,
     cumulativeSavings: cumulativeSavingsN0,
     loanAmountNeeded: Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0),
-    monthlyPayment: calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate, plan.loanTermYears, plan.paymentMethod),
+    monthlyPayment: calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate || 11, plan.loanTermYears || 25, plan.paymentMethod),
     monthlySurplus: annualSavingsN0 / 12,
-    buffer: (annualSavingsN0 / 12) - calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate, plan.loanTermYears, plan.paymentMethod),
-    isAffordable: ((annualSavingsN0 / 12) - calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate, plan.loanTermYears, plan.paymentMethod)) >= 0,
+    buffer: (annualSavingsN0 / 12) - calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate || 11, plan.loanTermYears || 25, plan.paymentMethod),
+    isAffordable: ((annualSavingsN0 / 12) - calculateMonthlyPayment(Math.max(0, plan.targetHousePriceN0 - cumulativeSavingsN0), plan.loanInterestRate || 11, plan.loanTermYears || 25, plan.paymentMethod)) >= 0,
     baseExpenses: plan.monthlyLivingExpenses * 12,
     preInsuranceExpenses: (plan.monthlyLivingExpenses + plan.monthlyNonHousingDebt) * 12,
     insurancePremium: plan.currentAnnualInsurancePremium,
@@ -148,10 +156,13 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     pctInvestmentReturn: plan.pctInvestmentReturn,
     factorMarriage: 0,
     factorChild: 0,
-    loanTermYears: plan.loanTermYears,
+    loanTermYears: plan.loanTermYears || 25,
     cumulativeSavingsFromInitial: initialSavings,
     cumulativeSavingsFromMonthly: annualSavingsN0 / 12,
     familyLoanRepayment: 0,
+    monthlyChildExpenses: plan.monthlyChildExpenses,
+    hasNewChild: plan.hasNewChild,
+    yearToHaveChild: plan.yearToHaveChild || 0,
   };
   projectionData.push(year0);
 
@@ -160,7 +171,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     const prev = projectionData[n - 1];
 
     const userAnnualIncome = prev.primaryIncome * (1 + plan.pctSalaryGrowth / 100);
-    const coApplicantAnnualIncome = prev.spouseIncome * (1 + (plan.coApplicantSalaryGrowth) / 100);
+    const coApplicantAnnualIncome = prev.spouseIncome * (1 + (plan?.coApplicantSalaryGrowth || 0) / 100);
     const totalAnnualIncome = userAnnualIncome + coApplicantAnnualIncome + prev.otherIncome;
 
     const livingExpensesAnnual = prev.baseExpenses * (1 + plan.pctExpenseGrowth / 100);
@@ -204,7 +215,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
 
     const bankLoanNeeded = Math.max(0, housePriceProjected - equityForPurchase);
     
-    const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate, plan.loanTermYears, plan.paymentMethod);
+    const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate || 11, plan.loanTermYears || 25, plan.paymentMethod);
     const monthlySurplus = annualSavings / 12;
     const buffer = monthlySurplus - monthlyPayment;
     const isAffordable = buffer >= 0;
@@ -225,11 +236,11 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
       monthlySurplus,
       buffer,
       isAffordable,
-      loanTermYears: plan.loanTermYears,
+      loanTermYears: plan.loanTermYears || 25,
       familyLoanRepayment: annualFamilyLoanRepayment,
       baseExpenses: livingExpensesAnnual,
       preInsuranceExpenses: livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12),
-      insurancePremium: plan.currentAnnualInsurancePremium,
+      insurancePremium: plan.currentAnnualInsurancePremium || 0,
       targetEF: (livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12)) / 12 * 6,
       efTopUp: 0,
       ltvRatio: housePriceProjected > 0 ? (bankLoanNeeded / housePriceProjected) * 100 : 0,
@@ -241,6 +252,9 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
       factorChild: 0,
       cumulativeSavingsFromInitial: accumulatedFromInitial,
       cumulativeSavingsFromMonthly: accumulatedFromMonthly,
+      monthlyChildExpenses: plan.monthlyChildExpenses,
+      hasNewChild: plan.hasNewChild,
+      yearToHaveChild: plan.yearToHaveChild || 0,
     });
   }
 

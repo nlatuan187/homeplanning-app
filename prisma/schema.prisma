@@ -54,7 +54,6 @@ model Plan {
   monthlyLivingExpenses         Float
   monthlyNonHousingDebt         Float   @default(0)
   currentAnnualInsurancePremium Float   @default(0)
-  currentAnnualOtherExpenses    Float   @default(0)
 
   initialSavings                Float   @default(0)
   pctHouseGrowth                Float   @default(10.0)
@@ -62,6 +61,7 @@ model Plan {
   pctInvestmentReturn           Float   @default(9.0)
   hasNewChild                   Boolean @default(false)
   yearToHaveChild               Int?
+  monthlyChildExpenses          Float   @default(0)
 
   // Page 4: Loan & Support Inputs
   loanInterestRate              Float?   @default(11.0)
