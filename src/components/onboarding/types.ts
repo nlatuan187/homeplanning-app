@@ -31,6 +31,7 @@ export interface OnboardingPlanState {
   currentAnnualOtherExpenses?: number;
   hasNewChild?: boolean;
   yearToHaveChild?: number;
+  monthlyChildExpenses?: number;
 
   // Section 4: Assumptions
   salaryGrowthRate?: number;

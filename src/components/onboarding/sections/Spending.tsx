@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -40,28 +40,40 @@ export default function Spending({
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
   const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
+  const [progress, setProgress] = useState({ current: 0, total: 1 });
+  const [form1InitialIndex, setForm1InitialIndex] = useState(0);
   const router = useRouter();
 
   const currentYear = new Date().getFullYear();
 
-  const spendingQuestionsPart1: Question[] = [
-    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
-  ];
+  const defaultValues: Partial<OnboardingPlanState> = {
+    monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
+    currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
+    hasNewChild: plan.hasNewChild,
+    yearToHaveChild: plan.yearToHaveChild,
+    monthlyChildExpenses: plan.monthlyChildExpenses,
+  };
 
-  const spendingQuestionsPart2: Question[] = [
-    // @ts-ignore
-    { key: 'currentAnnualInsurancePremium', text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', type: 'number', unit: 'triệu VNĐ' },
-    { 
-      key: 'currentAnnualOtherExpenses', 
-      text: 'Chi tiêu của cả GIA ĐÌNH hàng tháng là bao nhiêu (trừ chi tiêu CÁ NHÂN)?', 
+  const spendingQuestionsPart1: Question[] = useMemo(() => [
+    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
+    { key: 'currentAnnualInsurancePremium', 
+      text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu?', 
       type: 'number', 
-      unit: 'triệu VNĐ',  
-      condition: () => plan.hasFamilySupport === true
+      unit: 'triệu VNĐ',
+      description: "* Nếu bạn đã đóng bảo hiểm xã hội ở nơi làm việc, chỉ cần nhập giá trị bảo hiểm nhân thọ ở đây."
     },
-    { key: 'hasNewChild', text: 'Bạn có dự định sinh thêm em bé không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
+  ], []);
+
+  const spendingQuestionsPart2: Question[] = useMemo(() => [
+    // @ts-ignore
+    { 
+      key: 'hasNewChild', text: 'Bạn có dự định sinh thêm em bé không?', 
+      type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}],
+      condition: (ans: any) => ans.hasCoApplicant === true
+    },
     {
       key: "yearToHaveChild",
-      text: "Bạn dự định mua nhà vào thời điểm nào?",
+      text: "Bạn dự định sinh em bé vào năm nào?",
       type: "options",
       options: [
         { label: `Năm nay (${currentYear})`, value: currentYear },
@@ -70,7 +82,38 @@ export default function Spending({
       ],
       condition: (ans: any) => ans.hasNewChild === true,
     },
-  ];
+    {
+      key: "monthlyChildExpenses",
+      text: "Chi phí phát sinh hàng tháng khi có thêm em bé (đơn vị: triệu VNĐ)",
+      description: "* Theo nghiên cứu của Finful, chi phí phát sinh khi có em bé ước tính bằng 25% tổng chi phí của gia đình. Chúng tôi đã tự động tính toán dựa trên chi phí của gia đình bạn. Bạn có thể điều chỉnh nếu có con số phù hợp hơn.",
+      type: "number",
+      unit: "triệu VNĐ",
+      condition: (ans: any) => ans.hasNewChild === true
+    }
+  ], [currentYear, plan.hasFamilySupport]);
+
+  const visibleQuestionsPart1 = useMemo(() => {
+    return spendingQuestionsPart1.filter((q) => !q.condition || q.condition(formData));
+  }, [spendingQuestionsPart1, formData]);
+
+  const visibleQuestionsPart2 = useMemo(() => {
+    // For part 2, conditions depend on answers from part 1 and part 2 itself
+    const combinedData = { ...defaultValues, ...formData };
+    return spendingQuestionsPart2.filter((q) => !q.condition || q.condition(combinedData));
+  }, [spendingQuestionsPart2, formData, defaultValues]);
+
+  const totalSteps = useMemo(() => {
+    return visibleQuestionsPart1.length + 1 + visibleQuestionsPart2.length;
+  }, [visibleQuestionsPart1, visibleQuestionsPart2]);
+
+  const handleStep1Change = useCallback((current: number) => {
+    setProgress({ current: current + 1, total: totalSteps });
+  }, [totalSteps]);
+
+  const handleStep2Change = useCallback((current: number) => {
+    const baseProgress = visibleQuestionsPart1.length + 1;
+    setProgress({ current: baseProgress + current + 1, total: totalSteps });
+  }, [totalSteps, visibleQuestionsPart1.length]);
 
   const handleContinue = () => {
     updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.COMPLETED);
@@ -78,17 +121,27 @@ export default function Spending({
     router.push(`/plan/${planId}/assumption`);
   }
 
-  const defaultValues: Partial<OnboardingPlanState> = {
-    monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
-    currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
-    currentAnnualOtherExpenses: plan.currentAnnualOtherExpenses,
-    hasNewChild: plan.hasNewChild,
-    yearToHaveChild: plan.yearToHaveChild,
-  };
-
   const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
-    setFormData({ ...formData, ...data });
-    setStep("analysis");
+    const newFormData = { ...formData, ...data };
+    setFormData(newFormData);
+
+    // Check if there are any visible questions for part 2 with the new data
+    const combinedDataForPart2 = { ...defaultValues, ...newFormData };
+    const futureVisibleQuestionsPart2 = spendingQuestionsPart2.filter(
+      (q) => !q.condition || q.condition(combinedDataForPart2),
+    );
+
+    if (futureVisibleQuestionsPart2.length === 0) {
+      // If no questions in part 2, submit immediately
+      handleSubmit(newFormData);
+    } else {
+      // Otherwise, proceed to analysis step
+      setStep("analysis");
+      setProgress({
+        current: visibleQuestionsPart1.length + 1,
+        total: totalSteps,
+      });
+    }
   };
 
   const handleContinueFromAnalysis = () => {
@@ -112,9 +165,9 @@ export default function Spending({
     const spendingPayload = {
       monthlyNonHousingDebt: fullData.monthlyNonHousingDebt,
       currentAnnualInsurancePremium: fullData.currentAnnualInsurancePremium,
-      currentAnnualOtherExpenses: fullData.currentAnnualOtherExpenses,
       hasNewChild: fullData.hasNewChild,
       yearToHaveChild: fullData.yearToHaveChild,
+      monthlyChildExpenses: fullData.monthlyChildExpenses,
     };
 
     const result = await updateSpendingAndRecalculate(plan, spendingPayload);
@@ -155,87 +208,21 @@ export default function Spending({
             </p>
           </div>
           <Button
-            onClick={() => {setStep("form1"); updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.IN_PROGRESS);}}
+            onClick={() => {
+              setForm1InitialIndex(0);
+              setStep("form1");
+              updateOnboardingSectionProgress(
+                planId,
+                "spending",
+                OnboardingSectionState.IN_PROGRESS,
+              );
+            }}
             className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Tôi sẵn sàng rồi
           </Button>
         </div>
       </>
-    );
-  }
-
-  if (step === "form1") {
-    return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
-        <MultiStepQuestionForm
-          key="spending1"
-          questions={spendingQuestionsPart1}
-          onSubmit={handleSubmitPart1}
-          title="Dòng tiền đi ra"
-          subtitle="Tiếp tục"
-          defaultValues={defaultValues}
-          onBackFromFirst={() => setStep("intro")}
-        />
-      </div>
-    );
-  }
-
-  if (step === "analysis") {
-    return (
-      <div className="flex flex-col h-full flex-grow max-w-5xl mx-auto text-white">
-        <div className="relative flex items-center h-10 mb-4">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setStep("form1")}
-            >
-              <ArrowLeftIcon className="h-12 w-12" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex-grow flex flex-col items-center text-center pb-17 px-4">
-          <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
-          <h2 className="text-2xl font-bold mb-6 max-w-sm">Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến</h2>
-          <Image
-            src="/onboarding/baby.png" // Placeholder image
-            alt="Analysis"
-            width={150}
-            height={150}
-            className="mb-6"
-          />
-          <p className="text-white/90 max-w-md">
-            Hãy cân nhắc thật kỹ về thời điểm sinh em bé để đảm bảo bạn vững vàng nhất về tài chính cũng như kế hoạch mua nhà không bị thay đổi đột ngột ngoài dự kiến.
-          </p>
-        </div>
-        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
-          <div className="max-w-5xl mx-auto p-4">
-            <Button
-              onClick={handleContinueFromAnalysis}
-              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
-            >
-              Tiếp tục
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "form2") {
-    return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
-        <MultiStepQuestionForm
-          key="spending2"
-          questions={spendingQuestionsPart2}
-          onSubmit={handleSubmit}
-          title="Dòng tiền đi ra"
-          subtitle="Thời gian mua nhà có ảnh hưởng không"
-          defaultValues={formData}
-          onBackFromFirst={() => setStep("analysis")}
-        />
-      </div>
     );
   }
 
@@ -248,7 +235,7 @@ export default function Spending({
   }
 
   if (step === "result" && result && !isEditMode) {
-      return <ResultStep 
+      return <ResultStep
         plan={result.plan}
         title="Dòng tiền đi ra "
         message={result.message}
@@ -258,16 +245,89 @@ export default function Spending({
       />
   }
 
+  // Common layout for form steps
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950">
-        <MultiStepQuestionForm 
-            questions={spendingQuestionsPart2} 
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+      {step === "form1" && (
+        <MultiStepQuestionForm
+          key="spending1"
+          questions={spendingQuestionsPart1}
+          onSubmit={handleSubmitPart1}
+          title="Dòng tiền đi ra"
+          subtitle="Tiếp tục"
+          defaultValues={{ ...defaultValues, ...formData }}
+          onBackFromFirst={() => setStep("intro")}
+          onStepChange={handleStep1Change}
+          progressCurrent={progress.current}
+          progressTotal={totalSteps}
+          initialQuestionIndex={form1InitialIndex}
+        />
+      )}
+
+      {step === "analysis" && (
+        <div className="flex flex-col h-full flex-grow">
+          <div className="relative flex items-center h-10 mb-4">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setForm1InitialIndex(visibleQuestionsPart1.length - 1);
+                  setStep("form1");
+                  setProgress({
+                    current: visibleQuestionsPart1.length,
+                    total: totalSteps,
+                  });
+                }}
+              >
+                <ArrowLeftIcon className="h-12 w-12" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-grow flex flex-col items-center text-center pb-17 px-4">
+            <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
+                <h2 className="text-2xl font-bold mb-6 max-w-sm">Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến</h2>
+                <Image
+                    src="/onboarding/baby.png" // Placeholder image
+                    alt="Analysis"
+                    width={150}
+                    height={150}
+                    className="mb-6"
+                />
+                <p className="text-white/90 max-w-md">
+                    Hãy cân nhắc thật kỹ về thời điểm sinh em bé để đảm bảo bạn vững vàng nhất về tài chính cũng như kế hoạch mua nhà không bị thay đổi đột ngột ngoài dự kiến.
+                </p>
+                </div>
+                <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+                    <div className="max-w-5xl mx-auto p-4">
+                        <Button
+                        onClick={handleContinueFromAnalysis}
+                        className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+                        >
+                        Tiếp tục
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {step === "form2" && (
+            <MultiStepQuestionForm
+            key="spending2"
+            questions={spendingQuestionsPart2}
             onSubmit={handleSubmit}
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"
-            defaultValues={defaultValues}
-            onBackFromFirst={onBackFromFirst}
-        />
+            defaultValues={formData}
+            onBackFromFirst={() => {
+                setStep("analysis");
+                setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
+            }}
+            onStepChange={handleStep2Change}
+            progressCurrent={progress.current}
+            progressTotal={totalSteps}
+            />
+        )}
     </div>
   );
 }
