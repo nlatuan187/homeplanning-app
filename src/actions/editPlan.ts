@@ -38,11 +38,11 @@ export async function updateQuickCheckSection(planId: string, data: Partial<Onbo
     await db.plan.update({
       where: { id: planId },
       data: {
-        targetHousePriceN0: data.targetHousePriceN0,
+        targetHousePriceN0: data.targetHousePriceN0 ? data.targetHousePriceN0 * 1000 : 0,
         initialSavings: data.initialSavings,
         userMonthlyIncome: data.userMonthlyIncome,
         monthlyLivingExpenses: data.monthlyLivingExpenses,
-        yearsToPurchase: data.yearToPurchase ? data.yearToPurchase - new Date().getFullYear() : undefined,
+        yearsToPurchase: data.yearsToPurchase ? data.yearsToPurchase - new Date().getFullYear() : undefined,
       },
     });
 
@@ -101,7 +101,9 @@ export async function updateSpendingSection(planId: string, data: Partial<Onboar
       data: {
         monthlyNonHousingDebt: data.monthlyNonHousingDebt,
         currentAnnualInsurancePremium: data.currentAnnualInsurancePremium,
-        currentAnnualOtherExpenses: data.currentAnnualOtherExpenses,
+        hasNewChild: data.hasNewChild,
+        yearToHaveChild: data.yearToHaveChild,
+        monthlyChildExpenses: data.monthlyChildExpenses,
       },
     });
 

@@ -28,7 +28,7 @@ const quickCheckQuestionsPart1: Question[] = [
     key: "targetHousePriceN0",
     text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu?",
     type: "number",
-    unit: "triệu VNĐ",
+    unit: "tỷ VNĐ",
   },
   {
     key: "targetHouseType",

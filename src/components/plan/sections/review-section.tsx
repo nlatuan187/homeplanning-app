@@ -28,7 +28,7 @@ export default function ReviewSection({ formState }: ReviewSectionProps) {
             </div>
             <div className="flex justify-between">
               <dt className="font-medium text-slate-500">Giá trị căn nhà dự kiến:</dt>
-              <dd>{formState.targetHousePriceN0.toLocaleString()} triệu VNĐ</dd>
+              <dd>{(formState.targetHousePriceN0/ 1000).toLocaleString()} tỷ VNĐ</dd>
             </div>
             <div className="flex justify-between">
               <dt className="font-medium text-slate-500">Loại nhà:</dt>

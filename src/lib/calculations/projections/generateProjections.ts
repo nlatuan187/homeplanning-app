@@ -175,7 +175,16 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     const totalAnnualIncome = userAnnualIncome + coApplicantAnnualIncome + prev.otherIncome;
 
     const livingExpensesAnnual = prev.baseExpenses * (1 + plan.pctExpenseGrowth / 100);
-    const totalAnnualExpenses = livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12) + plan.currentAnnualInsurancePremium;
+
+    // Xử lý chi phí con cái cho các năm trong tương lai, bao gồm lạm phát chi phí
+    const projectionYear = currentYear + n;
+    let childExpensesAnnual = 0;
+    if (plan.hasNewChild && plan.yearToHaveChild && plan.monthlyChildExpenses && projectionYear >= plan.yearToHaveChild) {
+      const yearsSinceChildBorn = projectionYear - plan.yearToHaveChild;
+      childExpensesAnnual = (plan.monthlyChildExpenses * 12) * Math.pow(1 + plan.pctExpenseGrowth / 100, yearsSinceChildBorn);
+    }
+
+    const totalAnnualExpenses = livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12) + plan.currentAnnualInsurancePremium + childExpensesAnnual;
 
     let annualSavings = totalAnnualIncome - totalAnnualExpenses;
     
@@ -220,6 +229,10 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     const buffer = monthlySurplus - monthlyPayment;
     const isAffordable = buffer >= 0;
 
+    // Cập nhật lại Quỹ dự phòng mục tiêu để bao gồm các chi phí mới
+    const monthlyExpensesForEF = (totalAnnualExpenses / 12);
+    const targetEF = monthlyExpensesForEF * 6;
+
     projectionData.push({
       year: currentYear + n,
       n,
@@ -241,7 +254,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
       baseExpenses: livingExpensesAnnual,
       preInsuranceExpenses: livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12),
       insurancePremium: plan.currentAnnualInsurancePremium || 0,
-      targetEF: (livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12)) / 12 * 6,
+      targetEF: targetEF,
       efTopUp: 0,
       ltvRatio: housePriceProjected > 0 ? (bankLoanNeeded / housePriceProjected) * 100 : 0,
       pctHouseGrowth: plan.pctHouseGrowth,
