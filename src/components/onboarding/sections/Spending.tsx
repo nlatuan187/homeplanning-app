@@ -326,7 +326,8 @@ export default function Spending({
             onStepChange={handleStep2Change}
             progressCurrent={progress.current}
             progressTotal={totalSteps}
-            />
+            isFinalForm={true}
+        />
         )}
     </div>
   );

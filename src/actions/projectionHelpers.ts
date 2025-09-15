@@ -42,7 +42,7 @@ export async function buildPlanForProjection(planId: string): Promise<PlanWithDe
     loanInterestRate: plan.loanInterestRate || 11,
     loanTermYears: plan.loanTermYears || 25,
     paymentMethod: (plan.paymentMethod as any) || "BankLoan",
-    hasCoApplicant: plan.familySupport?.hasCoApplicant || false,
+    hasCoApplicant: plan.hasCoApplicant || false,
     coApplicantMonthlyIncome: plan.familySupport?.coApplicantMonthlyIncome || 0,
     monthlyOtherIncome: plan.familySupport?.monthlyOtherIncome || 0,
     hasFamilySupport: plan.familySupport?.hasFamilySupport || false,

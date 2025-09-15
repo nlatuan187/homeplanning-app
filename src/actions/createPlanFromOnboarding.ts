@@ -24,7 +24,7 @@ export async function createPlanFromOnboarding(
     !onboardingData ||
     onboardingData.targetHousePriceN0 === undefined ||
     onboardingData.monthlyLivingExpenses === undefined ||
-    !onboardingData.yearToPurchase
+    !onboardingData.yearsToPurchase
   ) {
     const errorMessage = "Invalid onboarding data: Required fields are missing.";
     console.error(errorMessage, onboardingData);
@@ -37,7 +37,7 @@ export async function createPlanFromOnboarding(
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
     // If user already has a plan, update its core fields from onboarding
-    const yearsToPurchase = onboardingData.yearToPurchase - new Date().getFullYear();
+    const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
     const updates = {
       planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
@@ -75,13 +75,15 @@ export async function createPlanFromOnboarding(
     // Keep initial lightweight check for UX; real projection will be used after create
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
-      onboardingData.yearToPurchase - new Date().getFullYear();
-
+      onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
+    if (!yearsToPurchase) {
+      return { success: false, error: "Invalid yearsToPurchase" };
+    }
     const planPayload: Omit<Prisma.PlanCreateInput, "user"> = {
       userEmail: userEmail,
       planName: "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
-      hasCoApplicant: onboardingData.hasCoApplicant || false,
+      hasCoApplicant: onboardingData.hasCoApplicant,
       targetHousePriceN0: onboardingData.targetHousePriceN0,
       targetHouseType: onboardingData.targetHouseType,
       targetLocation: onboardingData.targetLocation,
@@ -91,7 +93,7 @@ export async function createPlanFromOnboarding(
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
-      confirmedPurchaseYear: onboardingData.yearToPurchase,
+      confirmedPurchaseYear: onboardingData.yearsToPurchase,
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,
@@ -99,8 +101,6 @@ export async function createPlanFromOnboarding(
       loanInterestRate: 11.0,
       loanTermYears: 25,
       paymentMethod: "BankLoan",
-      hasNewChild: onboardingData.hasNewChild || false,
-      yearToHaveChild: onboardingData.yearToHaveChild || 0,
     };
 
     let newPlan = await db.plan.create({
@@ -157,8 +157,9 @@ export async function createPlanFromOnboarding(
     // --- STEP 2: IMPROVED ERROR LOGGING ---
     // This will print the *actual* Prisma error to your server's console (e.g., your terminal).
     console.error("!!! Critical error in createPlanFromOnboarding:", error);
+    const projectionResult = await calculateOnboardingProjection(onboardingData);
 
     // We still return a generic error to the client for security.
-    return { success: false, error: "Database error" };
+    return { success: false, error: "Database error", projectionResult: projectionResult };
   }
 }

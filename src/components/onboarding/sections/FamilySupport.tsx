@@ -326,6 +326,7 @@ export default function FamilySupport({
           onStepChange={handleStep2Change}
           progressCurrent={progress.current}
           progressTotal={totalSteps}
+          isFinalForm={true}
         />
       )}
     </div>

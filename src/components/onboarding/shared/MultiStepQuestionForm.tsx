@@ -37,6 +37,7 @@ interface MultiStepQuestionFormProps {
   progressCurrent?: number;
   progressTotal?: number;
   initialQuestionIndex?: number;
+  isFinalForm?: boolean;
 }
 
 export default function MultiStepQuestionForm({
@@ -52,6 +53,7 @@ export default function MultiStepQuestionForm({
   progressCurrent,
   progressTotal,
   initialQuestionIndex,
+  isFinalForm = false,
 }: MultiStepQuestionFormProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
@@ -246,7 +248,9 @@ export default function MultiStepQuestionForm({
             onClick={handleNext}
             className={cn(
               'w-full py-3.5 text-base rounded-sm mb-4',
-              isLastQuestion ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]' : 'text-slate-900 bg-white hover:bg-slate-200',
+              isLastQuestion && isFinalForm
+                ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]'
+                : 'text-slate-900 bg-white hover:bg-slate-200',
             )}
             disabled={
               currentValue === undefined || currentValue === null || currentValue === ''
@@ -255,7 +259,7 @@ export default function MultiStepQuestionForm({
             {isLastQuestion ? subtitle : 'Tiếp tục'}
           </Button>
         )}
-        {currentQuestion.type === 'options' && isLastQuestion && (
+        {currentQuestion.type === 'options' && isLastQuestion && isFinalForm && (
           <Button
             onClick={() => onSubmit?.(formData)}
             className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"

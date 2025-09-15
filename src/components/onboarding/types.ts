@@ -4,7 +4,7 @@
  */
 export interface OnboardingPlanState {
   // Section 1: Quick Check
-  yearToPurchase?: number;
+  yearsToPurchase?: number;
   targetHousePriceN0?: number;
   targetHouseType?: 'Chung cư' | 'Nhà mặt đất' | 'Khác';
   targetLocation?: string;

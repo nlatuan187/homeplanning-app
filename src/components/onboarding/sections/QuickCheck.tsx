@@ -8,14 +8,13 @@ import MultiStepQuestionForm, {
   Question,
 } from "../shared/MultiStepQuestionForm";
 import { ArrowLeftIcon, CheckCircle, XCircle } from "lucide-react";
-import ProgressBar from "../shared/ProgressBar";
 
 const currentYear = new Date().getFullYear();
 
 // Define the 7 questions for the Quick Check section
 const quickCheckQuestionsPart1: Question[] = [
   {
-    key: "yearToPurchase",
+    key: "yearsToPurchase",
     text: "Bạn dự định mua nhà vào thời điểm nào?",
     type: "options",
     options: [
@@ -454,6 +453,7 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
           onStepChange={handleStep2Change}
           progressCurrent={progress.current}
           progressTotal={totalSteps}
+          isFinalForm={true}
         />
       )}
     </div>

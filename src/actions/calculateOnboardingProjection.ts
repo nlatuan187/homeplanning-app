@@ -9,29 +9,30 @@ export async function calculateOnboardingProjection(
   previousResult?: ProjectionResult | null
 ): Promise<ProjectionResult> {
   const {
-    purchaseYear, propertyValue, initialSavings,
-    personalMonthlyIncome, personalMonthlyExpenses,
+    yearsToPurchase, targetHousePriceN0, initialSavings,
+    userMonthlyIncome, monthlyLivingExpenses,
     coApplicantMonthlyIncome, monthlyOtherIncome,
-    hasFamilySupport, familySupportType, familySupportGiftAmount, familySupportGiftTiming,
-    familySupportLoanAmount,
   } = data;
 
-  if (!purchaseYear || !propertyValue || initialSavings === undefined || personalMonthlyIncome === undefined || personalMonthlyExpenses === undefined) {
+  if (!yearsToPurchase || !targetHousePriceN0 || initialSavings === undefined || userMonthlyIncome === undefined || monthlyLivingExpenses === undefined) {
     return { success: false, error: "Invalid input" };
   }
 
   // Build a minimal plan for the engine
-  const yearsToPurchase = purchaseYear - new Date().getFullYear();
+  const yearToPurchase = yearsToPurchase ? yearsToPurchase - new Date().getFullYear() : undefined;
+  if (!yearToPurchase) {
+    return { success: false, error: "Invalid yearsToPurchase" };
+  }
   const planForEngine: Partial<PlanWithDetails> = {
     createdAt: new Date(),
-    yearsToPurchase,
-    targetHousePriceN0: propertyValue,
+    yearsToPurchase: yearToPurchase,
+    targetHousePriceN0: targetHousePriceN0,
     initialSavings: initialSavings || 0,
-    userMonthlyIncome: personalMonthlyIncome || 0,
+    userMonthlyIncome: userMonthlyIncome || 0,
     monthlyOtherIncome: monthlyOtherIncome || 0,
     hasCoApplicant: !!(coApplicantMonthlyIncome && coApplicantMonthlyIncome > 0),
     coApplicantMonthlyIncome: coApplicantMonthlyIncome || 0,
-    monthlyLivingExpenses: personalMonthlyExpenses || 0,
+    monthlyLivingExpenses: monthlyLivingExpenses || 0,
     monthlyNonHousingDebt: 0,
     currentAnnualInsurancePremium: 0,
     pctSalaryGrowth: 7,
@@ -41,27 +42,19 @@ export async function calculateOnboardingProjection(
     loanInterestRate: 11,
     loanTermYears: 25,
     paymentMethod: "fixed",
-    familySupport: hasFamilySupport ? {
-      familySupportType: familySupportType || null,
-      familySupportAmount: (familySupportType === 'GIFT' ? familySupportGiftAmount : familySupportLoanAmount) || 0,
-      familyGiftTiming: familySupportGiftTiming || null,
-      familyLoanRepaymentType: null,
-      familyLoanInterestRate: null,
-      familyLoanTermYears: null,
-    } : null,
   } as Partial<PlanWithDetails>;
 
   const projections = generateProjections(planForEngine);
-  const purchaseProjection = projections.find(p => p.year === purchaseYear) || projections[projections.length - 1];
+  const purchaseProjection = projections.find(p => p.year === yearsToPurchase) || projections[projections.length - 1];
   const earliest = projections.find(p => p.isAffordable) || projections[0];
   const earliestYear = earliest.year;
-  const nextAffordable = projections.find(p => p.year > purchaseYear && p.isAffordable) || null;
+  const nextAffordable = projections.find(p => p.year > yearsToPurchase && p.isAffordable) || null;
 
   return {
     success: true,
     isAffordable: purchaseProjection.isAffordable,
     earliestPurchaseYear: earliestYear,
-    selectedPurchaseYear: purchaseYear,
+    selectedPurchaseYear: yearsToPurchase,
     purchaseProjectionYear: purchaseProjection.year,
     nextAffordableYear: nextAffordable?.year,
   };
