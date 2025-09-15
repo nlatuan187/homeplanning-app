@@ -256,7 +256,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
                       </div>
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 mr-2 text-slate-400" />
-                        <span>Giá trị căn nhà: {plan.targetHousePriceN0.toLocaleString()} tỷ VNĐ</span>
+                        <span>Giá trị căn nhà: {(plan.targetHousePriceN0/ 1000).toLocaleString()} tỷ VNĐ</span>
                       </div>
                     </CardContent>
                     <CardFooter className="gap-4">

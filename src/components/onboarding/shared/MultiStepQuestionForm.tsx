@@ -64,6 +64,15 @@ export default function MultiStepQuestionForm({
     useState<Partial<OnboardingPlanState>>(defaultValues);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
 
+  const formatNumber = (value: number | undefined | null) => {
+    if (value === undefined || value === null) return "";
+    return new Intl.NumberFormat("en-US").format(value);
+  };
+
+  const parseNumber = (value: string) => {
+    return parseInt(value.replace(/,/g, ""), 10) || 0;
+  };
+
   const visibleQuestions = useMemo(() => {
     return questions.filter((q) => !q.condition || q.condition(formData));
   }, [questions, formData]);
@@ -104,13 +113,12 @@ export default function MultiStepQuestionForm({
       setTouchedFields((prev) => ({ ...prev, [currentQuestion.key]: true }));
     }
 
-    setTimeout(() => {
-      if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+    // Only auto-advance if it's NOT the last question
+    if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+      setTimeout(() => {
         setCurrentQuestionIndex((prev) => prev + 1);
-      } else {
-        onSubmit?.(newFormData);
-      }
-    }, 150);
+      }, 150);
+    }
   };
 
   const goToPrev = () => {
@@ -148,11 +156,12 @@ export default function MultiStepQuestionForm({
       return (
         <div className="relative w-full">
           <Input
-            type="number"
-            value={currentValue as string || ''}
-            onChange={(e) => handleInputChange(parseInt(e.target.value, 10) || 0)}
+            type="text"
+            inputMode="numeric"
+            value={formatNumber(currentValue as number)}
+            onChange={(e) => handleInputChange(parseNumber(e.target.value))}
             className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
-            placeholder={placeholderText}
+            placeholder={formatNumber(defaultValue as number)}
           />
           {currentQuestion.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{currentQuestion.unit}</span>}
         </div>
@@ -259,13 +268,18 @@ export default function MultiStepQuestionForm({
             {isLastQuestion ? subtitle : 'Tiếp tục'}
           </Button>
         )}
-        {currentQuestion.type === 'options' && isLastQuestion && isFinalForm && (
+        {currentQuestion.type === "options" && isLastQuestion && (
           <Button
             onClick={() => onSubmit?.(formData)}
-            className="w-full bg-cyan-500 text-white hover:bg-[#008C96] mb-4 py-3.5 text-base rounded-sm"
-            disabled={Object.keys(formData).length < visibleQuestions.length}
+            className={cn(
+              "w-full mb-4 py-3.5 text-base rounded-sm",
+              isFinalForm
+                ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                : "bg-white text-slate-900 hover:bg-slate-200",
+            )}
+            disabled={currentValue === undefined}
           >
-            {subtitle}
+            {isFinalForm ? subtitle : "Tiếp tục"}
           </Button>
         )}
       </div>
