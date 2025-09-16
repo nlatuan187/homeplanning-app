@@ -21,7 +21,7 @@ interface FamilySupportProps {
   initialData: OnboardingPlanState;
   familySupport: OnboardingPlanState;
   planId: string;
-  onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  onSubmit: (data: Partial<OnboardingPlanState>) => void;
   isEditMode?: boolean;
   onBackFromFirst?: () => void;
 }
@@ -41,7 +41,7 @@ export default function FamilySupport({
   initialData,
   familySupport,
   planId,
-  onCompleted,
+  onSubmit,
   isEditMode = false,
   onBackFromFirst,
 }: FamilySupportProps) {
@@ -67,7 +67,7 @@ export default function FamilySupport({
     familySupportLoanTerm: (familySupport?.familySupportLoanTerm as number) ?? 0,
   }), [familySupport]);
 
-  console.log("formData", familySupport);
+  console.log("formData", planId);
 
   const familySupportQuestionsPart1: Question[] = useMemo(() => [
       {
@@ -150,7 +150,7 @@ export default function FamilySupport({
     const finalData = { ...formData, ...data };
 
     if (isEditMode) {
-      onCompleted(finalData);
+      onSubmit(data);
       return;
     }
 

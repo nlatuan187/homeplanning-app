@@ -28,7 +28,6 @@ export interface OnboardingPlanState {
   // Section 3: Spending
   monthlyNonHousingDebt?: number;
   currentAnnualInsurancePremium?: number;
-  currentAnnualOtherExpenses?: number;
   hasNewChild?: boolean;
   yearToHaveChild?: number;
   monthlyChildExpenses?: number;

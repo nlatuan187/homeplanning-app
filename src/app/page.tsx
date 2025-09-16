@@ -23,7 +23,7 @@ export default function Home() {
   }
 
   if (!isSignedIn) {
-    return <OnboardingFlow />;
+    return <OnboardingFlow planId={""} />;
   }
 
   // This part should ideally not be reached if redirection works correctly in useEffect

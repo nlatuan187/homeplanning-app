@@ -15,7 +15,10 @@ export default async function EditPlanPage({ params }: { params: { planId: strin
   }
 
   const plan = await db.plan.findUnique({
-    where: { id: params.planId, userId: user.id },
+    where: { id: params.planId },
+    include: {
+      familySupport: true,
+    },
   });
 
   // Security check: ensure the user owns this plan
