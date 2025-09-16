@@ -39,7 +39,7 @@ export default function Spending({
 }: SpendingProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
-  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(plan);
   const [progress, setProgress] = useState({ current: 0, total: 1 });
   const [form1InitialIndex, setForm1InitialIndex] = useState(0);
   const router = useRouter();
@@ -51,8 +51,10 @@ export default function Spending({
     currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
     hasNewChild: plan.hasNewChild,
     yearToHaveChild: plan.yearToHaveChild,
-    monthlyChildExpenses: plan.monthlyChildExpenses,
+    monthlyChildExpenses: plan.monthlyChildExpenses ? (plan.monthlyChildExpenses) : (plan.monthlyLivingExpenses ?? 0) * 0.25,
   };
+
+  console.log("defaultValues", defaultValues);
 
   const spendingQuestionsPart1: Question[] = useMemo(() => [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
@@ -90,7 +92,7 @@ export default function Spending({
       unit: "triệu VNĐ",
       condition: (ans: any) => ans.hasNewChild === true
     }
-  ], [currentYear, plan.hasFamilySupport]);
+  ], [currentYear, plan.hasCoApplicant]);
 
   const visibleQuestionsPart1 = useMemo(() => {
     return spendingQuestionsPart1.filter((q) => !q.condition || q.condition(formData));
@@ -115,6 +117,12 @@ export default function Spending({
     setProgress({ current: baseProgress + current + 1, total: totalSteps });
   }, [totalSteps, visibleQuestionsPart1.length]);
 
+  const handleForm2DataChange = useCallback(({ formData: newData }: { formData: Partial<OnboardingPlanState> }) => {
+    setFormData(prev => ({...prev, ...newData}));
+  }, []);
+
+  console.log("formData", { ...defaultValues, ...formData });
+
   const handleContinue = () => {
     updateOnboardingSectionProgress(planId, "spending", OnboardingSectionState.COMPLETED);
     updateOnboardingSectionProgress(planId, "assumption", OnboardingSectionState.IN_PROGRESS);
@@ -125,22 +133,16 @@ export default function Spending({
     const newFormData = { ...formData, ...data };
     setFormData(newFormData);
 
-    // Check if there are any visible questions for part 2 with the new data
-    const combinedDataForPart2 = { ...defaultValues, ...newFormData };
-    const futureVisibleQuestionsPart2 = spendingQuestionsPart2.filter(
-      (q) => !q.condition || q.condition(combinedDataForPart2),
-    );
-
-    if (futureVisibleQuestionsPart2.length === 0) {
-      // If no questions in part 2, submit immediately
-      handleSubmit(newFormData);
-    } else {
-      // Otherwise, proceed to analysis step
+    // Logic mới: Chỉ hiển thị analysis và form2 nếu có người đồng hành
+    if (plan.hasCoApplicant) {
       setStep("analysis");
       setProgress({
         current: visibleQuestionsPart1.length + 1,
         total: totalSteps,
       });
+    } else {
+      // Nếu không có người đồng hành, gửi luôn
+      handleSubmit(newFormData);
     }
   };
 
@@ -158,7 +160,6 @@ export default function Spending({
       return; // Dừng hàm tại đây
     }
 
-    // --- Logic của luồng onboarding gốc giữ nguyên ---
     setStep("loading");
     const fullData = { ...initialData, ...finalData };
 
@@ -188,8 +189,8 @@ export default function Spending({
           className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/onboarding/section3bg.png')" }}
         />
-        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10">
-          <div className="flex-grow flex flex-col items-center justify-center text-center">
+        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
+          <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
             <div className="text-white/80 font-semibold mb-8">
                 Mục 2/3
             </div>
@@ -203,7 +204,7 @@ export default function Spending({
             <h1 className="text-4xl max-md:text-3xl font-bold text-white mb-3">
                 Dòng tiền đi ra
             </h1>
-            <p className="text-lg text-white/90 max-w-sm">
+            <p className="text-base text-white/90 max-w-sm">
                 Ngồi vững ghế nhé, có thể năm mua nhà sớm nhất của bạn sẽ bị đẩy lùi đi đó!            
             </p>
           </div>
@@ -217,7 +218,7 @@ export default function Spending({
                 OnboardingSectionState.IN_PROGRESS,
               );
             }}
-            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+            className="w-full bg-white text-slate-900 hover:bg-slate-200 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
             Tôi sẵn sàng rồi
           </Button>
@@ -255,7 +256,7 @@ export default function Spending({
           onSubmit={handleSubmitPart1}
           title="Dòng tiền đi ra"
           subtitle="Tiếp tục"
-          defaultValues={{ ...defaultValues, ...formData }}
+          defaultValues={{ ...formData, ...defaultValues }}
           onBackFromFirst={() => setStep("intro")}
           onStepChange={handleStep1Change}
           progressCurrent={progress.current}
@@ -318,12 +319,13 @@ export default function Spending({
             onSubmit={handleSubmit}
             title="Dòng tiền đi ra"
             subtitle="Thời gian mua nhà có ảnh hưởng không"
-            defaultValues={formData}
+            defaultValues={{ ...formData, ...defaultValues }}
             onBackFromFirst={() => {
                 setStep("analysis");
                 setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
             }}
             onStepChange={handleStep2Change}
+            onDataChange={handleForm2DataChange}
             progressCurrent={progress.current}
             progressTotal={totalSteps}
             isFinalForm={true}

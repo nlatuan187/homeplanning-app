@@ -34,7 +34,6 @@ export async function updateAndRecalculateFamilySupport(
     
     // TẠO DỮ LIỆU HIỆN TẠI ĐỂ SO SÁNH
     const currentData = {
-      hasCoApplicant: familySupport?.hasCoApplicant,
       coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome,
       monthlyOtherIncome: familySupport?.monthlyOtherIncome,
       hasFamilySupport: familySupport?.hasFamilySupport ?? false,
@@ -62,7 +61,6 @@ export async function updateAndRecalculateFamilySupport(
             create: { planId, ...formData },
         })
       ]);
-      console.log("change: true");
       result = await runProjectionWithEngine(planId);
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪"

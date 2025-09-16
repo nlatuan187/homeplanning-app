@@ -264,7 +264,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
                         <Link href={detailLink}>Xem chi tiết</Link>
                       </Button>
                       <Button asChild variant="outline" className="flex-1 border-slate-600 hover:bg-slate-700 text-slate-200">
-                        <Link href={`/plan/${plan.id}/edit`}>Chỉnh sửa</Link>
+                        <Link href={`/plan/${plan.id}/edit`}>Chỉnh sửa kế hoạch</Link>
                       </Button>
                     </CardFooter>
                   </Card>

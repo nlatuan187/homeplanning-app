@@ -45,7 +45,7 @@ function SliderWithDebounce({ item }: { item: SliderItem }) {
   }, [debouncedValue]);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center">
       <input
         type="range"
         min={0}

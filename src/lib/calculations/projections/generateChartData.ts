@@ -7,7 +7,7 @@ export interface ChartMilestone {
 }
 
 // Kiểu dữ liệu cho các key có thể vẽ biểu đồ, khớp với chartDataKey trong Assumption.tsx
-type DataKey = 'pctSalaryGrowth' | 'pctHouseGrowth' | 'pctInvestmentReturn';
+type DataKey = 'pctSalaryGrowth' | 'pctHouseGrowth' | 'initialSavings';
 
 /**
  * Tạo ra một chuỗi dữ liệu đơn giản để vẽ biểu đồ minh họa sự tăng trưởng của một biến số duy nhất,
@@ -43,10 +43,10 @@ export function generateAccumulationMilestones(
       initialValue = plan.targetHousePriceN0 || 0;
       growthRate = plan.pctHouseGrowth || 0;
       break;
-    case 'pctInvestmentReturn':
+    case 'initialSavings':
       // Minh họa sự tăng trưởng của khoản tiết kiệm ban đầu
       initialValue = plan.initialSavings || 0;
-      growthRate = plan.pctInvestmentReturn || 0;
+      growthRate = plan.initialSavings || 0;
       break;
   }
 

@@ -61,7 +61,7 @@ model Plan {
   pctInvestmentReturn           Float   @default(9.0)
   hasNewChild                   Boolean @default(false)
   yearToHaveChild               Int?
-  monthlyChildExpenses          Float   @default(0)
+  monthlyChildExpenses          Float?   
 
   // Page 4: Loan & Support Inputs
   loanInterestRate              Float?   @default(11.0)
@@ -117,7 +117,7 @@ model PlanFamilySupport {
   plan                      Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
   monthlyOtherIncome        Float                    @default(0)
   coApplicantMonthlyIncome  Float?
-  hasFamilySupport          Boolean                  @default(false)
+  hasFamilySupport          Boolean?                 
   familySupportType         FamilySupportType?
   familySupportAmount       Float?
   familyGiftTiming          FamilyGiftTiming?

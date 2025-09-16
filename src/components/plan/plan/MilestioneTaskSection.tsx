@@ -50,7 +50,7 @@ export default function MilestoneTaskSection({
   const allTasks = currentMilestoneInGroup?.items || [];
 
   const tasksWithStatus = (isMilestoneCompleted || currentMilestoneStatus === "done")
-    ? allTasks.map(task => ({ ...task, status: "auto-completed" as const }))
+    ? allTasks.map((task: any) => ({ ...task, status: "auto-completed" as const }))
     : allTasks;
   
   const todoListKey = `group-${currentMilestone?.id}-step-${currentStep}`;
