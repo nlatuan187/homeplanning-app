@@ -26,7 +26,7 @@ export default function ResultsClient({
               <ArrowLeftIcon className="h-6 w-6" />
             </Button>
           </div>
-          <h2 className="font-semibold text-white">Quick check</h2>
+          <h2 className="font-semibold text-white">Kiểm tra</h2>
         </header>
 
         <div className="rounded-lg text-center text-white pt-10">
@@ -39,7 +39,7 @@ export default function ResultsClient({
               <div className="rounded-lg p-4 text-center font-semibold text-2xl text-green-500">
                 hoàn toàn khả thi
               </div>
-              <div className="my-6 md:my-8">
+              <div className="my-6 md:my-8 pt-3">
                 <Image
                   src="/onboarding/result1.png"
                   alt="Decorative"
@@ -48,7 +48,7 @@ export default function ResultsClient({
                   className="mx-auto"
                 />
               </div>
-              <div className="rounded-lg py-4 px-7 text-center">
+              <div className="rounded-lg px-7 text-center">
                 Chúng tôi có thể giúp bạn tìm ra cách mua được nhà sớm hơn, dễ
                 dàng hơn.
                 <br />
@@ -62,10 +62,10 @@ export default function ResultsClient({
               </div>
               {plan.confirmedPurchaseYear && firstYearProjection && firstYearProjection.year - plan.confirmedPurchaseYear === 1 ? (
                 <>
-                  <div className="rounded-lg p-4 text-center">
+                  <div className="rounded-lg text-center">
                     nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}
                   </div>
-                  <div className="my-6 md:my-8 items-center justify-center pt-10">
+                  <div className="my-6 md:my-8 items-center justify-center pt-3">
                     <Image
                     src="/onboarding/result2.png"
                     alt="Decorative"
@@ -76,7 +76,7 @@ export default function ResultsClient({
                   </div>
                 </>
               ) : (
-              <div className="my-6 md:my-8 items-center justify-center pt-10">
+              <div className="my-6 md:my-8 items-center justify-center pt-3">
                 <Image
                   src="/onboarding/result3.png"
                   alt="Decorative"
@@ -86,7 +86,7 @@ export default function ResultsClient({
                 />
               </div>
             )}
-              <div className="rounded-lg py-4 px-7 text-center">
+              <div className="rounded-lg px-7 text-center">
                 Chúng tôi có thể giúp bạn tìm ra cách mua sớm nhất có thể.
                 <br />
                 Muốn biết chứ?

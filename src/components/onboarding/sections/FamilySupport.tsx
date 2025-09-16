@@ -47,10 +47,12 @@ export default function FamilySupport({
 }: FamilySupportProps) {
   const [step, setStep] = useState<Step>("intro");
   const [result, setResult] = useState<RecalculationResult | null>(null);
-  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>({});
+  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(initialData);
   const [progress, setProgress] = useState({ current: 0, total: 1 });
   const [form1InitialIndex, setForm1InitialIndex] = useState(0);
   const router = useRouter();
+
+  console.log("initialData", familySupport);
 
   const defaultValues: Partial<OnboardingPlanState> = useMemo(() => ({
     coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome ?? 0,
@@ -65,6 +67,8 @@ export default function FamilySupport({
     familySupportLoanTerm: (familySupport?.familySupportLoanTerm as number) ?? 0,
   }), [familySupport]);
 
+  console.log("formData", familySupport);
+
   const familySupportQuestionsPart1: Question[] = useMemo(() => [
       {
         key: 'monthlyOtherIncome',
@@ -76,7 +80,7 @@ export default function FamilySupport({
       },
   ], []);
 
-  const familySupportQuestionsPart2: Question[] = useMemo(() => [
+    const familySupportQuestionsPart2: Question[] = useMemo(() => [
       { key: 'hasFamilySupport', text: 'Bạn có nhận được hỗ trợ tài chính từ gia đình (bố mẹ, họ hàng,...) không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
       {
         key: 'familySupportType',
@@ -127,6 +131,10 @@ export default function FamilySupport({
     setProgress({ current: baseProgress + current + 1, total: totalSteps });
   }, [totalSteps, visibleQuestionsPart1.length]);
 
+  const handleForm2DataChange = useCallback(({ formData: newData }: { formData: Partial<OnboardingPlanState> }) => {
+    setFormData(prev => ({...prev, ...newData}));
+  }, []);
+
   const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
     const newFormData = { ...formData, ...data };
     setFormData(newFormData);
@@ -147,18 +155,17 @@ export default function FamilySupport({
     }
 
     setStep("loading");
-    const fullData = { ...initialData, ...finalData };
 
     const familySupportPayload = {
-      coApplicantMonthlyIncome: (fullData.coApplicantMonthlyIncome || 0),
-      monthlyOtherIncome: (fullData.monthlyOtherIncome || 0),
-      hasFamilySupport: (fullData.hasFamilySupport || false),
-      familySupportType: fullData.familySupportType,
-      familySupportGiftTiming: fullData.familySupportGiftTiming,
-      familySupportAmount: (fullData.familySupportLoanAmount || fullData.familySupportGiftAmount),
-      familyLoanInterestRate: fullData.familySupportLoanInterest,
-      familyLoanRepaymentType: fullData.familySupportLoanRepayment,
-      familyLoanTermYears: fullData.familySupportLoanTerm,
+      coApplicantMonthlyIncome: (finalData.coApplicantMonthlyIncome || 0),
+      monthlyOtherIncome: (finalData.monthlyOtherIncome || 0),
+      hasFamilySupport: (finalData.hasFamilySupport || false),
+      familySupportType: finalData.familySupportType,
+      familyGiftTiming: finalData.familySupportGiftTiming,
+      familySupportAmount: (finalData.familySupportLoanAmount || finalData.familySupportGiftAmount),
+      familyLoanInterestRate: finalData.familySupportLoanInterest,
+      familyLoanRepaymentType: finalData.familySupportLoanRepayment,
+      familyLoanTermYears: finalData.familySupportLoanTerm,
     };
 
     const result = await updateAndRecalculateFamilySupport(planId, familySupportPayload);
@@ -184,9 +191,9 @@ export default function FamilySupport({
           className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/onboarding/section2bg.png')" }}
         />
-        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10">
-          <div className="flex-grow flex flex-col items-center justify-center text-center">
-            <div className="text-white/80 font-semibold mb-8">
+        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col px-6 pt-30 z-10">
+          <div className="flex-grow flex flex-col items-center text-center">
+            <div className="text-white/80 font-semibold text-lg mb-8">
                 Mục 1/3
             </div>
             <Image
@@ -199,11 +206,11 @@ export default function FamilySupport({
             <h1 className="text-4xl max-md:text-3xl font-bold text-white mb-3">
               Nguồn lực hỗ trợ
             </h1>
-            <p className="text-lg text-white/90 max-w-sm">
+            <p className="text-base text-white/90 max-w-sm">
               Thật tuyệt vời nếu bạn có người đồng hành hoặc sự hỗ trợ tài chính. Hãy cùng xem những nguồn lực này có giúp bạn mua nhà sớm hơn không nhé!
             </p>
           </div>
-          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 z-10">
+          <div className="fixed bottom-0 left-0 p-4 right-0 w-full max-w-5xl mx-auto z-10">
             <Button
               onClick={() => {
                 setForm1InitialIndex(0);
@@ -214,7 +221,7 @@ export default function FamilySupport({
                   OnboardingSectionState.IN_PROGRESS,
                 );
               }}
-              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+              className="w-full bg-white text-slate-900 hover:bg-slate-200 px-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
             >
               Đi tìm nguồn lực hỗ trợ
             </Button>
@@ -324,6 +331,7 @@ export default function FamilySupport({
             });
           }}
           onStepChange={handleStep2Change}
+          onDataChange={handleForm2DataChange}
           progressCurrent={progress.current}
           progressTotal={totalSteps}
           isFinalForm={true}

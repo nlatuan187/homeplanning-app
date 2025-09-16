@@ -38,6 +38,7 @@ interface MultiStepQuestionFormProps {
   progressTotal?: number;
   initialQuestionIndex?: number;
   isFinalForm?: boolean;
+  autoSubmitOnLastOption?: boolean;
 }
 
 export default function MultiStepQuestionForm({
@@ -54,6 +55,7 @@ export default function MultiStepQuestionForm({
   progressTotal,
   initialQuestionIndex,
   isFinalForm = false,
+  autoSubmitOnLastOption = false,
 }: MultiStepQuestionFormProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
@@ -63,6 +65,12 @@ export default function MultiStepQuestionForm({
   const [formData, setFormData] =
     useState<Partial<OnboardingPlanState>>(defaultValues);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
+
+  // Đồng bộ hóa state của component cha một cách an toàn
+  // Effect này sẽ chạy sau khi component con đã render xong
+  useEffect(() => {
+    onDataChange?.({ formData, touchedFields });
+  }, [formData, touchedFields, onDataChange]);
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return "";
@@ -98,14 +106,6 @@ export default function MultiStepQuestionForm({
     }
   };
 
-  const goToNext = () => {
-    if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    } else {
-      onSubmit?.(formData);
-    }
-  };
-
   const handleOptionClick = (value: any) => {
     const newFormData = { ...formData, [currentQuestion.key]: value };
     setFormData(newFormData);
@@ -113,17 +113,26 @@ export default function MultiStepQuestionForm({
       setTouchedFields((prev) => ({ ...prev, [currentQuestion.key]: true }));
     }
 
-    // Only auto-advance if it's NOT the last question
-    if (currentQuestionIndex < visibleQuestionsRef.current.length - 1) {
+    // Re-calculate the list of visible questions based on the new data
+    const newVisibleQuestions = questions.filter(
+      (q) => !q.condition || q.condition(newFormData),
+    );
+    const newCurrentQuestionIndex = newVisibleQuestions.findIndex(
+      (q) => q.key === currentQuestion.key,
+    );
+
+    // Check if the current question is still not the last one in the NEW list
+    if (
+      newCurrentQuestionIndex !== -1 &&
+      newCurrentQuestionIndex < newVisibleQuestions.length - 1
+    ) {
       setTimeout(() => {
         setCurrentQuestionIndex((prev) => prev + 1);
       }, 150);
-    }
-  };
-
-  const goToPrev = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
+    } else if (autoSubmitOnLastOption) {
+      setTimeout(() => {
+        onSubmit?.(newFormData);
+      }, 150);
     }
   };
 
@@ -151,7 +160,6 @@ export default function MultiStepQuestionForm({
     if (currentQuestion.type === 'number') {
       // Lấy giá trị mặc định cho câu hỏi hiện tại
       const defaultValue = defaultValues[currentQuestion.key];
-      const placeholderText = String(defaultValue ?? 0);
 
       return (
         <div className="relative w-full">
@@ -161,7 +169,11 @@ export default function MultiStepQuestionForm({
             value={formatNumber(currentValue as number)}
             onChange={(e) => handleInputChange(parseNumber(e.target.value))}
             className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
-            placeholder={formatNumber(defaultValue as number)}
+            placeholder={
+              defaultValue === undefined || defaultValue === null
+                ? "Nhập câu trả lời...."
+                : formatNumber(defaultValue as number)
+            }
           />
           {currentQuestion.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{currentQuestion.unit}</span>}
         </div>
@@ -197,7 +209,7 @@ export default function MultiStepQuestionForm({
       {/* Header Section */}
       <div>
         {/* Navigation: Uses absolute positioning for perfect centering */}
-        <div className="relative flex items-center h-10 mb-4 mx-4">
+        <div className="relative flex items-center h-10 mb-4 mx-2">
           <div className="absolute left-0 top-1/2 -translate-y-1/2">
             <Button
               variant="ghost"
@@ -234,14 +246,14 @@ export default function MultiStepQuestionForm({
 
       {
         currentQuestion.description && (
-          <div className="text-sm text-gray-500 max-md:text-left text-center mb-4 px-4">
+          <div className="text-sm text-gray-500 max-md:text-left text-center mt-2 px-4">
             {currentQuestion.description}
           </div>
         )
       }
 
       {/* Question Content */}
-      <div className="flex-grow flex flex-col items-center text-center px-4">
+      <div className="flex-grow flex flex-col pt-5 items-center text-center px-4">
         <h2 className="text-2xl font-semibold text-white mb-12 max-w-5xl">
           {typeof currentQuestion.text === 'function'
             ? currentQuestion.text(formData)
@@ -268,10 +280,12 @@ export default function MultiStepQuestionForm({
             {isLastQuestion ? subtitle : 'Tiếp tục'}
           </Button>
         )}
-        {currentQuestion.type === "options" && isLastQuestion && (
-          <Button
-            onClick={() => onSubmit?.(formData)}
-            className={cn(
+        {currentQuestion.type === "options" &&
+          isLastQuestion &&
+          !autoSubmitOnLastOption && (
+            <Button
+              onClick={() => onSubmit?.(formData)}
+              className={cn(
               "w-full mb-4 py-3.5 text-base rounded-sm",
               isFinalForm
                 ? "bg-cyan-500 text-white hover:bg-[#008C96]"

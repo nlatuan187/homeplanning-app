@@ -30,6 +30,7 @@ export default function PendingPlanHandler() {
         const pendingPlanData = JSON.parse(pendingPlanJSON);
         const result = await createPlanFromOnboarding(pendingPlanData);
         console.log("result", result);
+        localStorage.removeItem(PENDING_PLAN_KEY);
         if (result.success && result.planId) {
           setMessage("Tạo kế hoạch thành công! Đang chuyển hướng...");
           // Redirect to the new results page
@@ -43,10 +44,10 @@ export default function PendingPlanHandler() {
           router.push("/dashboard");
         }
 
+
       } catch (error) {
         // Catch any other errors, clear storage, and redirect
         console.error("Error processing pending plan:", error);
-        localStorage.removeItem(PENDING_PLAN_KEY);
         router.push("/dashboard");
       }
     };

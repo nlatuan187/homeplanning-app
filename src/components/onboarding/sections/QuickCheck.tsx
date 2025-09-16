@@ -66,7 +66,7 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "initialSavings",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "CẢ HAI BẠN đã tích lũy được bao nhiêu tiền để mua nhà rồi?"
+        ? "Các bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?"
         : "Bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?",
     type: "number",
     unit: "triệu VNĐ",
@@ -75,8 +75,8 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "userMonthlyIncome",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "TỔNG thu nhập hàng tháng của CẢ HAI BẠN là bao nhiêu?"
-        : "Lương hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
+        ? "TỔNG thu nhập hàng tháng của các bạn là bao nhiêu?"
+        : "Lương hàng tháng của bạn là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
@@ -84,8 +84,8 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "monthlyLivingExpenses",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "TỔNG chi phí hàng tháng của CẢ HAI BẠN là bao nhiêu?"
-        : "Chi phí hàng tháng của CÁ NHÂN BẠN là bao nhiêu?",
+        ? "TỔNG chi phí hàng tháng của các bạn là bao nhiêu?"
+        : "Chi phí hàng tháng của bạn là bao nhiêu?",
     type: "number",
     unit: "triệu VNĐ",
   },
@@ -167,11 +167,23 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2">(
     "intro",
   );
-  const [formData, setFormData] = useState<Partial<OnboardingPlanState>>(initialData);
+
+  const processedInitialData = useMemo(() => {
+    if (initialData.targetHousePriceN0) {
+      return {
+        ...initialData,
+        targetHousePriceN0: initialData.targetHousePriceN0 / 1000,
+      };
+    }
+    return initialData;
+  }, [initialData]);
+
+  const [formData, setFormData] =
+    useState<Partial<OnboardingPlanState>>(processedInitialData);
   const [progress, setProgress] = useState({ current: 0, total: 1 });
   const [form1InitialIndex, setForm1InitialIndex] = useState(0);
 
-  const defaultValues = useMemo(() => initialData, [initialData]);
+  const defaultValues = useMemo(() => processedInitialData, [processedInitialData]);
 
   const questions1 = useMemo(() => quickCheckQuestionsPart1, []);
   const questions2 = useMemo(() => quickCheckQuestionsPart2, []);
@@ -346,6 +358,7 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
           progressCurrent={progress.current}
           progressTotal={totalSteps}
           initialQuestionIndex={form1InitialIndex}
+          autoSubmitOnLastOption={true}
         />
       )}
 
@@ -361,7 +374,7 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
           return (
             <div className="flex flex-col h-full flex-grow">
               <div>
-                <div className="relative flex items-center h-10 mb-4 mx-4">
+                <div className="relative flex items-center h-10 mb-4 mx-2">
                   <div className="absolute left-0 top-1/2 -translate-y-1/2">
                     <Button
                       variant="ghost"
@@ -385,7 +398,7 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
                   </div>
                 </div>
               </div>
-              <div className="relative flex-grow flex flex-col items-center text-center pb-20">
+              <div className="relative flex-grow flex flex-col items-center text-center px-4 overflow-y-auto pb-17">
                 <p className="text-lg mb-2">
                   Bạn muốn mua {targetHouseType} tại {targetLocation}
                 </p>
@@ -409,7 +422,7 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
                 </div>
               </div>
               <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
-                <div className="max-w-5xl mx-auto p-2">
+                <div className="max-w-5xl mx-auto p-4">
                   <Button
                     onClick={handleContinueFromAnalysis}
                     className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"

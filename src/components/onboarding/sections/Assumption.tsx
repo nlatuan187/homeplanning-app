@@ -13,6 +13,7 @@ import { useUser } from "@clerk/nextjs";
 import { OnboardingSectionState, Plan } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+import { cn } from "@/lib/utils";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -26,8 +27,12 @@ const assumptionData = [
     name: "Tiền lương",
     title: "Tốc độ tăng lương",
     label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu?",
-    subExplanation: "Tại sao cần tăng lương ít nhất 7%/năm?",
-    explanation: "Tiền lương có thể coi là đòn bẩy lớn nhất, và để nhanh chóng mua được nhà, bạn sẽ cần nỗ lực tăng lương. Mức tăng lương trung bình ở Việt Nam là 7%.",
+    explanations: [
+      {
+        sub: "Tại sao cần tăng lương ít nhất 7%/năm?",
+        main: "Tiền lương có thể coi là đòn bẩy lớn nhất, và để nhanh chóng mua được nhà, bạn sẽ cần nỗ lực tăng lương. Mức tăng lương trung bình ở Việt Nam là 7%.",
+      },
+    ],
     min: 0,
     max: 20,
     step: 1,
@@ -38,27 +43,40 @@ const assumptionData = [
     chartDataKey: "pctHouseGrowth" as const,
     name: "Giá nhà",
     title: "Tốc độ tăng giá nhà",
-    label: "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
-    subExplanation: "Tại sao giá nhà lại tăng 10%/năm?",
-    explanation: "Nhu cầu nhà ở cao, tốc độ đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hằng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
+    label:
+      "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
+    explanations: [
+      {
+        sub: "Tại sao giá nhà lại tăng 10%/năm?",
+        main: "Nhu cầu nhà ở cao, tốc độ đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hằng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
+      },
+    ],
     min: 0,
     max: 20,
     step: 1,
     suffix: "%",
   },
   {
-    key: "pctInvestmentReturn" as const,
-    chartDataKey: "pctInvestmentReturn" as const,
-    name: "Lợi nhuận đầu tư",
-    title: "Tỷ suất đầu tư",
+    key: "initialSavings" as const,
+    chartDataKey: "initialSavings" as const,
+    name: "Tích lũy của bạn",
+    title: "Tỷ suất tích lũy",
     label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
-    subExplanation: "Tại sao cần đầu tư sinh lời 11%/năm?",
-    explanation: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá nhà, ít nhất là 11%/năm.",
+    explanations: [
+      {
+        sub: "Tại sao cần đầu tư sinh lời 11%/năm?",
+        main: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá nhà, ít nhất là 11%/năm.",
+      },
+      {
+        sub: "Số tiền tích luỹ của bạn được tính như thế nào?",
+        main: "Tiền tích luỹ ban đầu là ... triệu VNĐ, sau năm đầu tiên tăng thêm ... triệu VNĐ dựa vào lãi đầu tư. Khoản tích luỹ này còn được cộng thêm từ khoản dư mỗi tháng để sớm đạt mục tiêu",
+      },
+    ],
     min: 0,
     max: 25,
     step: 1,
     suffix: "%",
-  }
+  },
 ];
 
 // --- Main Component ---
@@ -74,7 +92,7 @@ interface AssumptionProps {
     assumptions: {
         pctSalaryGrowth: number;
         pctHouseGrowth: number;
-        pctInvestmentReturn: number;
+        initialSavings: number;
     };
     onSliderChange: (key: keyof AssumptionProps['assumptions'], value: number) => void;
     onFinalChoice: (year: number) => void;
@@ -117,14 +135,16 @@ export default function Assumption({
           className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/onboarding/section4bg.png')" }}
         />
-        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-8 z-10">
-          <div className="flex-grow flex flex-col items-center justify-center text-center">
-            <div className="text-white/80 font-semibold mb-8">Mục 3/3</div>
+        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
+          <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
+            <div className="text-white/80 font-semibold text-lg mb-8">
+              Mục 3/3
+            </div>
             <Image src="/icons/suitcase 4.png" alt="Giả định & Chiến lược" width={80} height={80} className="mb-6" />
             <h1 className="text-4xl max-md:text-3xl font-bold text-white mb-3">
               Giả định & Chiến lược
             </h1>
-            <p className="text-lg text-white/90 max-w-lg">
+            <p className="text-sm text-white/90 max-w-sm">
               Hãy thử tư duy như một nhà hoạch định chiến lược. Bằng cách điều chỉnh các giả định, bạn sẽ thấy tác động của từng quyết định đến tốc độ chạm tay vào ngôi nhà mơ ước.
             </p>
           </div>
@@ -138,10 +158,10 @@ export default function Assumption({
 
   if (step === "form") {
     return (
-      <div className="flex flex-col h-full flex-grow w-full max-w-5xl mx-auto fixed inset-0">
-        <div className=" z-10 bg-slate-950">
+      <div className="flex flex-col flex-grow w-full max-w-5xl mx-auto fixed inset-0">
+        <div className="z-10 bg-slate-950">
           {/* Header Section */}
-          <div className="mb-4">
+          <div className="">
             <div className="relative flex items-center h-10 mb-4 mt-2">
               <div className="absolute left-0 top-1/2 -translate-y-1/2">
                 <Button variant="ghost" size="icon" onClick={onPrev}>
@@ -158,29 +178,41 @@ export default function Assumption({
         </div>
 
         <div className="z-10 bg-slate-950 px-2">
-          <div className="p-2 w-full">
-            <h2 className="text-lg font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
-              <div className="py-2">
-                <FinancialSliders
-                  items={[{
-                    label: currentAssumption.title,
-                    value: assumptions[currentAssumption.key],
-                    setValue: (value) => onSliderChange(currentAssumption.key, value),
-                    max: currentAssumption.max,
-                    suffix: currentAssumption.suffix,
-                  }]}
-                />
+          <div className="w-full p-2">
+            <h2 className="text-base font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
+            <div className="py-1">
+              <FinancialSliders
+                items={[{
+                  label: currentAssumption.title,
+                  value: assumptions[currentAssumption.key],
+                  setValue: (value) => onSliderChange(currentAssumption.key, value),
+                  max: currentAssumption.max,
+                  suffix: currentAssumption.suffix,
+                }]}
+              />
+            </div>
+            <div className="w-full h-auto rounded-md">
+              <AccumulationChart data={chartData} dataKey={currentAssumption.chartDataKey} name={currentAssumption.name} />
+            </div>
+            {currentAssumption.explanations.map((exp, index) => (
+              <div key={index} className="mt-2">
+                <p className="text-xs text-left text-cyan-500">{exp.sub}</p>
+                <p className="text-xs text-left text-slate-400 mt-1 mb-2">{exp.main}</p>
               </div>
-              <div className="w-full h-auto rounded-md p-2">
-                <AccumulationChart data={chartData} dataKey={currentAssumption.chartDataKey} name={currentAssumption.name} />
-              </div>
-              <p className="text-xs text-left text-cyan-500 mt-2">{currentAssumption.subExplanation}</p>
-              <p className="text-xs text-left text-slate-400 mt-2 mb-2">{currentAssumption.explanation}</p>
+            ))}
           </div>
 
           {/* Action Button */}
           <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-              <Button onClick={onNext} className="w-full bg-cyan-500 text-white hover:bg-cyan-600 py-4 text-lg font-semibold rounded-sm shadow-lg">
+              <Button 
+                onClick={onNext} 
+                className={cn(
+                  "w-full text-lg font-semibold rounded-sm",
+                  isLastStep
+                    ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                    : "bg-white text-slate-900 hover:bg-slate-200",
+                )}
+              >
                   {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
               </Button>
           </div>
