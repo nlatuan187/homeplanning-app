@@ -413,6 +413,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
         setCurrentSection('spending');
     } else {
         toast.error(result.error || "Lưu thất bại");
+        setCurrentSection('quickCheck');
     }
   };
 
@@ -428,9 +429,6 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
         toast.error(result.error || "Lưu thất bại");
     }
   };
-
-  console.log("planData", planData);
-
   // Cập nhật logic render
   const renderSection = () => {
     switch (currentSection) {
@@ -452,8 +450,8 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             initialData={planData as OnboardingPlanState}
             familySupport={planData.familySupport as OnboardingPlanState}
             planId={planData.id}
-            onCompleted={handleFamilySupportCompleted}
-            isEditMode={true} // <-- BÁO CHO NÓ BIẾT ĐANG Ở LUỒNG EDIT
+            onSubmit={handleFamilySupportCompleted}
+            isEditMode={true}
           />
         );
 

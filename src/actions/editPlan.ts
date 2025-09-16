@@ -61,7 +61,6 @@ export async function updateFamilySupportSection(planId: string, data: Partial<O
     await getUserAndPlan(planId);
 
     const familySupportData = {
-      hasCoApplicant: data.hasCoApplicant,
       coApplicantMonthlyIncome: data.coApplicantMonthlyIncome,
       monthlyOtherIncome: data.monthlyOtherIncome,
       hasFamilySupport: data.hasFamilySupport,
