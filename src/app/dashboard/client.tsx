@@ -141,6 +141,9 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
   const { user } = useUser();
   const [plan] = useState<PlanForDashboard | null>(initialPlan);
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
+  const targetHousePrice = ((plan?.targetHousePriceN0 || 0) * Math.pow(1 + (plan?.pctHouseGrowth || 0) / 100, (plan?.confirmedPurchaseYear || 0) - new Date().getFullYear()))/ 1000;
+  console.log("plan?.pctHouseGrowth", plan);
+  console.log("targetHousePrice", targetHousePrice);
 
   const SupportCard = () => (
     <Card 
@@ -256,7 +259,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
                       </div>
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 mr-2 text-slate-400" />
-                        <span>Giá trị căn nhà: {(plan.targetHousePriceN0/ 1000).toLocaleString()} tỷ VNĐ</span>
+                        <span>Giá trị căn nhà: {targetHousePrice.toLocaleString()} tỷ VNĐ</span>
                       </div>
                     </CardContent>
                     <CardFooter className="gap-4">

@@ -74,11 +74,17 @@ export default function MultiStepQuestionForm({
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return "";
-    return new Intl.NumberFormat("en-US").format(value);
+    // Giữ nguyên giá trị số, không format để hiển thị được số thập phân khi nhập
+    return value.toString();
   };
 
   const parseNumber = (value: string) => {
-    return parseInt(value.replace(/,/g, ""), 10) || 0;
+    // Cho phép dấu chấm và loại bỏ các ký tự không phải số khác (như dấu phẩy)
+    const sanitizedValue = value.replace(/[^0-9.]/g, '');
+    // Sử dụng parseFloat để xử lý số thập phân
+    const parsed = parseFloat(sanitizedValue);
+    // Trả về NaN nếu không hợp lệ để có thể xử lý ô input rỗng
+    return isNaN(parsed) ? null : parsed;
   };
 
   const visibleQuestions = useMemo(() => {
@@ -146,9 +152,8 @@ export default function MultiStepQuestionForm({
           {currentQuestion.options.map(option => (
             <Button
               key={option.label}
-              variant={"outline"}
               onClick={() => handleOptionClick(option.value)}
-              className={`w-full py-6 text-base justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'border-green-500 text-green-500' : 'border-slate-600 text-white hover:bg-slate-800 hover:text-white'}`}
+              className={`w-full py-6 text-base justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'text-slate-900 bg-white hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white'}`}
             >
               {option.label}
             </Button>
@@ -165,8 +170,8 @@ export default function MultiStepQuestionForm({
         <div className="relative w-full">
           <Input
             type="text"
-            inputMode="numeric"
-            value={formatNumber(currentValue as number)}
+            inputMode="decimal"
+            value={currentValue !== undefined && currentValue !== null ? formatNumber(currentValue as number) : ''}
             onChange={(e) => handleInputChange(parseNumber(e.target.value))}
             className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
             placeholder={

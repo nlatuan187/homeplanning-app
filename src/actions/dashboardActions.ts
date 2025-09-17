@@ -17,6 +17,7 @@ export type PlanForDashboard = Pick<
   | "targetHousePriceN0"
   | "affordabilityOutcome"
   | "confirmedPurchaseYear"
+  | "pctHouseGrowth"
 >;
 
 // Hàm này hiện đã được tối ưu để chỉ lấy dữ liệu của kế hoạch GẦN NHẤT
@@ -26,7 +27,6 @@ export async function getPlansForUser(userId: string): Promise<PlanForDashboard 
   // Chỉ thị "use server" ở đầu tệp này đảm bảo điều đó.
   const plan = await db.plan.findFirst({
     where: { userId },
-    orderBy: { updatedAt: "desc" }, // Sắp xếp để lấy kế hoạch được cập nhật gần nhất
     select: {
       id: true,
       planName: true,
@@ -38,6 +38,7 @@ export async function getPlansForUser(userId: string): Promise<PlanForDashboard 
       targetHousePriceN0: true,
       affordabilityOutcome: true,
       confirmedPurchaseYear: true,
+      pctHouseGrowth: true,
     },
   });
 

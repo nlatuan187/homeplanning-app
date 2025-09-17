@@ -101,11 +101,11 @@ export default function FamilySupport({
       // @ts-ignore
       { key: 'familySupportLoanAmount', text: 'Số tiền đi vay (triệu VNĐ)', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
-      { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (%)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+      { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (đơn vị: %/năm) (Nếu vay không cần trả lãi, vui lòng nhập 0)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
       { key: 'familySupportLoanRepayment', text: 'Bạn sẽ trả nợ theo hình thức nào?', type: 'options', options: [{label: 'Trả góp đều hàng tháng', value: 'MONTHLY'}, {label: 'Trả một lần vào cuối kỳ ', value: 'LUMP_SUM'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
-      { key: 'familySupportLoanTerm', text: 'Thời hạn của khoản vay này là bao lâu (năm)', type: 'number', unit: 'năm', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+      { key: 'familySupportLoanTerm', text: 'Thời hạn của khoản vay này là bao lâu (năm)', type: 'number', unit: 'năm', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' && ans.familySupportLoanRepayment === 'MONTHLY' },
   ], []);
 
   const visibleQuestionsPart1 = useMemo(() => {
@@ -288,7 +288,7 @@ export default function FamilySupport({
               </Button>
             </div>
           </div>
-          <div className="flex-grow flex flex-col items-center text-center pb-17 px-4">
+          <div className="flex-grow flex flex-col items-center text-center pb-17 px-4 overflow-y-auto">
             <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
             <h2 className="text-2xl font-bold mb-6">Hỗ trợ từ người thân không nhất thiết phải là một khoản cho không!</h2>
             <Image
