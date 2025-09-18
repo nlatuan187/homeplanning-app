@@ -7,7 +7,7 @@ export interface ChartMilestone {
 }
 
 // Kiểu dữ liệu cho các key có thể vẽ biểu đồ, khớp với chartDataKey trong Assumption.tsx
-type DataKey = 'pctSalaryGrowth' | 'pctHouseGrowth' | 'pctInvestmentReturn';
+export type DataKey = 'pctSalaryGrowth' | 'pctHouseGrowth' | 'pctInvestmentReturn';
 
 /**
  * Tạo ra một chuỗi dữ liệu đơn giản để vẽ biểu đồ minh họa sự tăng trưởng của một biến số duy nhất,

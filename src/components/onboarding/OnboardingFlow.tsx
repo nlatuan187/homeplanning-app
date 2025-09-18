@@ -59,7 +59,7 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
       case 'spending':
         return <Spending initialData={planState} plan={planState} onCompleted={handleSpendingCompleted} planId={planId} isEditMode={false}/>;
       case 'assumptions':
-        return <Assumption plan={planState as Plan} onFinalChoice={() => {}} onConfirm={() => {}} step="intro" setStep={() => {}} assumptionStep={0} onNext={() => {}} onPrev={() => {}} result={null} assumptions={{pctSalaryGrowth: 0, pctHouseGrowth: 0, loanInterestRate: 0}} onSliderChange={() => {}} chartData={[]}/>;
+        return <Assumption plan={planState as Plan} onFinalChoice={() => {}} onConfirm={() => {}} step="intro" setStep={() => {}} assumptionStep={0} onNext={() => {}} onPrev={() => {}} result={null} assumptions={{pctSalaryGrowth: 0, pctHouseGrowth: 0, pctInvestmentReturn: 0}} onSliderChange={() => {}} chartData={[]}/>;
       default:
         return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
     }
