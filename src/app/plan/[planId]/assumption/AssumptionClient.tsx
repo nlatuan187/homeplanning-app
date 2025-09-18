@@ -86,7 +86,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
       setDataKey(prev => prev === 'pctHouseGrowth' ? 'pctSalaryGrowth' : 'pctHouseGrowth');
     } else {
       // Nếu đang ở slider đầu tiên, điều hướng về section Spending.
-      router.push(`/plan/${plan.id}/spending`);
+      setStep("intro");
     }
   };
 

@@ -7,7 +7,7 @@ import ProgressBar from "../shared/ProgressBar";
 import { ArrowLeftIcon, Home } from "lucide-react";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Line, ReferenceLine } from 'recharts';
-import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
+import { ChartMilestone, DataKey } from "@/lib/calculations/projections/generateChartData";
 import FinancialSliders from "@/components/plan/playground/FinancialSliders";
 import { useUser } from "@clerk/nextjs";
 import { OnboardingSectionState, Plan } from "@prisma/client";
@@ -21,64 +21,71 @@ const formatNumber = (value: number) => {
 };
 
 // --- Slider Data Configuration ---
-const assumptionData = [
-  {
-    key: "pctSalaryGrowth" as const,
-    chartDataKey: "pctSalaryGrowth" as const,
-    name: "Tiền lương",
-    title: "Tốc độ tăng lương",
-    label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu?",
-    explanations: [
-      {
-        sub: "Tại sao cần tăng lương ít nhất 7%/năm?",
-        main: "Tiền lương có thể coi là đòn bẩy lớn nhất, và để nhanh chóng mua được nhà, bạn sẽ cần nỗ lực tăng lương. Mức tăng lương trung bình ở Việt Nam là 7%.",
-      },
-    ],
-    min: 0,
-    max: 20,
-    step: 1,
-    suffix: "%",
-  },
-  {
-    key: "pctHouseGrowth" as const,
-    chartDataKey: "pctHouseGrowth" as const,
-    name: "Giá nhà",
-    title: "Tốc độ tăng giá nhà",
-    label:
-      "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
-    explanations: [
-      {
-        sub: "Tại sao giá nhà lại tăng 10%/năm?",
-        main: "Nhu cầu nhà ở cao, tốc độ đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hằng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
-      },
-    ],
-    min: 0,
-    max: 20,
-    step: 1,
-    suffix: "%",
-  },
-  {
-    key: "pctInvestmentReturn" as const,
-    chartDataKey: "pctInvestmentReturn" as const,
-    name: "Tích lũy của bạn",
-    title: "Tỷ suất tích lũy",
-    label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
-    explanations: [
-      {
-        sub: "Tại sao cần đầu tư sinh lời 11%/năm?",
-        main: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá nhà, ít nhất là 11%/năm.",
-      },
-      {
-        sub: "Số tiền tích luỹ của bạn được tính như thế nào?",
-        main: "Tiền tích luỹ ban đầu là ... triệu VNĐ, sau năm đầu tiên tăng thêm ... triệu VNĐ dựa vào lãi đầu tư. Khoản tích luỹ này còn được cộng thêm từ khoản dư mỗi tháng để sớm đạt mục tiêu",
-      },
-    ],
-    min: 0,
-    max: 25,
-    step: 1,
-    suffix: "%",
-  },
-];
+const getAssumptionData = (plan: Plan) => {
+  const initialSavings = plan.initialSavings || 0;
+  console.log("initialSavings", initialSavings);
+  const pctInvestmentReturn = plan.pctInvestmentReturn || 0;
+  const firstYearReturn = initialSavings * (pctInvestmentReturn / 100);
+
+  return [
+    {
+      key: "pctSalaryGrowth" as const,
+      chartDataKey: "pctSalaryGrowth" as const,
+      name: "Tiền lương",
+      title: "Tốc độ tăng lương",
+      label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu?",
+      explanations: [
+        {
+          sub: "Tại sao cần tăng lương ít nhất 7%/năm?",
+          main: "Tiền lương có thể coi là đòn bẩy lớn nhất, và để nhanh chóng mua được nhà, bạn sẽ cần nỗ lực tăng lương. Mức tăng lương trung bình ở Việt Nam là 7%.",
+        },
+      ],
+      min: 0,
+      max: 20,
+      step: 1,
+      suffix: "%",
+    },
+    {
+      key: "pctHouseGrowth" as const,
+      chartDataKey: "pctHouseGrowth" as const,
+      name: "Giá nhà",
+      title: "Tốc độ tăng giá nhà",
+      label:
+        "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
+      explanations: [
+        {
+          sub: "Tại sao giá nhà lại tăng 10%/năm?",
+          main: "Nhu cầu nhà ở cao, tốc độ đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hằng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
+        },
+      ],
+      min: 0,
+      max: 20,
+      step: 1,
+      suffix: "%",
+    },
+    {
+      key: "pctInvestmentReturn" as const,
+      chartDataKey: "pctInvestmentReturn" as const,
+      name: "Tích lũy của bạn",
+      title: "Tỷ suất tích lũy",
+      label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
+      explanations: [
+        {
+          sub: "Tại sao cần đầu tư sinh lời 11%/năm?",
+          main: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá nhà, ít nhất là 11%/năm.",
+        },
+        {
+          sub: "Số tiền tích luỹ của bạn được tính như thế nào?",
+          main: `Tiền tích luỹ ban đầu là ${formatNumber(initialSavings)} triệu VNĐ, sau năm đầu tiên tăng thêm ${formatNumber(firstYearReturn)} triệu VNĐ dựa vào lãi đầu tư. Khoản tích luỹ này còn được cộng thêm từ khoản dư mỗi tháng để sớm đạt mục tiêu`,
+        },
+      ],
+      min: 0,
+      max: 25,
+      step: 1,
+      suffix: "%",
+    },
+  ];
+};
 
 // --- Main Component ---
 interface AssumptionProps {
@@ -101,11 +108,6 @@ interface AssumptionProps {
     loadingTitle?: string;
 }
 
-interface ResultAccumulationChartProps {
-    earliestPurchaseYear: number;
-    desiredPurchaseYear: number | null | undefined;
-}
-
 export default function Assumption({ 
     plan,
     step, 
@@ -122,6 +124,8 @@ export default function Assumption({
     loadingTitle,
 }: AssumptionProps) {
   const { user, isLoaded } = useUser();
+  const assumptionData = getAssumptionData(plan);
+  console.log("assumptionData", assumptionData);
   const currentAssumption = assumptionData[assumptionStep];
   const isLastStep = assumptionStep === assumptionData.length - 1;
   const router = useRouter();
@@ -138,7 +142,13 @@ export default function Assumption({
           className="max-w-5xl mx-auto fixed inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/onboarding/section4bg.png')" }}
         />
+        {/* Container cho nút Back */}
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
+          <div className="max-w-5xl mx-auto absolute top-4 left-4 z-20">
+            <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${plan.id}/spending`)}>
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
+            </Button>
+          </div>
           <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
             <div className="text-white/80 font-semibold text-lg mb-8">
               Mục 3/3
@@ -197,7 +207,12 @@ export default function Assumption({
               />
             </div>
             <div className="w-full h-auto rounded-md">
-              <AccumulationChart data={chartData} dataKey={currentAssumption.chartDataKey} name={currentAssumption.name} />
+              <AccumulationChart 
+                data={chartData} 
+                dataKey={currentAssumption.chartDataKey} 
+                name={currentAssumption.name}
+                name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
+              />
             </div>
             {currentAssumption.explanations.map((exp, index) => (
               <div key={index} className="mt-2">
@@ -218,7 +233,7 @@ export default function Assumption({
                     : "bg-white text-slate-900 hover:bg-slate-200",
                 )}
               >
-                  {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
+                  {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
               </Button>
           </div>
         </div>
@@ -268,7 +283,7 @@ export default function Assumption({
                   <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
                     <div className="mt-auto pt-4">
                       <Button 
-                        onClick={() => setStep('form')}
+                        onClick={() => router.push(`/plan/${plan.id}/edit`)}
                         variant="outline" 
                         className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
                       >
@@ -347,7 +362,7 @@ export default function Assumption({
                   Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!
                 </div>
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-                  <Button onClick={() => setStep('form')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                  <Button onClick={() => router.push(`/plan/${plan.id}/edit`)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                     Điều chỉnh mong muốn
                   </Button>
                 </div>
