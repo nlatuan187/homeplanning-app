@@ -65,6 +65,7 @@ export default function MultiStepQuestionForm({
   const [formData, setFormData] =
     useState<Partial<OnboardingPlanState>>(defaultValues);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
+  const [inputValue, setInputValue] = useState<string>(""); // State mới để quản lý giá trị input dạng chuỗi
 
   // Đồng bộ hóa state của component cha một cách an toàn
   // Effect này sẽ chạy sau khi component con đã render xong
@@ -74,13 +75,13 @@ export default function MultiStepQuestionForm({
 
   const formatNumber = (value: number | undefined | null) => {
     if (value === undefined || value === null) return "";
-    // Giữ nguyên giá trị số, không format để hiển thị được số thập phân khi nhập
-    return value.toString();
+    // Sử dụng toLocaleString để thêm dấu phẩy hàng nghìn
+    return value.toLocaleString('en-US');
   };
 
   const parseNumber = (value: string) => {
-    // Cho phép dấu chấm và loại bỏ các ký tự không phải số khác (như dấu phẩy)
-    const sanitizedValue = value.replace(/[^0-9.]/g, '');
+    // Loại bỏ dấu phẩy hàng nghìn trước khi parse
+    const sanitizedValue = value.replace(/,/g, '');
     // Sử dụng parseFloat để xử lý số thập phân
     const parsed = parseFloat(sanitizedValue);
     // Trả về NaN nếu không hợp lệ để có thể xử lý ô input rỗng
@@ -98,14 +99,55 @@ export default function MultiStepQuestionForm({
   const currentQuestion = visibleQuestions[currentQuestionIndex];
   const currentValue = currentQuestion ? formData[currentQuestion.key] : undefined;
   
+  useEffect(() => {
+    // Cập nhật inputValue với giá trị đã format khi câu hỏi thay đổi
+    if (currentQuestion?.type === 'number') {
+      const value = formData[currentQuestion.key];
+      setInputValue(value != null ? formatNumber(value as number) : '');
+    }
+  }, [currentQuestion]);
+
   const visibleQuestionsRef = useRef(visibleQuestions);
   useEffect(() => {
     visibleQuestionsRef.current = visibleQuestions;
   }, [visibleQuestions]);
 
 
-  const handleInputChange = (value: any) => {
-    setFormData((prev) => ({ ...prev, [currentQuestion.key]: value }));
+  const handleInputChange = (value: string) => {
+    // 1. Chỉ giữ lại số và một dấu chấm thập phân
+    const sanitized = value.replace(/[^0-9.]/g, "");
+    const parts = sanitized.split(".");
+    const integerPart = parts[0];
+    const fractionalPart = parts.length > 1 ? parts.slice(1).join("") : undefined;
+
+    // Nếu có nhiều hơn 1 dấu chấm, không cập nhật
+    if (parts.length > 2) {
+      return;
+    }
+    
+    // 2. Cập nhật giá trị số cho state của form
+    const numericValue = parseFloat(`${integerPart}.${fractionalPart || ''}`);
+    setFormData((prev) => ({
+      ...prev,
+      [currentQuestion.key]: isNaN(numericValue) ? null : numericValue,
+    }));
+
+    // 3. Tạo chuỗi hiển thị đã được định dạng
+    const formattedInteger = integerPart ? parseInt(integerPart, 10).toLocaleString("en-US") : "0";
+    
+    let displayValue;
+    if (fractionalPart !== undefined) {
+      displayValue = `${formattedInteger}.${fractionalPart}`;
+    } else if (value.endsWith(".") && integerPart) {
+      displayValue = `${formattedInteger}.`;
+    } else if (integerPart) {
+      displayValue = formattedInteger;
+    } else {
+      displayValue = "";
+    }
+
+    setInputValue(displayValue);
+
     // Đánh dấu trường này là đã được tương tác
     if (!touchedFields[currentQuestion.key]) {
       setTouchedFields((prev) => ({ ...prev, [currentQuestion.key]: true }));
@@ -171,8 +213,8 @@ export default function MultiStepQuestionForm({
           <Input
             type="text"
             inputMode="decimal"
-            value={currentValue !== undefined && currentValue !== null ? formatNumber(currentValue as number) : ''}
-            onChange={(e) => handleInputChange(parseNumber(e.target.value))}
+            value={inputValue}
+            onChange={(e) => handleInputChange(e.target.value)}
             className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
             placeholder={
               defaultValue === undefined || defaultValue === null
@@ -187,7 +229,7 @@ export default function MultiStepQuestionForm({
     
     return null;
   // Thêm defaultValues vào dependency array của useMemo
-  }, [currentQuestion, currentValue, defaultValues]);
+  }, [currentQuestion, currentValue, defaultValues, inputValue]);
 
   if (!currentQuestion) {
     return null;
