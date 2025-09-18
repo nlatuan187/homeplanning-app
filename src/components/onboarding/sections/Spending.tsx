@@ -222,6 +222,16 @@ export default function Spending({
                 "spending",
                 OnboardingSectionState.IN_PROGRESS,
               );
+              updateOnboardingSectionProgress(
+                planId,
+                "assumption",
+                OnboardingSectionState.NOT_STARTED,
+              );
+              updateOnboardingSectionProgress(
+                planId,
+                "familySupport",
+                OnboardingSectionState.COMPLETED,
+              );
             }}
             className="w-full bg-white text-slate-900 hover:bg-slate-200 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
           >
