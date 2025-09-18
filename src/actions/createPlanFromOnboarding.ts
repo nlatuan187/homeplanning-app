@@ -97,7 +97,7 @@ export async function createPlanFromOnboarding(
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,
-      pctInvestmentReturn: 9.0,
+      pctInvestmentReturn: 11.0,
       loanInterestRate: 11.0,
       loanTermYears: 25,
       paymentMethod: "BankLoan",

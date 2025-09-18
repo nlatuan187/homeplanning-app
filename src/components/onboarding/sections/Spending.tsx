@@ -190,6 +190,11 @@ export default function Spending({
           style={{ backgroundImage: "url('/onboarding/section3bg.png')" }}
         />
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
+          <div className="max-w-5xl mx-auto absolute top-4 left-4 z-20">
+            <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${planId}/familySupport`)}>
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
+            </Button>
+          </div>
           <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
             <div className="text-white/80 font-semibold mb-8">
                 Mục 2/3
