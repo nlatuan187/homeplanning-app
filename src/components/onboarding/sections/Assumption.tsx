@@ -161,7 +161,14 @@ export default function Assumption({
               Hãy thử tư duy như một nhà hoạch định chiến lược. Bằng cách điều chỉnh các giả định, bạn sẽ thấy tác động của từng quyết định đến tốc độ chạm tay vào ngôi nhà mơ ước.
             </p>
           </div>
-          <Button onClick={() => {setStep("form"); updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.IN_PROGRESS);}} className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
+          <Button 
+            onClick={() => {
+              setStep("form"); 
+              updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.IN_PROGRESS);
+              updateOnboardingSectionProgress(plan.id, "spending", OnboardingSectionState.COMPLETED);
+              updateOnboardingSectionProgress(plan.id, "familySupport", OnboardingSectionState.COMPLETED);
+            }} 
+            className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
             Bắt đầu thôi
           </Button>
         </div>
