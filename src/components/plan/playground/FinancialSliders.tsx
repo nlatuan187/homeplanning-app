@@ -33,6 +33,11 @@ function SliderWithDebounce({ item }: { item: SliderItem }) {
   const [localValue, setLocalValue] = useState(item.value);
   const debouncedValue = useDebounce(localValue, 300);
 
+  // Thêm effect này để đồng bộ localValue khi item.value thay đổi
+  useEffect(() => {
+    setLocalValue(item.value);
+  }, [item.value]);
+
   const handleInitialInteraction = () => {
     item.onInteraction?.();
   };

@@ -14,7 +14,6 @@ const assumptionSchema = z.object({
   targetHousePriceN0: z.number().optional(),
   targetHouseType: z.string().optional(),
   targetLocation: z.string().optional(),
-  pctHouseGrowth: z.number().optional(),
   userMonthlyIncome: z.number().optional(),
   hasCoApplicant: z.boolean().optional(),
   coApplicantMonthlyIncome: z.number().optional(),
@@ -25,6 +24,7 @@ const assumptionSchema = z.object({
   monthlyNonHousingDebt: z.number().optional(),
   currentAnnualInsurancePremium: z.number().optional(),
   initialSavings: z.number().optional(),
+  pctHouseGrowth: z.number().optional(),
   pctExpenseGrowth: z.number().optional(),
   pctInvestmentReturn: z.number().optional(),
 });

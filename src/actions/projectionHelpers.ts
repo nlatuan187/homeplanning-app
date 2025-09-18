@@ -91,10 +91,10 @@ export async function computeOnboardingOutcome(plan: PlanWithDetails): Promise<{
   return { projections, earliestPurchaseYear: earliestYear, purchaseProjection, message };
 }
 
-export async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string;}> {
+export async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; projections?: ProjectionRow[];}> {
   const enginePlan = await buildPlanForProjection(planId);
   const outcome = await computeOnboardingOutcome(enginePlan);
-  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message };
+  return { earliestPurchaseYear: outcome.earliestPurchaseYear, message: outcome.message, projections: outcome.projections };
 }
 
 

@@ -15,7 +15,7 @@ import { OnboardingSectionState } from "@prisma/client";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
 import Image from "next/image";
-import { generateProjections, PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
+import { PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon, Home } from "lucide-react";
 import ProgressBar from "../onboarding/shared/ProgressBar";

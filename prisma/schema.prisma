@@ -58,7 +58,7 @@ model Plan {
   initialSavings                Float   @default(0)
   pctHouseGrowth                Float   @default(10.0)
   pctExpenseGrowth              Float   @default(4.0)
-  pctInvestmentReturn           Float   @default(9.0)
+  pctInvestmentReturn           Float   @default(11.0)
   hasNewChild                   Boolean?
   yearToHaveChild               Int?
   monthlyChildExpenses          Float?   

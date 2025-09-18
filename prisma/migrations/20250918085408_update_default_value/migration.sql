@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Plan" ALTER COLUMN "pctInvestmentReturn" SET DEFAULT 11.0,
+ALTER COLUMN "hasNewChild" DROP NOT NULL,
+ALTER COLUMN "hasNewChild" DROP DEFAULT;
