@@ -57,16 +57,6 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   });
   // State mới để theo dõi các trường đã tương tác
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
-
-  const chartData = useMemo(() => {
-    const tempPlan = {
-      ...plan,
-      pctSalaryGrowth: assumptions.pctSalaryGrowth,
-      pctHouseGrowth: assumptions.pctHouseGrowth,
-      pctInvestmentReturn: assumptions.pctInvestmentReturn,
-    };
-    return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey);
-  }, [plan, assumptions, dataKey]);
   
   // State to store the result from the server
   const [result, setResult] = useState<any | null>(null);
@@ -82,6 +72,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   const handleNext = () => {
     if (assumptionStep < 2) {
       setAssumptionStep(prev => prev + 1);
+      setDataKey(prev => prev === 'pctSalaryGrowth' ? 'pctHouseGrowth' : 'pctInvestmentReturn');
     } else {
       // Last step, so we submit
       handleSubmit(assumptions);
@@ -92,11 +83,22 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
     // Nếu chúng ta không ở slider đầu tiên, chỉ cần quay lại slider trước đó.
     if (assumptionStep > 0) {
       setAssumptionStep(prev => prev - 1);
+      setDataKey(prev => prev === 'pctHouseGrowth' ? 'pctSalaryGrowth' : 'pctHouseGrowth');
     } else {
       // Nếu đang ở slider đầu tiên, điều hướng về section Spending.
       router.push(`/plan/${plan.id}/spending`);
     }
   };
+
+  const chartData = useMemo(() => {
+    const tempPlan = {
+      ...plan,
+      pctSalaryGrowth: assumptions.pctSalaryGrowth,
+      pctHouseGrowth: assumptions.pctHouseGrowth,
+      pctInvestmentReturn: assumptions.pctInvestmentReturn,
+    };
+    return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey);
+  }, [plan, assumptions, dataKey]);
 
   const handleSubmit = async (formData: AssumptionData) => {
     setStep("loading");

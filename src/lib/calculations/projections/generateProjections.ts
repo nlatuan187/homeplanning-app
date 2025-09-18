@@ -160,7 +160,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     cumulativeSavingsFromInitial: initialSavings,
     cumulativeSavingsFromMonthly: annualSavingsN0 / 12,
     familyLoanRepayment: 0,
-    monthlyChildExpenses: plan.monthlyChildExpenses,
+    monthlyChildExpenses: plan.monthlyChildExpenses || 0,
     hasNewChild: plan.hasNewChild,
     yearToHaveChild: plan.yearToHaveChild || 0,
   };
@@ -265,7 +265,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
       factorChild: 0,
       cumulativeSavingsFromInitial: accumulatedFromInitial,
       cumulativeSavingsFromMonthly: accumulatedFromMonthly,
-      monthlyChildExpenses: plan.monthlyChildExpenses,
+      monthlyChildExpenses: plan.monthlyChildExpenses || 0,
       hasNewChild: plan.hasNewChild,
       yearToHaveChild: plan.yearToHaveChild || 0,
     });

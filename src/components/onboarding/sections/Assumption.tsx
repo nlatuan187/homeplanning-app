@@ -14,6 +14,7 @@ import { OnboardingSectionState, Plan } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { cn } from "@/lib/utils";
+import { generateProjections } from "@/lib/calculations/projections/generateProjections";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -57,8 +58,8 @@ const assumptionData = [
     suffix: "%",
   },
   {
-    key: "initialSavings" as const,
-    chartDataKey: "initialSavings" as const,
+    key: "pctInvestmentReturn" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
     name: "Tích lũy của bạn",
     title: "Tỷ suất tích lũy",
     label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
@@ -92,7 +93,7 @@ interface AssumptionProps {
     assumptions: {
         pctSalaryGrowth: number;
         pctHouseGrowth: number;
-        initialSavings: number;
+        pctInvestmentReturn: number;
     };
     onSliderChange: (key: keyof AssumptionProps['assumptions'], value: number) => void;
     onFinalChoice: (year: number) => void;
@@ -124,6 +125,8 @@ export default function Assumption({
   const currentAssumption = assumptionData[assumptionStep];
   const isLastStep = assumptionStep === assumptionData.length - 1;
   const router = useRouter();
+  console.log("chartData", generateProjections(plan as any));
+  console.log("result",  assumptions[currentAssumption.key]);
 
   // This useEffect block is redundant and causes the error, so it will be removed.
   // The logic is correctly handled in the parent component AssumptionClient.tsx.
@@ -185,7 +188,9 @@ export default function Assumption({
                 items={[{
                   label: currentAssumption.title,
                   value: assumptions[currentAssumption.key],
-                  setValue: (value) => onSliderChange(currentAssumption.key, value),
+                  setValue: (value) => {
+                    onSliderChange(currentAssumption.key, value);
+                  },
                   max: currentAssumption.max,
                   suffix: currentAssumption.suffix,
                 }]}
