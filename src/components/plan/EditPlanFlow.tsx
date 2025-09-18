@@ -36,6 +36,7 @@ import { useDebounce } from "@/hooks/useDebounce"; // Import hook debounce
 import { updateSinglePlanField } from "@/actions/editPlan"; // Import action mới
 import { useEffect } from "react"; // Import useEffect
 import { cn } from "@/lib/utils";
+import { DataKey } from "@/lib/calculations/projections/generateChartData";
 
 interface AssumptionData {
   pctSalaryGrowth: number;
@@ -71,8 +72,8 @@ const assumptionData = [
     suffix: "%",
   },
   {
-    key: "initialSavings" as const,
-    chartDataKey: "initialSavings" as const,
+    key: "pctInvestmentReturn" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
     name: "Tích lũy của bạn",
     title: "Tỷ suất tích lũy",
     label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
@@ -117,7 +118,7 @@ function AssumptionFormStep({
   planData: PlanWithFamilySupport;
   assumptions: any;
   assumptionStep: number;
-  onSliderChange: (key: "pctSalaryGrowth" | "pctHouseGrowth" | "initialSavings", value: number) => void;
+  onSliderChange: (key: "pctSalaryGrowth" | "pctHouseGrowth" | "pctInvestmentReturn", value: number) => void;
   onNext: () => void;
   onPrev: () => void;
   router: any;
@@ -128,9 +129,9 @@ function AssumptionFormStep({
       ...planData,
       pctSalaryGrowth: assumptions.pctSalaryGrowth,
       pctHouseGrowth: assumptions.pctHouseGrowth,
-      initialSavings: assumptions.initialSavings,
+      pctInvestmentReturn: assumptions.pctInvestmentReturn,
     };
-    return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey);
+    return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey as DataKey);
   }, [planData, assumptions, dataKey]);
 
   const currentAssumption = assumptionData[assumptionStep];
@@ -338,7 +339,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
   const [assumptions, setAssumptions] = useState({
       pctSalaryGrowth: initialPlan.pctSalaryGrowth ?? 7,
       pctHouseGrowth: initialPlan.pctHouseGrowth ?? 10,
-      initialSavings: initialPlan.initialSavings ?? 11,
+      pctInvestmentReturn: initialPlan.pctInvestmentReturn ?? 11,
   });
 
   // Sử dụng debounce cho giá trị assumptions
@@ -355,8 +356,8 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
           if (debouncedAssumptions.pctHouseGrowth !== initialPlan.pctHouseGrowth) {
               await updateSinglePlanField(initialPlan.id, 'pctHouseGrowth', debouncedAssumptions.pctHouseGrowth);
           }
-          if (debouncedAssumptions.initialSavings !== initialPlan.initialSavings) {
-              await updateSinglePlanField(initialPlan.id, 'initialSavings', debouncedAssumptions.initialSavings);
+          if (debouncedAssumptions.pctInvestmentReturn !== initialPlan.pctInvestmentReturn) {
+              await updateSinglePlanField(initialPlan.id, 'pctInvestmentReturn', debouncedAssumptions.pctInvestmentReturn);
           }
           // Sau khi update, có thể refresh lại dữ liệu plan để initialPlan luôn mới nhất
           // router.refresh(); // Cân nhắc dùng để tránh stale data
