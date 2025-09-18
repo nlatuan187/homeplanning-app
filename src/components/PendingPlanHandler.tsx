@@ -24,7 +24,7 @@ export default function PendingPlanHandler() {
         return;
       }
 
-      setMessage("Đang tạo kế hoạch cho bạn...");
+      setMessage("Tính toán khả năng mua nhà...");
 
       try {
         const pendingPlanData = JSON.parse(pendingPlanJSON);
@@ -32,7 +32,6 @@ export default function PendingPlanHandler() {
         console.log("result", result);
         localStorage.removeItem(PENDING_PLAN_KEY);
         if (result.success && result.planId) {
-          setMessage("Tạo kế hoạch thành công! Đang chuyển hướng...");
           // Redirect to the new results page
           router.push(`/plan/${result.planId}/results`);
         } else {

@@ -6,7 +6,7 @@ import { ChartMilestone } from "@/lib/calculations/projections/generateChartData
 interface AccumulationChartProps {
   data: ChartMilestone[];
   // dataKey không còn cần thiết để vẽ, nhưng có thể giữ lại nếu dùng cho mục đích khác
-  dataKey: "pctSalaryGrowth" | "pctHouseGrowth" | "initialSavings";
+  dataKey: "monthlyIncome" | "targetHousePriceN0" | "initialSavings";
   name: string;
 }
 

@@ -113,7 +113,7 @@ export async function createPlanFromOnboarding(
     await db.planFamilySupport.create({
       data: {
         planId: newPlan.id,
-        hasFamilySupport: false,
+        hasFamilySupport: null,
         familySupportType: null,
         familySupportAmount: 0,
         familyGiftTiming: null,
