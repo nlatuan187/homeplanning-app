@@ -76,7 +76,7 @@ export async function createPlanFromOnboarding(
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
       onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
-    if (!yearsToPurchase) {
+    if (yearsToPurchase === undefined || yearsToPurchase < 0) {
       return { success: false, error: "Invalid yearsToPurchase" };
     }
     const planPayload: Omit<Prisma.PlanCreateInput, "user"> = {
