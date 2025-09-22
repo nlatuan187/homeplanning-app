@@ -3,63 +3,145 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPlanFromOnboarding } from "@/actions/createPlanFromOnboarding";
+import { checkUserPlanStatus } from "@/actions/checkUserPlanStatus";
+import { updatePlanFromOnboarding } from "@/actions/updatePlanFromOnboarding";
+import { OnboardingPlanState } from "./onboarding/types";
 import LoadingOverlay from "./ui/loading-overlay";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
 
-// This key must match the one used in SignupPrompt.tsx
 const PENDING_PLAN_KEY = "pendingOnboardingPlan";
+// Add a new key for session storage to prevent re-running
+const PROCESSED_PENDING_PLAN_KEY = "processedPendingPlan";
 
 export default function PendingPlanHandler() {
   const router = useRouter();
-  const [isProcessing, setIsProcessing] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false); // Default to false
   const [message, setMessage] = useState("Kiểm tra dữ liệu của bạn...");
+  
+  // State for handling existing users
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [pendingData, setPendingData] = useState<Partial<OnboardingPlanState> | null>(null);
+  const [existingPlanId, setExistingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
-    // This effect should only run once on component mount.
     const processPendingPlan = async () => {
-      const pendingPlanJSON = localStorage.getItem(PENDING_PLAN_KEY);
+      // 1. Check if we've already processed this in the current session
+      if (sessionStorage.getItem(PROCESSED_PENDING_PLAN_KEY)) {
+        setIsProcessing(false); // Ensure no loading overlay shows
+        return;
+      }
 
+      const pendingPlanJSON = localStorage.getItem(PENDING_PLAN_KEY);
       if (!pendingPlanJSON) {
-        // Nothing to do, stop showing loading state.
+        // Nothing to do, stop any potential processing state.
         setIsProcessing(false);
         return;
       }
 
-      setMessage("Tính toán khả năng mua nhà...");
+      // 2. A pending plan exists and we haven't processed it this session.
+      // IMMEDIATELY set the session flag to prevent re-runs on navigation.
+      sessionStorage.setItem(PROCESSED_PENDING_PLAN_KEY, "true");
+      setIsProcessing(true); // Now, we can safely show the loading overlay
+
+      const data: Partial<OnboardingPlanState> = JSON.parse(pendingPlanJSON);
+      setPendingData(data);
 
       try {
-        const pendingPlanData = JSON.parse(pendingPlanJSON);
-        const result = await createPlanFromOnboarding(pendingPlanData);
-        console.log("result", result);
-        localStorage.removeItem(PENDING_PLAN_KEY);
-        if (result.success && result.planId) {
-          // Redirect to the new results page
-          router.push(`/plan/${result.planId}/results`);
+
+        const { hasPlan, planId } = await checkUserPlanStatus();
+        
+
+        if (hasPlan && planId) {
+          // User has a plan, show them a choice
+          setExistingPlanId(planId);
+          setShowChoiceModal(true);
+          setIsProcessing(false); // Stop loading to show the modal
         } else {
-          // If creation fails, log the error and go to the general dashboard
-          console.error(
-            "Failed to create plan from onboarding data:",
-            result.error
-          );
-          router.push("/dashboard");
+          // New user, create the plan directly
+          setMessage("Tạo kế hoạch mới...");
+          const result = await createPlanFromOnboarding(data);
+          handleActionResult(result);
         }
-
-
       } catch (error) {
-        // Catch any other errors, clear storage, and redirect
-        console.error("Error processing pending plan:", error);
-        router.push("/dashboard");
+        console.error("Error checking user plan status:", error);
+        cleanupAndRedirect();
       }
     };
 
     processPendingPlan();
   }, [router]);
 
-  // While processing, show a loading overlay to prevent user interaction.
+  const cleanupAndRedirect = (path = "/dashboard") => {
+    localStorage.removeItem(PENDING_PLAN_KEY);
+    // We don't remove the session key here. It should persist for the whole session.
+    router.push(path);
+  };
+
+  const handleActionResult = (result: { success: boolean; planId?: string; error?: string }) => {
+    if (result.success && result.planId) {
+      cleanupAndRedirect(`/plan/${result.planId}/results`);
+    } else {
+      console.error("Action failed:", result.error);
+      cleanupAndRedirect();
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!pendingData || !existingPlanId) return;
+    setIsProcessing(true);
+    setMessage("Đang cập nhật kế hoạch...");
+    const result = await updatePlanFromOnboarding(existingPlanId, pendingData);
+    handleActionResult(result);
+    setShowChoiceModal(false);
+  };
+
+  const handleCreateNew = async () => {
+    if (!pendingData) return;
+    setIsProcessing(true);
+    setMessage("Đang tạo kế hoạch mới...");
+    const result = await createPlanFromOnboarding(pendingData);
+    handleActionResult(result);
+    setShowChoiceModal(false);
+  };
+
+  const handleCancel = () => {
+    setShowChoiceModal(false);
+    cleanupAndRedirect();
+  };
+
+
   if (isProcessing) {
+    return <LoadingOverlay messages={[message]} />;
+  }
+
+  if (showChoiceModal) {
     return (
-        <LoadingOverlay messages={[message]} />
+      <Dialog open={showChoiceModal} onOpenChange={setShowChoiceModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bạn đã có kế hoạch từ trước</DialogTitle>
+            <DialogDescription>
+              Chúng tôi nhận thấy bạn vừa hoàn thành một kịch bản mua nhà mới. Bạn muốn làm gì với nó?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancel}>
+              Hủy bỏ
+            </Button>
+            <Button onClick={handleCreateNew}>Lưu thành kế hoạch mới</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 
-  return null; // Render nothing once done (if there was no plan).
+  return null;
 }

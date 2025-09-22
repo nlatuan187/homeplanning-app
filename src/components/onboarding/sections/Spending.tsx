@@ -304,10 +304,10 @@ export default function Spending({
             <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
                 <h2 className="text-2xl font-bold mb-6 max-w-sm">Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến</h2>
                 <Image
-                    src="/onboarding/baby.png" // Placeholder image
+                    src="/onboarding/analysis.png" // Placeholder image
                     alt="Analysis"
-                    width={150}
-                    height={150}
+                    width={400}
+                    height={300}
                     className="mb-6"
                 />
                 <p className="text-white/90 max-w-md">

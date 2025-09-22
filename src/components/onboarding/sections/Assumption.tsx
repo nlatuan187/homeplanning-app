@@ -341,8 +341,9 @@ export default function Assumption({
               ) : (result.earliestPurchaseYear === plan.confirmedPurchaseYear) ? (
               <div className="flex flex-col mx-4">
                 <div className="text-lg mb-4">
-                  Bạn sẽ cần điều chỉnh nhiều để<br/> 
-                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
+                  Kế hoạch <br/> 
+                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
+                  của bạn đã sẵn sàng.
                 </div>
                 <div className="flex items-center justify-center text-center">
                   <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
@@ -352,7 +353,7 @@ export default function Assumption({
                 </div>
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
                   <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                    Lập kế hoạch mua nha nhà
+                    Lập kế hoạch mua nha nhà năm {plan.confirmedPurchaseYear}
                   </Button>
                 </div>
               </div>
@@ -363,7 +364,7 @@ export default function Assumption({
                   <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
                 </div>
                 <div className="flex items-center justify-center text-center">
-                  <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                  <Image src="/onboarding/result 4.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
                 </div>
                 <div className="text-center text-slate-400">
                   Bạn vẫn chưa thể mua được nhà, sẽ cần rất nhiều thay đổi về mong muốn và khả năng tích luỹ đấy!
