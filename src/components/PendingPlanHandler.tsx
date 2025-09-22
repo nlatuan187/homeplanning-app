@@ -136,7 +136,6 @@ export default function PendingPlanHandler() {
             <Button variant="outline" onClick={handleCancel}>
               Hủy bỏ
             </Button>
-            <Button onClick={handleUpdate}>Cập nhật kế hoạch hiện tại</Button>
             <Button onClick={handleCreateNew}>Lưu thành kế hoạch mới</Button>
           </DialogFooter>
         </DialogContent>
