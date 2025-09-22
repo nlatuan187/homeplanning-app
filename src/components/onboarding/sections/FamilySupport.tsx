@@ -220,6 +220,16 @@ export default function FamilySupport({
                   "familySupport",
                   OnboardingSectionState.IN_PROGRESS,
                 );
+                updateOnboardingSectionProgress(
+                  planId,
+                  "assumption",
+                  OnboardingSectionState.NOT_STARTED,
+                );
+                updateOnboardingSectionProgress(
+                  planId,
+                  "spending",
+                  OnboardingSectionState.NOT_STARTED,
+                );
               }}
               className="w-full bg-white text-slate-900 hover:bg-slate-200 px-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
             >
@@ -292,7 +302,7 @@ export default function FamilySupport({
             <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
             <h2 className="text-2xl font-bold mb-6">Hỗ trợ từ người thân không nhất thiết phải là một khoản cho không!</h2>
             <Image
-              src="/onboarding/analysis.png"
+              src="/onboarding/familyanalys.png"
               alt="Analysis"
               width={400}
               height={300}

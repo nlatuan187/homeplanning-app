@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
         // targetChildYear: body.targetChildYear ? Number(body.targetChildYear) : null,
         // initialSavingsGoal: Number(body.initialSavingsGoal),
         // incomeLastYear: Number(body.incomeLastYear),
-        monthlyOtherIncome: Number(body.monthlyOtherIncome),
         monthlyLivingExpenses: Number(body.monthlyLivingExpenses),
         monthlyNonHousingDebt: Number(body.monthlyNonHousingDebt),
         currentAnnualInsurancePremium: Number(body.currentAnnualInsurancePremium),

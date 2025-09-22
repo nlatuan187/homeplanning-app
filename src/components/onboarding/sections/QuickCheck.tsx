@@ -8,6 +8,7 @@ import MultiStepQuestionForm, {
   Question,
 } from "../shared/MultiStepQuestionForm";
 import { ArrowLeftIcon, CheckCircle, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const currentYear = new Date().getFullYear();
 
@@ -168,6 +169,8 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
     "intro",
   );
 
+  const router = useRouter();
+
   const processedInitialData = useMemo(() => {
     if (initialData.targetHousePriceN0) {
       return {
@@ -325,15 +328,10 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
                   Bắt đầu ngay
                 </Button>
                 <Button
-                  onClick={() =>
-                    window.open(
-                      "https://cal.com/tuan-nguyen-finful/45min",
-                      "_blank",
-                    )
-                  }
+                  onClick={() => router.push("/sign-in")}
                   className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
                 >
-                  Trò chuyện với chuyên gia trước
+                  Đăng nhập (Nếu đã có tài khoản)
                 </Button>
               </div>
             </div>
