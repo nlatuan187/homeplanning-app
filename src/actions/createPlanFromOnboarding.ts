@@ -36,11 +36,39 @@ export async function createPlanFromOnboarding(
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
-    // Per request, if a user already has a plan, we DELETE it completely
-    // before creating the new one from the onboarding data.
-    // This is a destructive action.
-    logger.info(`User ${userId} has an existing plan (${existingPlan.id}). Deleting it to create a new one from onboarding.`);
-    await db.plan.delete({ where: { id: existingPlan.id } });
+   // If user already has a plan, update its core fields from onboarding
+   const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+   const updates = {
+     planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
+     yearsToPurchase: yearsToPurchase,
+     hasCoApplicant: onboardingData.hasCoApplicant || false,
+     targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
+     targetHouseType: onboardingData.targetHouseType,
+     targetLocation: onboardingData.targetLocation,
+     initialSavings: onboardingData.initialSavings || 0,
+     userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+     monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+   } as const;
+
+   const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+
+   await createOnboardingProgress(existingPlan.id);
+   try {
+     const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
+     const isAffordable = outcome.purchaseProjection?.isAffordable; 
+
+     await db.plan.update({
+       where: { id: updated.id },
+       data: {
+         firstViableYear: outcome.purchaseProjection.year,
+         affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+       },
+     });
+   } catch (e) {
+     logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+   }
+
+   return { success: true, planId: existingPlan.id, existed: true };
   }
 
   try {
@@ -83,7 +111,6 @@ export async function createPlanFromOnboarding(
       },
     });
 
-    // FIX: Add onboarding progress creation for new plans to ensure consistency.
     await createOnboardingProgress(newPlan.id);
 
     await db.planFamilySupport.create({

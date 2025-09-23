@@ -204,11 +204,6 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
             <p className="text-slate-300">
               Thiết kế kế hoạch tài chính tổng thể để tìm ra thời điểm mua nhà hợp lý, đồng thời tối ưu số tiền bạn đang có.
             </p>
-            {!plan && (
-              <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-200 font-semibold">
-                <Link href="/plan/new">Tạo kế hoạch mới <ArrowRight className="ml-2 h-5 w-5" /></Link>
-              </Button>
-            )}
           </div>
         </div>
 
