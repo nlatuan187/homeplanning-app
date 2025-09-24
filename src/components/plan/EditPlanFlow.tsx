@@ -442,6 +442,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             initialData={planData}
             planId={planData.id}
             onCompleted={handleQuickCheckCompleted}
+            isEditMode={true}
           />
         );
 

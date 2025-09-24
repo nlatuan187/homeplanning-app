@@ -162,9 +162,10 @@ interface QuickCheckProps {
   initialData?: OnboardingPlanState;
   planId?: string;
   onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  isEditMode?: boolean;
 }
 
-export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheckProps) {
+export default function QuickCheck({ onCompleted, initialData = {}, isEditMode = false }: QuickCheckProps) {
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2">(
     "intro",
   );
@@ -321,18 +322,29 @@ export default function QuickCheck({ onCompleted, initialData = {} }: QuickCheck
           <div className="fixed bottom-0 left-0 right-0 z-20">
             <div className="max-w-5xl mx-auto p-4">
               <div className="space-y-3">
-                <Button
-                  onClick={handleStart}
-                  className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
-                >
-                  Bắt đầu ngay
-                </Button>
-                <Button
-                  onClick={() => router.push("/sign-in")}
-                  className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
-                >
-                  Đăng nhập (Nếu đã có tài khoản)
-                </Button>
+                {!isEditMode ? (
+                  <>
+                    <Button
+                      onClick={handleStart}
+                      className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                    >
+                      Bắt đầu ngay
+                    </Button>
+                    <Button
+                      onClick={() => router.push("/sign-in")}
+                      className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
+                    >
+                      Đăng nhập (Nếu đã có tài khoản)
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleStart}
+                    className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                  >
+                    Bắt đầu ngay
+                  </Button>
+                )}
               </div>
             </div>
           </div>
