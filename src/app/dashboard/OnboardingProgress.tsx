@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from "react-hot-toast"; // Added for toast notifications
 import { cn } from "@/lib/utils"; // Added for conditional class names
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
+import { NotificationManager } from '@/components/NotificationManager';
 
 interface OnboardingProgressDisplayProps {
   planId: string;
@@ -170,6 +171,7 @@ export default function OnboardingProgressDisplay({ planId, progress }: Onboardi
           />
         </div>
       </div>
+      <NotificationManager />
     </div>
   );
 }
