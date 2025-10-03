@@ -10,12 +10,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  plans     Plan[]
-  feedback  Feedback[]
+  id           String         @id @unique
+  email        String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  plans        Plan[]
+  feedback     Feedback[]
+  deviceTokens DeviceToken[]
+  notifications Notification[]
 }
 
 model Feedback {
@@ -30,12 +32,12 @@ model Feedback {
 
 // BẢNG PLAN ĐÃ ĐƯỢC LÀM GỌN
 model Plan {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  planName    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Page 1: Goal Inputs
   yearsToPurchase    Int     @default(3)
@@ -44,44 +46,44 @@ model Plan {
   targetLocation     String?
 
   // Page 2: Income Inputs
-  hasCoApplicant            Boolean  @default(false)
-  userMonthlyIncome         Float    @default(0)
+  hasCoApplicant    Boolean @default(false)
+  userMonthlyIncome Float   @default(0)
 
-  pctSalaryGrowth           Float    @default(7.0)
-  coApplicantSalaryGrowth   Float?
+  pctSalaryGrowth         Float  @default(7.0)
+  coApplicantSalaryGrowth Float?
 
   // Page 3: Spending & Savings Inputs
   monthlyLivingExpenses         Float
-  monthlyNonHousingDebt         Float   @default(0)
-  currentAnnualInsurancePremium Float   @default(0)
+  monthlyNonHousingDebt         Float @default(0)
+  currentAnnualInsurancePremium Float @default(0)
 
-  initialSavings                Float   @default(0)
-  pctHouseGrowth                Float   @default(10.0)
-  pctExpenseGrowth              Float   @default(4.0)
-  pctInvestmentReturn           Float   @default(11.0)
-  hasNewChild                   Boolean?
-  yearToHaveChild               Int?
-  monthlyChildExpenses          Float?   
+  initialSavings       Float    @default(0)
+  pctHouseGrowth       Float    @default(10.0)
+  pctExpenseGrowth     Float    @default(4.0)
+  pctInvestmentReturn  Float    @default(11.0)
+  hasNewChild          Boolean?
+  yearToHaveChild      Int?
+  monthlyChildExpenses Float?
 
   // Page 4: Loan & Support Inputs
-  loanInterestRate              Float?   @default(11.0)
-  loanTermYears                 Int?     @default(25)
-  paymentMethod                 String   @default("fixed")
-  
+  loanInterestRate Float? @default(11.0)
+  loanTermYears    Int?   @default(25)
+  paymentMethod    String @default("fixed")
+
   // --- Store the RESULT of the plan ---
-  affordabilityOutcome String?
-  firstViableYear      Int?
+  affordabilityOutcome  String?
+  firstViableYear       Int?
   confirmedPurchaseYear Int?
-  
-  userEmail              String?
-  buffer                 Float?
+
+  userEmail String?
+  buffer    Float?
 
   // --- QUAN HỆ ---
-  familySupport     PlanFamilySupport?
-  milestoneProgress MilestoneProgress?
-  report            PlanReport?
-  history           PlanHistory?
-  roadmap           PlanRoadmap? // Thêm quan hệ này để dễ truy vấn
+  familySupport      PlanFamilySupport?
+  milestoneProgress  MilestoneProgress?
+  report             PlanReport?
+  history            PlanHistory?
+  roadmap            PlanRoadmap? // Thêm quan hệ này để dễ truy vấn
   onboardingProgress OnboardingProgress?
 }
 
@@ -92,14 +94,14 @@ enum OnboardingSectionState {
 }
 
 model OnboardingProgress {
-  id String @id @default(cuid())
+  id     String @id @default(cuid())
   planId String @unique
   plan   Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  quickCheckState       OnboardingSectionState @default(NOT_STARTED)
-  familySupportState    OnboardingSectionState @default(NOT_STARTED)
-  spendingState         OnboardingSectionState @default(NOT_STARTED)
-  assumptionState       OnboardingSectionState @default(NOT_STARTED)
+  quickCheckState    OnboardingSectionState @default(NOT_STARTED)
+  familySupportState OnboardingSectionState @default(NOT_STARTED)
+  spendingState      OnboardingSectionState @default(NOT_STARTED)
+  assumptionState    OnboardingSectionState @default(NOT_STARTED)
 
   // Lưu trữ dữ liệu nháp của form
   draftData Json?
@@ -112,18 +114,18 @@ model OnboardingProgress {
 }
 
 model PlanFamilySupport {
-  id                        String                   @id @default(cuid())
-  planId                    String                   @unique
-  plan                      Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  monthlyOtherIncome        Float                    @default(0)
-  coApplicantMonthlyIncome  Float?
-  hasFamilySupport          Boolean?                 
-  familySupportType         FamilySupportType?
-  familySupportAmount       Float?
-  familyGiftTiming          FamilyGiftTiming?
-  familyLoanRepaymentType   FamilyLoanRepaymentType?
-  familyLoanInterestRate    Float?
-  familyLoanTermYears       Int?
+  id                       String                   @id @default(cuid())
+  planId                   String                   @unique
+  plan                     Plan                     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  monthlyOtherIncome       Float                    @default(0)
+  coApplicantMonthlyIncome Float?
+  hasFamilySupport         Boolean?
+  familySupportType        FamilySupportType?
+  familySupportAmount      Float?
+  familyGiftTiming         FamilyGiftTiming?
+  familyLoanRepaymentType  FamilyLoanRepaymentType?
+  familyLoanInterestRate   Float?
+  familyLoanTermYears      Int?
 }
 
 // SỬA LẠI CÁC KHỐI ENUM Ở ĐÂY
@@ -144,9 +146,9 @@ enum FamilyLoanRepaymentType {
 
 // BẢNG MỚI CHO REPORT
 model PlanReport {
-  id        String   @id @default(cuid())
-  planId    String   @unique
-  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id               String    @id @default(cuid())
+  planId           String    @unique
+  plan             Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
   generatedAt      DateTime?
   assetEfficiency  String?   @db.Text
   capitalStructure String?   @db.Text
@@ -158,39 +160,65 @@ model PlanReport {
 
 // BẢNG MỚI CHO HISTORY
 model PlanHistory {
-  id               String @id @default(cuid())
-  planId           String @unique
-  plan             Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
-  revisionCount    Int    @default(0)
-  revisionHistory  Json?
-  interactionLog   Json?
+  id              String @id @default(cuid())
+  planId          String @unique
+  plan            Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  revisionCount   Int    @default(0)
+  revisionHistory Json?
+  interactionLog  Json?
 }
 
 // BẢNG MILESTONEPROGRESS ĐÃ ĐƯỢC LÀM GỌN
 model MilestoneProgress {
-  id                    String   @id @default(cuid())
-  planId                String   @unique
-  plan                  Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  userEmail             String?
-  currentSavings        Float    @default(0)
-  selectedMilestoneId   Int      @default(1)
-  totalCompletedMilestones Int   @default(0)
-  savingsPercentage     Float    @default(0)
-  housePriceProjected   Float    @default(0)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  lastProgressUpdate    DateTime?
+  id                       String    @id @default(cuid())
+  planId                   String    @unique
+  plan                     Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  userEmail                String?
+  currentSavings           Float     @default(0)
+  selectedMilestoneId      Int       @default(1)
+  totalCompletedMilestones Int       @default(0)
+  savingsPercentage        Float     @default(0)
+  housePriceProjected      Float     @default(0)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  lastProgressUpdate       DateTime?
   lastMilestoneCalculation DateTime?
+
   @@index([planId])
 }
 
 // BẢNG MỚI CHO ROADMAP
 model PlanRoadmap {
-  id                   String   @id @default(cuid())
-  planId               String   @unique
-  plan                 Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id                   String @id @default(cuid())
+  planId               String @unique
+  plan                 Plan   @relation(fields: [planId], references: [id], onDelete: Cascade)
   milestoneGroups      Json?
   currentMilestoneData Json?
   completedMilestones  Json?
   planPageData         Json?
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Token từ FCM, phải là duy nhất
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  String // "ios", "android", hoặc "web"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  body       String   @db.Text
+  isRead     Boolean  @default(false)
+  relatedUrl String? // Đường dẫn để điều hướng trong app, ví dụ: "/plan/planId/roadmap"
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
