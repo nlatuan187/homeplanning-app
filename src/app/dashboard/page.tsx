@@ -4,7 +4,6 @@ import { getPlansForUser } from "@/actions/dashboardActions";
 import { getOnboardingProgress } from "@/actions/onboardingActions";
 import DashboardClient from "./client"; // SỬA ĐƯỜNG DẪN IMPORT
 import { Suspense } from "react";
-import { NotificationManager } from '@/components/NotificationManager';
 
 export default async function DashboardPage() {
     const user = await currentUser();
@@ -28,7 +27,6 @@ export default async function DashboardPage() {
         <Suspense fallback={dashboardSkeleton}>
             {/* TRUYỀN DỮ LIỆU VÀO CLIENT COMPONENT */}
             <DashboardClient initialPlan={plan} initialProgress={onboardingProgress} />
-            <NotificationManager />
         </Suspense>
     );
 }
