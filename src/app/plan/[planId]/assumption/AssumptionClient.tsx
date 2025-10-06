@@ -17,7 +17,7 @@ import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 
 interface AssumptionData {
   pctSalaryGrowth: number;
-  pctHouseGrowth: number;
+  pctHouseGrowth: number; 
   pctInvestmentReturn: number;
 }
 
@@ -70,7 +70,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   };
 
   const handleNext = () => {
-    if (assumptionStep < 2) {
+    if (assumptionStep < 3) {
       setAssumptionStep(prev => prev + 1);
       setDataKey(prev => prev === 'pctSalaryGrowth' ? 'pctHouseGrowth' : 'pctInvestmentReturn');
     } else {

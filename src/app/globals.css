@@ -220,3 +220,50 @@
     -moz-appearance: textfield;
   }
 }
+
+@layer utilities {
+  /* Custom styles for range input */
+  .custom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    background-color: transparent;
+    position: relative;
+    z-index: 10;
+  }
+  
+  .custom-slider::-webkit-slider-runnable-track {
+    background-color: transparent;
+    height: 8px;
+  }
+  
+  .custom-slider::-moz-range-track {
+    background-color: transparent;
+    height: 8px;
+  }
+
+  .custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    background-color: var(--thumb-color, #06b6d4);
+    border-radius: 50%;
+    border: 2px solid var(--thumb-color, #06b6d4);
+    cursor: pointer;
+    margin-top: -4px; /* Vertically center thumb on track */
+    position: relative;
+    z-index: 20;
+  }
+
+  .custom-slider::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    background-color: var(--thumb-color, #06b6d4);
+    border-radius: 50%;
+    border: 2px solid var(--thumb-color, #06b6d4);
+    cursor: pointer;
+    position: relative;
+    z-index: 20;
+  }
+}
