@@ -15,21 +15,116 @@ import { useRouter } from "next/navigation";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { cn } from "@/lib/utils";
 import { generateProjections } from "@/lib/calculations/projections/generateProjections";
+import { useEffect, useRef } from "react";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
 };
 
-// --- Slider Data Configuration ---
-const getAssumptionData = (plan: Plan) => {
-  const initialSavings = plan.initialSavings || 0;
-  console.log("initialSavings", initialSavings);
-  const pctInvestmentReturn = plan.pctInvestmentReturn || 0;
-  const firstYearReturn = initialSavings * (pctInvestmentReturn / 100);
+const findSelectedProfile = (options: any[], returnValue: number) => {
+  return options.find(option => {
+    // The last option has an inclusive max range
+    if (option.value === 'expert') {
+      return returnValue >= option.minReturn && returnValue <= option.maxReturn;
+    }
+    return returnValue >= option.minReturn && returnValue < option.maxReturn;
+  });
+};
 
-  return [
+// --- Slider Data Configuration ---
+const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: number }) => {
+
+  const riskProfileStep = {
+    key: "riskProfile" as const,
+    type: "radio" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
+    name: "Tích lũy của bạn",
+    title: "Chọn mô tả đúng nhất về bạn:",
+    label: "Chọn mô tả đúng nhất về bạn:",
+    explanations: [
+      {
+        sub: "Thay vì để khoản tiết kiệm và khoản tiền dư ra hàng hàng tháng \"đứng yên\", chúng tôi sẽ giúp bạn xây dựng kế hoạch để nó tăng trưởng",
+        main: "",
+      },
+    ],
+    options: [
+        {
+            value: "safety",
+            title: "Ưu tiên sự an toàn, không muốn mất vốn",
+            sub: "Đề xuất định hướng: ",
+            targetReturn: "4% - 6%/năm",
+            description: "Gửi tiết kiệm, tích luỹ an toàn,...",
+            minReturn: 4,
+            maxReturn: 6,
+            returnRate: 5
+        },
+        {
+            value: "balanced",
+            title: "Chấp nhận biến động để có tăng trưởng tốt hơn",
+            sub: "Đề xuất định hướng: ",
+            targetReturn: "6% - 10%/năm",
+            description: "Tích luỹ an toàn, đầu tư tăng trưởng",
+            minReturn: 6,
+            maxReturn: 10,
+            returnRate: 8
+        },
+        {
+            value: "growth",
+            title: "Chấp nhận rủi ro cao để tối đa hoá tăng trưởng",
+            sub: "Sản phẩm tài chính đề xuất: ",
+            targetReturn: "10% - 14%/năm",
+            description: "Đầu tư tăng trưởng thông qua các sản phẩm uỷ thác.",
+            minReturn: 10,
+            maxReturn: 14,
+            returnRate: 12
+        },
+        {
+            value: "expert",
+            title: "Cần sự tư vấn trực tiếp của chuyên gia",
+            sub: "Sản phẩm tài chính đề xuất: ",
+            targetReturn: "14% - 20%/năm",
+            description: "Đầu tư tăng trưởng thông với sự đồng hành của chuyên gia từ Finful.",
+            minReturn: 14,
+            maxReturn: 20,
+            returnRate: 17
+        }
+    ]
+  };
+
+  const riskColors = {
+    safety: '#22c55e',   // green-500
+    balanced: '#3b82f6', // blue-500
+    growth: '#f97316',   // orange-500
+    expert: '#ef4444',   // red-500
+  };
+
+  const sliderColorRanges = riskProfileStep.options.map(option => ({
+    min: option.minReturn,
+    max: option.maxReturn,
+    color: riskColors[option.value as keyof typeof riskColors],
+    isLast: option.value === 'expert'
+  }));
+
+  const investmentReturnStep = {
+      key: "pctInvestmentReturn" as const,
+      type: "slider" as const,
+      chartDataKey: "pctInvestmentReturn" as const,
+      name: "Tích lũy của bạn",
+      title: "Tỷ suất tích lũy",
+      label: "Kéo thanh trượt để điều chỉnh lợi nhuận kỳ vọng, bạn sẽ thấy bức tranh tài chính thay đổi.",
+      explanations: [],
+      min: 4,
+      max: 20,
+      step: 0.5,
+      suffix: "%",
+      isCustom: true,
+      colorRanges: sliderColorRanges,
+  };
+
+  const assumptionItems: any[] = [
     {
       key: "pctSalaryGrowth" as const,
+      type: "slider" as const,
       chartDataKey: "pctSalaryGrowth" as const,
       name: "Tiền lương",
       title: "Tốc độ tăng lương",
@@ -47,6 +142,7 @@ const getAssumptionData = (plan: Plan) => {
     },
     {
       key: "pctHouseGrowth" as const,
+      type: "slider" as const,
       chartDataKey: "pctHouseGrowth" as const,
       name: "Giá nhà",
       title: "Tốc độ tăng giá nhà",
@@ -63,28 +159,11 @@ const getAssumptionData = (plan: Plan) => {
       step: 1,
       suffix: "%",
     },
-    {
-      key: "pctInvestmentReturn" as const,
-      chartDataKey: "pctInvestmentReturn" as const,
-      name: "Tích lũy của bạn",
-      title: "Tỷ suất tích lũy",
-      label: "Bạn có thể đầu tư với tỷ lệ lợi nhuận bao nhiêu?",
-      explanations: [
-        {
-          sub: "Tại sao cần đầu tư sinh lời 11%/năm?",
-          main: "Tốc độ tăng giá nhà trung bình là 10%/năm, vì vậy bạn cần đầu tư với tỷ suất sinh lời cao hơn tốc độ tăng giá nhà, ít nhất là 11%/năm.",
-        },
-        {
-          sub: "Số tiền tích luỹ của bạn được tính như thế nào?",
-          main: `Tiền tích luỹ ban đầu là ${formatNumber(initialSavings)} triệu VNĐ, sau năm đầu tiên tăng thêm ${formatNumber(firstYearReturn)} triệu VNĐ dựa vào lãi đầu tư. Khoản tích luỹ này còn được cộng thêm từ khoản dư mỗi tháng để sớm đạt mục tiêu`,
-        },
-      ],
-      min: 0,
-      max: 25,
-      step: 1,
-      suffix: "%",
-    },
+    riskProfileStep,
+    investmentReturnStep,
   ];
+ 
+  return assumptionItems;
 };
 
 // --- Main Component ---
@@ -124,16 +203,11 @@ export default function Assumption({
     loadingTitle,
 }: AssumptionProps) {
   const { user, isLoaded } = useUser();
-  const assumptionData = getAssumptionData(plan);
-  console.log("assumptionData", assumptionData);
+  const router = useRouter();
+
+  const assumptionData = getAssumptionData(plan, assumptions);
   const currentAssumption = assumptionData[assumptionStep];
   const isLastStep = assumptionStep === assumptionData.length - 1;
-  const router = useRouter();
-  console.log("chartData", generateProjections(plan as any));
-  console.log("result",  assumptions[currentAssumption.key]);
-
-  // This useEffect block is redundant and causes the error, so it will be removed.
-  // The logic is correctly handled in the parent component AssumptionClient.tsx.
 
   if (step === "intro") {
     return (
@@ -197,41 +271,97 @@ export default function Assumption({
           </div>
         </div>
 
-        <div className="z-10 bg-slate-950 px-2">
+        <div className="z-10 bg-slate-950 px-2 flex-grow overflow-y-auto pb-24">
           <div className="w-full p-2">
             <h2 className="text-base font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
-            <div className="py-1">
-              <FinancialSliders
-                items={[{
-                  label: currentAssumption.title,
-                  value: assumptions[currentAssumption.key],
-                  setValue: (value) => {
-                    onSliderChange(currentAssumption.key, value);
-                  },
-                  max: currentAssumption.max,
-                  suffix: currentAssumption.suffix,
-                }]}
-              />
-            </div>
-            <div className="w-full h-auto rounded-md">
-              <AccumulationChart 
-                data={chartData} 
-                dataKey={currentAssumption.chartDataKey} 
-                name={currentAssumption.name}
-                name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
-              />
-            </div>
-            {currentAssumption.explanations.map((exp, index) => (
-              <div key={index} className="mt-2">
-                <p className="text-xs text-left text-cyan-500">{exp.sub}</p>
-                <p className="text-xs text-left text-slate-400 mt-1 mb-2">{exp.main}</p>
+            {currentAssumption.type === 'radio' ? (
+              <div className="py-1">
+                {currentAssumption.explanations.map((exp: any, index: number) => (
+                  <div key={index} className="mt-2 mb-4 p-4 rounded-md bg-slate-900 border border-slate-800 flex flex-col items-center text-center">
+                     <Image src="/onboarding/increase.png" alt="Growth" width={60} height={60} className="mb-2 text-cyan-400" />
+                    <p className="text-sm text-slate-300">
+                      Thay vì để <span className="font-semibold text-white">khoản tiết kiệm</span> và <span className="font-semibold text-white">khoản tiền dư ra hàng tháng</span> “đứng yên”, chúng tôi sẽ giúp bạn xây dựng kế hoạch để nó tăng trưởng
+                    </p>
+                  </div>
+                ))}
+                <div className="space-y-3">
+                  {currentAssumption.options.map((option: any) => {
+                    const selectedProfile = findSelectedProfile(currentAssumption.options, assumptions.pctInvestmentReturn);
+                    const isSelected = selectedProfile?.value === option.value;
+                    return (
+                      <div
+                        key={option.value}
+                        onClick={() => onSliderChange('pctInvestmentReturn', option.returnRate)}
+                        className={cn(
+                          "p-4 border rounded-md cursor-pointer transition-all",
+                          isSelected ? "border-cyan-500 bg-cyan-500/10" : "border-slate-700 bg-slate-900 hover:bg-slate-800"
+                        )}
+                      >
+                        <div className="flex items-center">
+                          <div className={cn(
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4",
+                            isSelected ? "border-cyan-500 bg-cyan-500" : "border-slate-500"
+                          )}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-slate-900"></div>}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className={cn("font-semibold text-mx", isSelected ? "text-cyan-400" : "text-white")}>{option.title}</h3>
+                            <div className="text-xs text-slate-400 mt-2 grid grid-cols-2 gap-x-4">
+                              <div>
+                                <p className="font-medium">Mức tăng mục tiêu:</p>
+                                <p>{option.targetReturn}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium">{option.sub}</p>
+                                <p>{option.description}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
+            ) : (
+              <>
+                <div className="py-1">
+                  <FinancialSliders
+                    items={[{
+                      label: currentAssumption.title,
+                      value: assumptions[currentAssumption.key as keyof typeof assumptions],
+                      setValue: (value) => {
+                        onSliderChange(currentAssumption.key as keyof typeof assumptions, value);
+                      },
+                      min: currentAssumption.min,
+                      max: currentAssumption.max,
+                      suffix: currentAssumption.suffix,
+                      isCustom: currentAssumption.isCustom,
+                      colorRanges: currentAssumption.colorRanges,
+                    }]}
+                  />
+                </div>
+                <div className="w-full h-auto rounded-md">
+                  <AccumulationChart 
+                    data={chartData} 
+                    name={currentAssumption.name}
+                    name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
+                  />
+                </div>
+                {currentAssumption.type === 'slider' && currentAssumption.explanations.map((exp: any, index: number) => (
+                  <div key={index} className="mt-2">
+                    <p className="text-xs text-left text-cyan-500">{exp.sub}</p>
+                    <p className="text-xs text-left text-slate-400 mt-1 mb-2">{exp.main}</p>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
-
-          {/* Action Button */}
-          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-              <Button 
+        </div>
+          
+        {/* Action Button */}
+        <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+            <Button 
                 onClick={onNext} 
                 className={cn(
                   "w-full text-lg font-semibold rounded-sm",
@@ -244,7 +374,6 @@ export default function Assumption({
               </Button>
           </div>
         </div>
-      </div>
     );
   }
 
