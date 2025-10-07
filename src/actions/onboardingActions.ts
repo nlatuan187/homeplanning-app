@@ -77,3 +77,28 @@ export async function updateOnboardingSectionProgress(
     return { success: false, error: "Could not complete onboarding section." };
   }
 }
+
+export async function saveContact(phone: string, userId: string) {
+  try {
+    const contact = await db.user.update({
+      where: { id: userId },
+      data: { phone },
+    });
+    return contact;
+  } catch (error) {
+    console.error("Error saving contact:", error);
+    throw new Error("Could not save contact.");
+  }
+}
+
+export async function getUser(userId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+}

@@ -44,7 +44,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   }
 
   // State for controlling the UI steps (intro, form, loading, result)
-  const [step, setStep] = useState<"intro" | "form" | "loading" | "result">("intro");
+  const [step, setStep] = useState<"intro" | "form" | "loading" | "result" | "accept">("intro");
   const [loadingTitle, setLoadingTitle] = useState("Hoàn thiện kế hoạch");
   
   // State for controlling the assumption substep (0, 1, 2)
