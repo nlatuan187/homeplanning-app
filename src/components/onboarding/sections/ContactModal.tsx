@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,32 +8,41 @@ interface ContactModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (phone: string) => Promise<void>;
+  currentPhone?: string | null;
 }
 
-export default function ContactModal({ isOpen, onClose, onSubmit }: ContactModalProps) {
+export default function ContactModal({ isOpen, onClose, onSubmit, currentPhone }: ContactModalProps) {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!isOpen) {
+      setPhone("");
+      setError("");
+    }
+  }, [isOpen]);
+
   const handleSubmit = async () => {
-    if (!/^\d{10}$/.test(phone)) {
+    const phoneToSubmit = phone || currentPhone;
+    if (!phoneToSubmit || !/^\d{10}$/.test(phoneToSubmit)) {
         setError("Vui lòng nhập số điện thoại hợp lệ.");
         return;
     }
     setError("");
     setIsLoading(true);
-    await onSubmit(phone);
+    await onSubmit(phoneToSubmit);
     setIsLoading(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-slate-950">
         <DialogHeader className="items-center text-center">
-          <Image src="/path/to/your/barrier-icon.svg" alt="Contact" width={80} height={80} className="mb-4" />
-          <DialogTitle className="text-xl">Thông tin liên hệ</DialogTitle>
+          <Image src="/barrier.png" alt="Contact" width={80} height={80} className="mb-4" />
+          <DialogTitle className="text-xl">Trò chuyện cùng chuyên gia</DialogTitle>
           <DialogDescription className="text-center px-4">
-            Thông tin của bạn sẽ được gửi tới các chuyên gia tài chính của Finful. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.
+            Thông tin của bạn sẽ được gửi tới các chuyên gia tài chính của Finful để chúng tôi có thể hỗ trợ bạn miễn phí.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -41,7 +50,7 @@ export default function ContactModal({ isOpen, onClose, onSubmit }: ContactModal
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="09..."
+            placeholder={currentPhone || "Nhập số điện thoại của bạn"}
             className="col-span-3"
           />
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
