@@ -8,16 +8,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-export default function Schedule() {
+export default function Schedule({ onConfirm }: { onConfirm: () => void }) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-
-  const handleConfirm = () => {
-    // Handle confirmation logic here
-    console.log({ name, phone });
-    toast.success('Đăng ký thành công!');
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -29,7 +23,7 @@ export default function Schedule() {
   };
 
   return (
-    <div className="bg-slate-950 text-white min-h-screen flex flex-col max-w-md mx-auto">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950 text-white px-2">
       <header className="p-4 flex items-center relative border-b border-slate-800">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="absolute left-2">
           <ArrowLeft className="h-6 w-6" />
@@ -37,7 +31,7 @@ export default function Schedule() {
         <h1 className="text-lg font-semibold text-center flex-grow">Đặt lịch tư vấn 1-1</h1>
       </header>
 
-      <main className="flex-grow p-4 space-y-6 overflow-y-auto pb-24">
+      <main className="flex-grow space-y-6 overflow-y-auto">
         <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
           <h2 className="text-lg font-semibold mb-3 flex items-center">
             <span className="w-2 h-2 bg-cyan-500 rounded-full mr-2"></span>
@@ -84,39 +78,38 @@ export default function Schedule() {
           </div>
         </div>
 
-        <div className="text-center">
-          <h2 className="text-lg font-semibold mb-3">Thông tin chuyển khoản</h2>
-          <div className="flex flex-col items-center bg-slate-900 p-4 rounded-lg border border-slate-800">
-            {/* Make sure to add your QR code image to the public folder */}
+        <h2 className="text-lg font-semibold mb-3">Thông tin chuyển khoản</h2>
+
+        <div className="flex flex-row items-center rounded-lg mb-20 max-md:mb-10">
+          <div>
             <Image
-              src="/qr-code-placeholder.png"
+              src="/QR.png"
               alt="QR Code"
-              width={140}
-              height={140}
-              className="mb-4"
+              width={280}
+              height={150}
+              className=""
             />
-            <div className="text-slate-300 space-y-1">
-              <p>Ngân hàng Quân đội (MB)</p>
-              <div className="flex items-center justify-center space-x-2">
-                <p className="font-semibold text-white text-lg tracking-wider">9602345678</p>
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard('9602345678')} title="Sao chép số tài khoản">
-                  <Copy className="h-4 w-4 text-slate-400 hover:text-white" />
-                </Button>
-              </div>
-              <p>CÔNG TY CỔ PHẦN FINFUL</p>
+          </div>
+          <div className="text-slate-300 flex flex-col ml-5">
+            <p className="text-sm">Ngân hàng Quân đội (MB)</p>
+            <div className="flex items-center justify-center">
+              <p className="font-semibold text-cyan-500 text-sm tracking-wider">9602345678</p>
+              <Button variant="ghost" size="icon" onClick={() => copyToClipboard('9602345678')} title="Sao chép số tài khoản">
+                <Copy className="h-4 w-4 text-slate-400 hover:text-white" />
+              </Button>
             </div>
-            <p className="text-xs text-slate-400 mt-3 max-w-xs">
+            <p>CÔNG TY CỔ PHẦN FINFUL</p>
+            <p className="text-xs text-slate-400 mt-3">
               Vui lòng thanh toán 499.000 VNĐ để đặt lịch hẹn. Xác nhận hẹn sẽ được về số điện thoại của bạn.
             </p>
           </div>
         </div>
+        <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-2 bg-slate-950 border-t border-slate-800 z-10">
+          <Button onClick={onConfirm} className="w-full bg-white text-slate-950 hover:bg-slate-200 text-lg font-semibold py-3">
+            Xác nhận đăng ký
+          </Button>
+        </div>
       </main>
-
-      <footer className="p-4 bg-slate-950 border-t border-slate-800 fixed bottom-0 w-full max-w-md">
-        <Button onClick={handleConfirm} className="w-full bg-white text-slate-950 hover:bg-slate-200 text-lg font-semibold py-3">
-          Xác nhận đăng ký
-        </Button>
-      </footer>
     </div>
   );
 }
