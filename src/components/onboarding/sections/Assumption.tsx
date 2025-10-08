@@ -19,6 +19,7 @@ import ContactModal from "./ContactModal";
 import { toast } from "react-hot-toast";
 import { saveContact } from "@/actions/onboardingActions";
 import Accept from "./Accept";
+import Schedule from "./Schedule";
 
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat('vi-VN').format(Math.round(value));
@@ -172,8 +173,8 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
 // --- Main Component ---
 interface AssumptionProps {
     plan: Plan;
-    step: "intro" | "form" | "loading" | "result" | "accept";
-    setStep: (step: "intro" | "form" | "loading" | "result" | "accept") => void;
+    step: "intro" | "form" | "loading" | "result" | "accept" | "schedule";
+    setStep: (step: "intro" | "form" | "loading" | "result" | "accept" | "schedule") => void;
     assumptionStep: number;
     onNext: () => void;
     onPrev: () => void;
@@ -238,6 +239,10 @@ export default function Assumption({
       console.error("Failed to save contact:", error);
       toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.");
     }
+  };
+
+  const scheduleConfirm = () => {
+    setStep("accept");
   };
 
   const handleOpenContactModal = (source: 'expert' | 'result') => {
@@ -536,7 +541,7 @@ export default function Assumption({
                         </Button>
                       </div>
                     </div>
-                  ) : (result.earliestPurchaseYear > (plan.confirmedPurchaseYear ?? Infinity) && result.earliestPurchaseYear - plan.confirmedPurchaseYear! <= 1) ? (
+                  ) : (result.earliestPurchaseYear < (plan.confirmedPurchaseYear ?? Infinity)) ? (
                     <div className="flex flex-col mx-4">
                       <div className="text-lg mb-4"> 
                         Bạn có thể<br/> 
@@ -561,7 +566,7 @@ export default function Assumption({
                           </Button>
                         </div>
                         <div className="mt-auto pt-4">
-                          <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                          <Button onClick={() => setStep('schedule')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                             Đặt lịch tư vấn 1-1
                           </Button>
                         </div>
@@ -602,6 +607,9 @@ export default function Assumption({
       )}
       {step === "accept" && (
         <Accept />
+      )}
+      {step === "schedule" && (
+        <Schedule onConfirm={scheduleConfirm} />
       )}
     </>
   );
