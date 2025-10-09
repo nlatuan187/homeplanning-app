@@ -103,7 +103,7 @@ export default function FamilySupport({
       // @ts-ignore
       { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (đơn vị: %/năm) (Nếu vay không cần trả lãi, vui lòng nhập 0)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
-      { key: 'familySupportLoanRepayment', text: 'Bạn sẽ trả nợ theo hình thức nào?', type: 'options', options: [{label: 'Trả góp đều hàng tháng', value: 'MONTHLY'}, {label: 'Trả một lần vào cuối kỳ ', value: 'LUMP_SUM'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+      { key: 'familySupportLoanRepayment', text: 'Bạn sẽ trả nợ theo hình thức nào?', type: 'options', options: [{label: 'Trả góp đều hàng tháng', value: 'MONTHLY'}, {label: 'Trả một lần khi đủ tiền', value: 'LUMP_SUM'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
       { key: 'familySupportLoanTerm', text: 'Thời hạn của khoản vay này là bao lâu (năm)', type: 'number', unit: 'năm', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' && ans.familySupportLoanRepayment === 'MONTHLY' },
   ], []);
@@ -244,7 +244,7 @@ export default function FamilySupport({
   if (step === "loading" && familySupport) {
       return (
         <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
-            <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ"/>
+            <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100}/>
         </div>
       )
   }

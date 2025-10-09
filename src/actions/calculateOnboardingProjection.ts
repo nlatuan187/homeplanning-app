@@ -20,7 +20,7 @@ export async function calculateOnboardingProjection(
 
   // Build a minimal plan for the engine
   const yearToPurchase = yearsToPurchase ? yearsToPurchase - new Date().getFullYear() : undefined;
-  if (!yearToPurchase) {
+  if (yearToPurchase === undefined || yearToPurchase < 0) {
     return { success: false, error: "Invalid yearsToPurchase" };
   }
   const planForEngine: Partial<PlanWithDetails> = {

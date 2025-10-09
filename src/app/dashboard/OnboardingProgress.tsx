@@ -171,7 +171,6 @@ export default function OnboardingProgressDisplay({ planId, progress }: Onboardi
           />
         </div>
       </div>
-      <NotificationManager />
     </div>
   );
 }

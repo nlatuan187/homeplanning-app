@@ -52,11 +52,11 @@ export async function updateSpendingAndRecalculate(
       ]);
       result = await runProjectionWithEngine(plan.id);
       if (result.earliestPurchaseYear === 0) {
-        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪"
+        customMessage = "Chi tiêu rất ấn tượng đấy 😀"
       } else if (result.earliestPurchaseYear > existingResult.earliestPurchaseYear) {
-        customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 😞"
+        customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵"
       } else {
-        customMessage = `Ấn tượng đấy 😀`;
+        customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
       }
       await db.$transaction([
         db.planReport.upsert({

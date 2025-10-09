@@ -2,13 +2,15 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { OnboardingPlanState } from "@/components/onboarding/types";
+import { OnboardingPlanState, ProjectionResult } from "@/components/onboarding/types";
 import { calculateOnboardingProjection } from "./calculateOnboardingProjection";
 import { computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { runProjectionWithEngine } from "./projectionHelpers";
 import { createOnboardingProgress } from "./onboardingActions";
+
+export type QuickCheckResultPayload = ProjectionResult;
 
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
@@ -77,6 +79,7 @@ export async function createPlanFromOnboarding(
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
       onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
+    console.log("yearsToPurchase", yearsToPurchase);
     if (yearsToPurchase === undefined || yearsToPurchase < 0) {
       return { success: false, error: "Invalid yearsToPurchase" };
     }
@@ -165,4 +168,12 @@ export async function createPlanFromOnboarding(
     // We still return a generic error to the client for security.
     return { success: false, error: "Database error", projectionResult: projectionResult };
   }
+}
+
+export async function calculateQuickCheckResult(
+  onboardingData: Partial<OnboardingPlanState>
+) {
+  console.log("onboardingData", onboardingData);
+  const projectionResult = await calculateOnboardingProjection(onboardingData);
+  return projectionResult;
 }
