@@ -60,7 +60,7 @@ export default function ResultsClient({
               <div className="rounded-lg text-center font-semibold text-2xl text-red-500">
                 chưa khả thi
               </div>
-              {plan.confirmedPurchaseYear && firstYearProjection && firstYearProjection.year - plan.confirmedPurchaseYear === 1 ? (
+              {plan.confirmedPurchaseYear && firstYearProjection ? (
                 <>
                   <div className="rounded-lg text-center">
                     nhưng bạn có thể mua nhà vào năm {firstYearProjection.year}
@@ -99,7 +99,7 @@ export default function ResultsClient({
         <div className="container mx-auto max-w-5xl">
           <Button
             className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"
-            onClick={() => router.push(`/plan/${plan.id}/familySupport`)}
+            onClick={() => router.push(`/plan/${plan.id}/familysupport`)}
           >
             Khám phá ngay
           </Button>

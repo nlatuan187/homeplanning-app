@@ -166,7 +166,7 @@ interface QuickCheckProps {
 }
 
 export default function QuickCheck({ onCompleted, initialData = {}, isEditMode = false }: QuickCheckProps) {
-  const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2">(
+  const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2" | "loading" | "result">(
     "intro",
   );
 

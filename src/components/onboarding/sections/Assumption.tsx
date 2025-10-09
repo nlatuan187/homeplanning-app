@@ -13,17 +13,12 @@ import { OnboardingSectionState, Plan } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 import ContactModal from "./ContactModal";
 import { toast } from "react-hot-toast";
 import { saveContact } from "@/actions/onboardingActions";
 import Accept from "./Accept";
 import Schedule from "./Schedule";
-
-const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('vi-VN').format(Math.round(value));
-};
 
 const findSelectedProfile = (options: any[], returnValue: number) => {
   return options.find(option => {
@@ -115,7 +110,7 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
       chartDataKey: "pctInvestmentReturn" as const,
       name: "Tích lũy của bạn",
       title: "Tỷ suất tích lũy",
-      label: "Kéo thanh trượt để điều chỉnh lợi nhuận kỳ vọng, bạn sẽ thấy bức tranh tài chính thay đổi.",
+      label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (tỷ lệ: %)",
       explanations: [],
       min: 4,
       max: 20,
@@ -400,6 +395,7 @@ export default function Assumption({
                             data={chartData} 
                             name={currentAssumption.name}
                             name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
+                            hasComparisonData={currentAssumption.chartDataKey === 'pctInvestmentReturn'}
                           />
                         </div>
                         {currentAssumption.type === 'slider' && currentAssumption.explanations.map((exp: any, index: number) => (
@@ -522,7 +518,7 @@ export default function Assumption({
           
                     </div>
                     // Case 3: Cannot purchase
-                    ) : (result.earliestPurchaseYear === plan.confirmedPurchaseYear) ? (
+                    ) : (result.earliestPurchaseYear === plan.confirmedPurchaseYear && result.earliestPurchaseYear - new Date().getFullYear() >= 1) ? (
                     <div className="flex flex-col mx-4">
                       <div className="text-lg mb-4">
                         Kế hoạch <br/> 
@@ -537,11 +533,11 @@ export default function Assumption({
                       </div>
                       <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
                         <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                          Lập kế hoạch mua nha nhà năm {plan.confirmedPurchaseYear}
+                          Lập kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
                         </Button>
                       </div>
                     </div>
-                  ) : (result.earliestPurchaseYear < (plan.confirmedPurchaseYear ?? Infinity)) ? (
+                  ) : (plan.confirmedPurchaseYear && plan.confirmedPurchaseYear - result.earliestPurchaseYear <= 1) ? (
                     <div className="flex flex-col mx-4">
                       <div className="text-lg mb-4"> 
                         Bạn có thể<br/> 

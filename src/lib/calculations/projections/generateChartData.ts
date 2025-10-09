@@ -135,7 +135,7 @@ export function generateAccumulationMilestones(
 
     } else {
       currentValue = initialValue * Math.pow(1 + growthRate / 100, year - currentYear);
-      milestones.push({ name: `${year}`, value: Math.round(currentValue) });
+      milestones.push({ name: `${year}`, value: currentValue });
     }
   }
 

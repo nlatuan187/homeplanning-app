@@ -10,8 +10,6 @@ import QuickCheck from "@/components/onboarding/sections/QuickCheck";
 import FamilySupport from "@/components/onboarding/sections/FamilySupport";
 import Spending from "@/components/onboarding/sections/Spending";
 import { OnboardingPlanState } from "@/components/onboarding/types";
-import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
-import { OnboardingSectionState } from "@prisma/client";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import { RecalculationResult } from "@/components/onboarding/shared/ResultStep";
 import Image from "next/image";
@@ -22,14 +20,12 @@ import ProgressBar from "../onboarding/shared/ProgressBar";
 import FinancialSliders from "./playground/FinancialSliders";
 import AccumulationChart from "./playground/AccumulationChart";
 import { generateAccumulationMilestones } from "@/lib/calculations/projections/generateChartData";
-import { updateAndRecalculateAssumption } from "@/actions/updateAndRecalculateAssumption";
 import { useUser } from "@clerk/nextjs";
 import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
 import { 
   updateQuickCheckSection, 
   updateFamilySupportSection, 
   updateSpendingSection,
-  updateAssumptionSectionAndRecalculate,
   runProjectionForPlan
 } from "@/actions/editPlan";
 import { useDebounce } from "@/hooks/useDebounce"; // Import hook debounce
@@ -37,12 +33,6 @@ import { updateSinglePlanField } from "@/actions/editPlan"; // Import action m�
 import { useEffect } from "react"; // Import useEffect
 import { cn } from "@/lib/utils";
 import { DataKey } from "@/lib/calculations/projections/generateChartData";
-
-interface AssumptionData {
-  pctSalaryGrowth: number;
-  pctHouseGrowth: number;
-  pctInvestmentReturn: number;
-}
 
 const assumptionData = [
   {
@@ -85,13 +75,6 @@ const assumptionData = [
     suffix: "%",
   }
 ];
-
-type InteractionLogEntry = {
-  timestamp: string;
-  type: "interaction_start" | "initial_change" | "reset_to_initial" | "final_submit";
-  values?: Record<string, any>;
-};
-
 
 // Định nghĩa các section trong luồng chỉnh sửa
 type EditPlanSection = 'quickCheck' | 'familySupport' | 'spending' | 'assumptions';
@@ -167,6 +150,7 @@ function AssumptionFormStep({
                 value: assumptions[currentAssumption.key],
                 setValue: (value) => onSliderChange(currentAssumption.key, value),
                 max: currentAssumption.max,
+                min: currentAssumption.min,
                 suffix: currentAssumption.suffix,
               }]}
             />
