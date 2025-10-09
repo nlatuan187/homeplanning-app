@@ -1,11 +1,6 @@
 import { Plan, PlanHistory } from "@prisma/client";
 import { ProjectionRow } from "../affordability";
 
-// Define a more specific type for the plan object to satisfy TypeScript
-type PlanWithPaymentMethod = Plan & {
-  paymentMethod: "fixed" | "decreasing";
-};
-
 /**
  * A more specific type for the plan object that includes nested family support.
  * This ensures TypeScript understands the full data structure we're working with.
@@ -161,7 +156,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     cumulativeSavingsFromMonthly: annualSavingsN0 / 12,
     familyLoanRepayment: 0,
     monthlyChildExpenses: plan.monthlyChildExpenses || 0,
-    hasNewChild: plan.hasNewChild,
+    hasNewChild: plan.hasNewChild || false,
     yearToHaveChild: plan.yearToHaveChild || 0,
   };
   projectionData.push(year0);
@@ -266,7 +261,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
       cumulativeSavingsFromInitial: accumulatedFromInitial,
       cumulativeSavingsFromMonthly: accumulatedFromMonthly,
       monthlyChildExpenses: plan.monthlyChildExpenses || 0,
-      hasNewChild: plan.hasNewChild,
+      hasNewChild: plan.hasNewChild || false,
       yearToHaveChild: plan.yearToHaveChild || 0,
     });
   }

@@ -8,19 +8,20 @@ interface AccumulationChartProps {
   name: string;
   name2?: string;
   name3?: string;
+  hasComparisonData: boolean;
 }
 
 const formatNumber = (value: number) => {
   if (value === null || value === undefined) return "";
   // Sử dụng 'en-US' để có dấu chấm thập phân như trong hình ảnh thiết kế
   const options = {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
+    minimumFractionDigits: 0, // <--- Vấn đề ở đây
+    maximumFractionDigits: 1, // <--- Và ở đây
   };
   return new Intl.NumberFormat('en-US', options).format(value);
 };
 
-export default function AccumulationChart({ data, name, name2, name3 }: AccumulationChartProps) {
+export default function AccumulationChart({ data, name, name2, name3, hasComparisonData }: AccumulationChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="text-center text-slate-500 py-10">
@@ -28,8 +29,6 @@ export default function AccumulationChart({ data, name, name2, name3 }: Accumula
       </div>
     );
   }
-
-  const hasComparisonData = data.some(d => d.value2 !== undefined);
 
   const processedData = data.map(item => ({
     ...item,
