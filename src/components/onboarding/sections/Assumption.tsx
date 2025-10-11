@@ -32,7 +32,6 @@ const findSelectedProfile = (options: any[], returnValue: number) => {
 
 // --- Slider Data Configuration ---
 const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: number }) => {
-
   const riskProfileStep = {
     key: "riskProfile" as const,
     type: "radio" as const,
@@ -411,19 +410,19 @@ export default function Assumption({
                   
                 {/* Action Button */}
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-                    <Button 
-                        onClick={onNext} 
-                        className={cn(
-                          "w-full text-lg font-semibold rounded-sm",
-                          isLastStep
-                            ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                            : "bg-white text-slate-900 hover:bg-slate-200",
-                        )}
-                      >
-                          {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
-                      </Button>
-                  </div>
+                  <Button 
+                    onClick={onNext} 
+                    className={cn(
+                      "w-full text-lg font-semibold rounded-sm",
+                      isLastStep
+                        ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                        : "bg-white text-slate-900 hover:bg-slate-200",
+                    )}
+                  >
+                      {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
+                  </Button>
                 </div>
+              </div>
             </>
           );
         }

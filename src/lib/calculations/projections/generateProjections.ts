@@ -92,7 +92,6 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
   // BƯỚC 1: Chuẩn bị dữ liệu đầu vào an toàn
   const plan = preparePlanForProjection(planData);
   console.log("plan", plan);
-  console.log("planData", planData);
 
   // --- PHẦN KHỞI TẠO ---
   const familySupport = plan.familySupport;

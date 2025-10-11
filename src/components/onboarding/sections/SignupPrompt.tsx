@@ -6,7 +6,7 @@ import { OnboardingPlanState } from "../types";
 import { Award, ShieldCheck, ArrowLeftIcon } from "lucide-react";
 
 interface SignupPromptProps {
-  planData: Partial<OnboardingPlanState>;
+  planData: Partial<OnboardingPlanState> & { id?: string };
   onBack: () => void; // Function to go back to the form
 }
 
@@ -20,12 +20,25 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
     try {
       // Save the collected data to localStorage
       localStorage.setItem(PENDING_PLAN_KEY, JSON.stringify(planData));
-      // Redirect to the sign-up page
-      router.push("/sign-up");
+
+      if (!planData.id) {
+        router.push("/sign-up");
+        return;
+      }
+      // Redirect to the sign-up page, with a redirect to the family support page after completion
+      const redirectUrl = `/plan/${planData.id}/familysupport`;
+      router.push(`/sign-up?redirect_url=${encodeURIComponent(redirectUrl)}`);
     } catch (error) {
       console.error("Failed to save pending plan to localStorage", error);
       // Still redirect even if saving fails
-      router.push("/sign-up");
+      if (planData.id) {
+        const redirectUrl = `/plan/${planData.id}/familysupport`;
+        router.push(
+          `/sign-up?redirect_url=${encodeURIComponent(redirectUrl)}`
+        );
+      } else {
+        router.push("/sign-up");
+      }
     }
   };
 

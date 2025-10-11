@@ -7,11 +7,11 @@ import Image from "next/image";
 interface ContactModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (phone: string) => Promise<void>;
+  onSubmit: (phone: string, assumptionData?: any) => Promise<void>;
   currentPhone?: string | null;
 }
 
-export default function ContactModal({ isOpen, onClose, onSubmit, currentPhone }: ContactModalProps) {
+export default function ContactModal({ isOpen, onClose, onSubmit, currentPhone}: ContactModalProps) {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

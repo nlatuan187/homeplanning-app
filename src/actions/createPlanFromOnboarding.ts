@@ -79,7 +79,6 @@ export async function createPlanFromOnboarding(
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
       onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
-    console.log("yearsToPurchase", yearsToPurchase);
     if (yearsToPurchase === undefined || yearsToPurchase < 0) {
       return { success: false, error: "Invalid yearsToPurchase" };
     }
@@ -173,7 +172,6 @@ export async function createPlanFromOnboarding(
 export async function calculateQuickCheckResult(
   onboardingData: Partial<OnboardingPlanState>
 ) {
-  console.log("onboardingData", onboardingData);
   const projectionResult = await calculateOnboardingProjection(onboardingData);
   return projectionResult;
 }

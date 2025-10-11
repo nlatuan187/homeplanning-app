@@ -267,8 +267,18 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
   };
 
   const handleSubmitPart2 = async (data: Partial<OnboardingPlanState>) => {
-    setStep("loading");
     const finalData = { ...formData, ...data };
+
+    if (isEditMode) {
+      onCompleted({
+        onboardingData: finalData,
+        quickCheckResult: result as QuickCheckResultPayload,
+      });
+      return;
+    }
+
+    setStep("loading");
+
     const processedData: Partial<OnboardingPlanState> = {
       ...finalData,
         hasCoApplicant: (finalData.hasCoApplicant || false),
@@ -278,8 +288,6 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
         monthlyLivingExpenses: (finalData.monthlyLivingExpenses || 0),
         yearsToPurchase: (finalData.yearsToPurchase || 0),
     };
-    console.log("processedData", processedData);
-    console.log("response", await calculateQuickCheckResult(processedData));
 
     try {
       const response = await calculateQuickCheckResult(processedData);
@@ -393,7 +401,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     );
   }
 
-  if (step === "loading") {
+  if (step === "loading" && !isEditMode) {
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
         <LoadingOverlay messages={["Đang kiểm tra khả năng mua nhà..."]} />
@@ -401,7 +409,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     );
   }
 
-  if (step === "result" && result) {
+  if (step === "result" && result && !isEditMode) {
     const yearsToPurchase = (formData.yearsToPurchase ?? new Date().getFullYear()) - new Date().getFullYear();
 
     const partialPlan: Partial<PlanWithDetails> = {
@@ -429,15 +437,13 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
 
     // Chạy hàm tính toán projection với đối tượng plan tạm thời
     const projectionData = generateProjections(partialPlan);
-    console.log("projectionData", projectionData);
     const targetYearProjection: ProjectionRow | undefined =
       projectionData.find(p => p.isAffordable);
 
-    console.log("targetYearProjection", targetYearProjection);
     const displayPlan = { ...partialPlan };
 
     return (
-      <ResultsClient plan={displayPlan as any} firstYearProjection={targetYearProjection} onCompleted={handleContinueFromResult} />
+      <ResultsClient plan={displayPlan as any} firstYearProjection={targetYearProjection} onNext={handleContinueFromResult} />
     );
   }
 

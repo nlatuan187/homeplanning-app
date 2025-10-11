@@ -9,16 +9,18 @@ import { ArrowLeftIcon } from "lucide-react";
 interface ResultsClientProps {
   plan: Plan & { familySupport: any };
   firstYearProjection?: any;
-  onCompleted: () => void;
+  onNext: () => void;
 }
 
 export default function ResultsClient({
   plan,
   firstYearProjection,
-  onCompleted,
+  onNext,
 }: ResultsClientProps) {
   const router = useRouter();
-  const isScenarioB = firstYearProjection && firstYearProjection.year <= (plan.confirmedPurchaseYear ?? 0); 
+  const isScenarioB =
+    firstYearProjection &&
+    firstYearProjection.year <= (plan.confirmedPurchaseYear ?? 0);
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="container mx-auto max-w-5xl">
@@ -101,7 +103,7 @@ export default function ResultsClient({
         <div className="container mx-auto max-w-5xl">
           <Button
             className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"
-            onClick={() => router.push(`/plan/${plan.id}/familysupport`)}
+            onClick={onNext}
           >
             Khám phá ngay
           </Button>

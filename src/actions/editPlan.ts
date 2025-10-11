@@ -245,3 +245,29 @@ export async function runProjectionForPlan(planId: string) {
     return { success: false, error: (error as Error).message };
   }
 }
+
+/**
+ * Xóa tiến trình onboarding của một kế hoạch.
+ * Được gọi sau khi người dùng hoàn thành luồng chỉnh sửa kế hoạch.
+ */
+export async function deleteOnboardingProgress(planId: string) {
+  try {
+    // Xác thực người dùng và quyền sở hữu plan
+    await getUserAndPlan(planId);
+
+    // Tìm và xóa bản ghi OnboardingProgress
+    await db.onboardingProgress.delete({
+      where: { planId: planId },
+    });
+
+    return { success: true };
+  } catch (error) {
+    // Lỗi có thể xảy ra nếu không tìm thấy bản ghi, nhưng ta có thể bỏ qua
+    // vì mục tiêu cuối cùng là không còn bản ghi đó nữa.
+    if ((error as any).code === 'P2025') { // Mã lỗi của Prisma khi không tìm thấy record
+      return { success: true, message: "Onboarding progress not found, considered deleted." };
+    }
+    console.error(`[ACTION_ERROR] Failed to delete onboarding progress for plan ${planId}:`, error);
+    return { success: false, error: (error as Error).message };
+  }
+}
