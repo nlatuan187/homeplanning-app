@@ -32,7 +32,6 @@ const findSelectedProfile = (options: any[], returnValue: number) => {
 
 // --- Slider Data Configuration ---
 const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: number }) => {
-
   const riskProfileStep = {
     key: "riskProfile" as const,
     type: "radio" as const,
@@ -110,7 +109,7 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
       chartDataKey: "pctInvestmentReturn" as const,
       name: "Tích lũy của bạn",
       title: "Tỷ suất tích lũy",
-      label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (tỷ lệ: %)",
+      label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (đơn vị: %)",
       explanations: [],
       min: 4,
       max: 20,
@@ -411,19 +410,19 @@ export default function Assumption({
                   
                 {/* Action Button */}
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
-                    <Button 
-                        onClick={onNext} 
-                        className={cn(
-                          "w-full text-lg font-semibold rounded-sm",
-                          isLastStep
-                            ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                            : "bg-white text-slate-900 hover:bg-slate-200",
-                        )}
-                      >
-                          {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
-                      </Button>
-                  </div>
+                  <Button 
+                    onClick={onNext} 
+                    className={cn(
+                      "w-full text-lg font-semibold rounded-sm",
+                      isLastStep
+                        ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                        : "bg-white text-slate-900 hover:bg-slate-200",
+                    )}
+                  >
+                      {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
+                  </Button>
                 </div>
+              </div>
             </>
           );
         }
@@ -571,8 +570,8 @@ export default function Assumption({
                   ) : (
                     <div className="flex flex-col mx-4">
                       <div className="text-lg mb-4">
-                        Bạn sẽ cần điều chỉnh nhiều để<br/> 
-                        <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
+                        Bạn chưa thể<br/> 
+                        <div className="text-cyan-500 font-bold">mua được căn nhà như mong muốn</div> 
                       </div>
                       <div className="flex items-center justify-center text-center">
                         <Image src="/onboarding/result 4.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />

@@ -54,7 +54,7 @@ function calculateMonthlyPayment(
  * @param partialPlanData - Dữ liệu kế hoạch chưa hoàn chỉnh từ người dùng.
  * @returns - Một object Plan hoàn chỉnh, sẵn sàng cho việc tính toán.
  */
-function preparePlanForProjection(partialPlanData: Partial<PlanWithDetails>): PlanWithDetails {
+export function preparePlanForProjection(partialPlanData: Partial<PlanWithDetails>): PlanWithDetails {
   const defaults = {
     createdAt: new Date(),
     yearsToPurchase: 3,
@@ -91,6 +91,7 @@ function preparePlanForProjection(partialPlanData: Partial<PlanWithDetails>): Pl
 export function generateProjections(planData: Partial<PlanWithDetails>, maxYearsToProject?: number): ProjectionRow[] {
   // BƯỚC 1: Chuẩn bị dữ liệu đầu vào an toàn
   const plan = preparePlanForProjection(planData);
+  console.log("plan", plan);
 
   // --- PHẦN KHỞI TẠO ---
   const familySupport = plan.familySupport;

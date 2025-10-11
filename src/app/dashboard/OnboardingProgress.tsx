@@ -25,7 +25,7 @@ const sectionConfig = {
   familySupport: {
     title: "Nguồn lực hỗ trợ",
     image: "/icons/suitcase 2.png",
-    link: "familySupport",
+    link: "familysupport",
     backgroundImage: "url('/onboarding/card2bg.png')", 
   },
   spending: {
@@ -171,7 +171,6 @@ export default function OnboardingProgressDisplay({ planId, progress }: Onboardi
           />
         </div>
       </div>
-      <NotificationManager />
     </div>
   );
 }

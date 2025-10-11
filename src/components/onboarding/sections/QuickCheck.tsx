@@ -9,6 +9,15 @@ import MultiStepQuestionForm, {
 } from "../shared/MultiStepQuestionForm";
 import { ArrowLeftIcon, CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import LoadingOverlay from "@/components/ui/loading-overlay";
+import {
+  calculateQuickCheckResult,
+  QuickCheckResultPayload,
+} from "@/actions/createPlanFromOnboarding";
+import { toast } from "react-hot-toast";
+import { generateProjections, PlanWithDetails, preparePlanForProjection } from "@/lib/calculations/projections/generateProjections";
+import { ProjectionRow } from "@/lib/calculations/affordability";
+import ResultsClient from "./ResultsClient";
 
 const currentYear = new Date().getFullYear();
 
@@ -161,7 +170,10 @@ interface QuickCheckProps {
   quickCheck?: OnboardingPlanState;
   initialData?: OnboardingPlanState;
   planId?: string;
-  onCompleted: (data: Partial<OnboardingPlanState>) => void;
+  onCompleted: (data: {
+    onboardingData: Partial<OnboardingPlanState>;
+    quickCheckResult: QuickCheckResultPayload;
+  }) => void;
   isEditMode?: boolean;
 }
 
@@ -169,6 +181,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2" | "loading" | "result">(
     "intro",
   );
+  const [result, setResult] = useState<QuickCheckResultPayload | null>(null);
 
   const router = useRouter();
 
@@ -253,8 +266,19 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     setStep("form2");
   };
 
-  const handleSubmitPart2 = (data: Partial<OnboardingPlanState>) => {
+  const handleSubmitPart2 = async (data: Partial<OnboardingPlanState>) => {
     const finalData = { ...formData, ...data };
+
+    if (isEditMode) {
+      onCompleted({
+        onboardingData: finalData,
+        quickCheckResult: result as QuickCheckResultPayload,
+      });
+      return;
+    }
+
+    setStep("loading");
+
     const processedData: Partial<OnboardingPlanState> = {
       ...finalData,
         hasCoApplicant: (finalData.hasCoApplicant || false),
@@ -262,8 +286,32 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
         initialSavings: (finalData.initialSavings || 0),
         userMonthlyIncome: (finalData.userMonthlyIncome || 0),
         monthlyLivingExpenses: (finalData.monthlyLivingExpenses || 0),
+        yearsToPurchase: (finalData.yearsToPurchase || 0),
     };
-    onCompleted(processedData);
+
+    try {
+      const response = await calculateQuickCheckResult(processedData);
+      if (response.success && response) {
+        setResult(response);
+        setFormData(processedData); // Save the completed data
+        setStep("result");
+      } else {
+        toast.error(response.error || "Không thể tính toán. Vui lòng thử lại.");
+        setStep("form2"); // Go back to the form
+      }
+    } catch (error) {
+      console.error("Quick check calculation failed", error);
+      toast.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại.");
+      setStep("form2");
+    }
+  };
+
+  const handleContinueFromResult = () => {
+    if (!result) return;
+    onCompleted({
+      onboardingData: formData,
+      quickCheckResult: result,
+    });
   };
 
   if (step === "intro") {
@@ -350,6 +398,52 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
           </div>
         </div>
       </>
+    );
+  }
+
+  if (step === "loading" && !isEditMode) {
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+        <LoadingOverlay messages={["Đang kiểm tra khả năng mua nhà..."]} />
+      </div>
+    );
+  }
+
+  if (step === "result" && result && !isEditMode) {
+    const yearsToPurchase = (formData.yearsToPurchase ?? new Date().getFullYear()) - new Date().getFullYear();
+
+    const partialPlan: Partial<PlanWithDetails> = {
+      yearsToPurchase: yearsToPurchase,
+      hasCoApplicant: formData.hasCoApplicant ?? false,
+      targetHousePriceN0: (formData.targetHousePriceN0 ?? 0) * 1000,
+      initialSavings: formData.initialSavings ?? 0,
+      userMonthlyIncome: formData.userMonthlyIncome ?? 0,
+      monthlyLivingExpenses: formData.monthlyLivingExpenses ?? 0,
+      confirmedPurchaseYear: formData.yearsToPurchase ?? 0,
+      pctSalaryGrowth: 7.0,
+      pctHouseGrowth: 10.0,
+      pctInvestmentReturn: 11.0,
+      pctExpenseGrowth: 4.0,
+      loanInterestRate: 11.0,
+      loanTermYears: 25,
+      monthlyNonHousingDebt: 0,
+      currentAnnualInsurancePremium: 0,
+      hasNewChild: false,
+      yearToHaveChild: 0,
+      monthlyChildExpenses: 0,
+      paymentMethod: "fixed",
+      coApplicantSalaryGrowth: 7.0,
+    };
+
+    // Chạy hàm tính toán projection với đối tượng plan tạm thời
+    const projectionData = generateProjections(partialPlan);
+    const targetYearProjection: ProjectionRow | undefined =
+      projectionData.find(p => p.isAffordable);
+
+    const displayPlan = { ...partialPlan };
+
+    return (
+      <ResultsClient plan={displayPlan as any} firstYearProjection={targetYearProjection} onNext={handleContinueFromResult} />
     );
   }
 

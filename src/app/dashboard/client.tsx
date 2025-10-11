@@ -1,6 +1,6 @@
 "use client"; 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -140,6 +140,13 @@ interface DashboardClientProps {
 export default function DashboardClient({ initialPlan, initialProgress }: DashboardClientProps) {
   const { user } = useUser();
   const [plan] = useState<PlanForDashboard | null>(initialPlan);
+  const [pendingPlan, setPendingPlan] = useState<boolean>(false);
+  const PENDING_PLAN_KEY = "pendingOnboardingPlan";
+  useEffect(() => {
+    const pendingPlanJSON = localStorage.getItem(PENDING_PLAN_KEY);
+    setPendingPlan(!!pendingPlanJSON);
+  }, []);
+
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
   const targetHousePrice = ((plan?.targetHousePriceN0 || 0) * Math.pow(1 + (plan?.pctHouseGrowth || 0) / 100, (plan?.confirmedPurchaseYear || 0) - new Date().getFullYear()))/ 1000;
   console.log("plan?.pctHouseGrowth", plan);
@@ -163,6 +170,14 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
       </CardContent>
     </Card>
   );
+
+  if (pendingPlan) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+        <PendingPlanHandler />
+      </main>
+    );
+  }
 
   if (initialProgress) {
     return (
@@ -279,7 +294,6 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
           <SupportSheetContent />
         </SheetContent>
       </Sheet>
-      <PendingPlanHandler />
       {plan && <BottomNavbar planId={plan.id}/>}
     </main>
   );

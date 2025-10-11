@@ -102,3 +102,28 @@ export async function getUser(userId: string) {
     return null;
   }
 }
+
+export async function getPlan(planId: string) {
+  try {
+    const plan = await db.plan.findUnique({
+      where: { id: planId },
+    });
+    return plan;
+  } catch (error) {
+    console.error("Error fetching plan:", error);
+    return null;
+  }
+}
+
+export async function updatePlanViableYear(planId: string, firstViableYear: number | undefined) {
+  try {
+    const updatedPlan = await db.plan.update({
+      where: { id: planId },
+      data: { firstViableYear },
+    });
+    return { success: true, plan: updatedPlan };
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật năm khả thi cho plan ${planId}:`, error);
+    return { success: false, error: "Không thể cập nhật kế hoạch." };
+  }
+}

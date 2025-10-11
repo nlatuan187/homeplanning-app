@@ -9,17 +9,21 @@ import { ArrowLeftIcon } from "lucide-react";
 interface ResultsClientProps {
   plan: Plan & { familySupport: any };
   firstYearProjection?: any;
+  onNext: () => void;
 }
 
 export default function ResultsClient({
   plan,
   firstYearProjection,
+  onNext,
 }: ResultsClientProps) {
   const router = useRouter();
-  const isScenarioB = plan.affordabilityOutcome === "ScenarioB"; 
+  const isScenarioB =
+    firstYearProjection &&
+    firstYearProjection.year <= (plan.confirmedPurchaseYear ?? 0);
   return (
-    <main className="min-h-screen bg-black text-white p-2 md:p-4">
-      <div className="container mx-auto max-w-5xl pb-24">
+    <main className="min-h-screen bg-slate-950 text-white">
+      <div className="container mx-auto max-w-5xl">
         <header className="relative flex justify-center items-center py-4 px-2">
           <div className="absolute left-0">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -33,7 +37,7 @@ export default function ResultsClient({
           Kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
         </div>
 
-        <div className="space-y-8">
+        <div className="">
           {isScenarioB ? (
             <div>
               <div className="rounded-lg p-4 text-center font-semibold text-2xl text-green-500">
@@ -95,11 +99,11 @@ export default function ResultsClient({
           )}
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 bg-black p-4">
+      <div className="fixed inset-x-0 bottom-0 bg-slate-950 p-4">
         <div className="container mx-auto max-w-5xl">
           <Button
             className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"
-            onClick={() => router.push(`/plan/${plan.id}/familysupport`)}
+            onClick={onNext}
           >
             Khám phá ngay
           </Button>

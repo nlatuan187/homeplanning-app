@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPlanFromOnboarding } from "@/actions/createPlanFromOnboarding";
-import LoadingOverlay from "./ui/loading-overlay";
+import LoadingStep from "./onboarding/shared/LoadingStep";
 
 const PENDING_PLAN_KEY = "pendingOnboardingPlan";
 
 export default function PendingPlanHandler() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(true); // Default to false
-  const [message, setMessage] = useState("Kiểm tra dữ liệu của bạn...");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const processPendingPlan = async () => {
@@ -22,15 +22,14 @@ export default function PendingPlanHandler() {
         return;
       }
 
-      setMessage("Tính toán khả năng mua nhà...");
+      setMessage("Đang tạo kế hoạch mua nhà...");
       try {
         const pendingPlanData = JSON.parse(pendingPlanJSON);
         const result = await createPlanFromOnboarding(pendingPlanData);
-        console.log("result", result);
         localStorage.removeItem(PENDING_PLAN_KEY);
         if (result.success && result.planId) {
           // Redirect to the new results page
-          router.push(`/plan/${result.planId}/results`);
+          router.push(`/plan/${result.planId}/familysupport`);
         } else {
           // If creation fails, log the error and go to the general dashboard
           console.error(
@@ -49,7 +48,7 @@ export default function PendingPlanHandler() {
   }, [router]);
 
   if (isProcessing) {
-    return <LoadingOverlay messages={[message]} />;
+    return <LoadingStep message={message} percentage={100}/>;
   }
 
   return null;

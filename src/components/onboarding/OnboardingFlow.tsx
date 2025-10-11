@@ -9,6 +9,7 @@ import Spending from "./sections/Spending";
 import Assumption from "./sections/Assumption";
 import { Plan } from "@prisma/client";
 import { useUser } from "@clerk/nextjs";
+import { QuickCheckResultPayload } from "@/actions/createPlanFromOnboarding";
 
 type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
@@ -22,8 +23,11 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
   const { isSignedIn } = useUser();
 
-  const handleQuickCheckCompleted = (data: Partial<OnboardingPlanState>) => {
-    setPlanState(prev => ({ ...prev, ...data }));
+  const handleQuickCheckCompleted = (data: {
+    onboardingData: Partial<OnboardingPlanState>;
+    quickCheckResult: QuickCheckResultPayload;
+  }) => {
+    setPlanState(prev => ({ ...prev, ...data.onboardingData }));
     if (isSignedIn) {
       setCurrentSection('familySupport');
     } else {
@@ -45,12 +49,10 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
     setCurrentSection('quickCheck');
   };
 
-  console.log("planState", planState);
-
   const renderSection = () => {
     switch (currentSection) {
       case 'quickCheck':
-        return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
+        return <QuickCheck planId={planId} initialData={planState} onCompleted={handleQuickCheckCompleted} />;
       case 'signupPrompt':
         return <SignupPrompt planData={planState} onBack={handleBackFromPrompt} />;
       case 'familySupport':
