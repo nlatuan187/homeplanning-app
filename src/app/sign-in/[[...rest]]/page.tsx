@@ -1,26 +1,27 @@
-// src/app/manual-sign-in/page.tsx
-import SignInForm from "@/components/auth/signInForm";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import Link from "next/link";
+"use client";
+
+import { SignIn } from "@clerk/nextjs";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function SignInPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-950">
-      <Card className="w-full max-w-md bg-slate-900 border-slate-800 text-white">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold tracking-tight">BẠN ĐÃ SẴN SÀNG</CardTitle>
-          <CardDescription className="text-center">
-            Chinh phục <span className="text-cyan-500">căn nhà đầu tiên?</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SignInForm />
-          <div className="mt-4 text-center text-sm">
-            Chưa có tài khoản?{" "}
-            <Link href="/sign-up" className="underline text-cyan-500">
-              Đăng ký
-            </Link>
-          </div>
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6">
+          <SignIn
+            appearance={{
+              elements: {
+                formButtonPrimary: "bg-slate-800 hover:bg-slate-700 text-white",
+                card: "bg-transparent shadow-none",
+                headerTitle: "text-white",
+                headerSubtitle: "text-slate-400",
+                formFieldLabel: "text-slate-300",
+                formFieldInput: "bg-slate-900 border-slate-700 text-white",
+                footerActionLink: "text-slate-400 hover:text-white",
+              },
+            }}
+            routing="hash"
+          />
         </CardContent>
       </Card>
     </main>
