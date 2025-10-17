@@ -4,8 +4,10 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 // Note the (.*) at the end of sign-in and sign-up routes to match all sub-routes
 const isPublicRoute = createRouteMatcher([
   '/',                  // Trang chủ
-  '/api/auth/sign-in(.*)',       // Trang đăng nhập và các trang con
-  '/api/auth/sign-up(.*)',       // Trang đăng ký và các trang con
+  '/sign-in(.*)',       // Trang giao diện đăng nhập
+  '/sign-up(.*)',       // Trang giao diện đăng ký
+  '/api/auth/sign-in(.*)',       // API đăng nhập
+  '/api/auth/sign-up(.*)',       // API đăng ký
   '/docs(.*)',
 
   // == API CÔNG KHAI CỦA BẠN ==
