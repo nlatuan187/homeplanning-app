@@ -97,7 +97,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
   const familySupport = plan.familySupport;
   const currentYear = plan.createdAt.getFullYear();
   const currentMonth = plan.createdAt.getMonth();
-  const maxYears = maxYearsToProject || (plan.yearsToPurchase + 5);
+  const maxYears = Math.min(maxYearsToProject || (plan.yearsToPurchase - new Date().getFullYear() + 5), 10);
   const projectionData: ProjectionRow[] = [];
 
   // BƯỚC 2: XỬ LÝ HỖ TRỢ NHẬN NGAY (GIFT - NOW)

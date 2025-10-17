@@ -1,3 +1,5 @@
+import { ProjectionRow } from "@/lib/calculations/affordability";
+
 /**
  * Defines the complete data structure for the entire onboarding flow.
  * We define it upfront to ensure consistency across all sections.
@@ -43,7 +45,7 @@ export interface OnboardingPlanState {
  */
 export type ProjectionResult = {
   success: boolean;
-  earliestPurchaseYear?: number;
+  earliestAffordableYear?: number;
   isAffordable?: boolean;
   // Keep track of the year user selected in Quick Check to render headings correctly
   selectedPurchaseYear?: number;
@@ -52,6 +54,7 @@ export type ProjectionResult = {
   // The first affordable year at or after selected year (commonly selected+1 if not affordable)
   nextAffordableYear?: number;
   error?: string;
+  projectionData?: ProjectionRow[];
 };
 
 /**

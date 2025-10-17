@@ -10,14 +10,15 @@ interface ResultsClientProps {
   plan: Plan & { familySupport: any };
   firstYearProjection?: any;
   onNext: () => void;
+  onBack: () => void;
 }
 
 export default function ResultsClient({
   plan,
   firstYearProjection,
   onNext,
+  onBack,
 }: ResultsClientProps) {
-  const router = useRouter();
   const isScenarioB =
     firstYearProjection &&
     firstYearProjection.year <= (plan.confirmedPurchaseYear ?? 0);
@@ -26,7 +27,7 @@ export default function ResultsClient({
       <div className="container mx-auto max-w-5xl">
         <header className="relative flex justify-center items-center py-4 px-2">
           <div className="absolute left-0">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <Button variant="ghost" size="icon" onClick={onBack}>
               <ArrowLeftIcon className="h-6 w-6" />
             </Button>
           </div>

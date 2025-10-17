@@ -411,6 +411,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
 
   if (step === "result" && result && !isEditMode) {
     const yearsToPurchase = (formData.yearsToPurchase ?? new Date().getFullYear()) - new Date().getFullYear();
+    console.log("result", result);
 
     const partialPlan: Partial<PlanWithDetails> = {
       yearsToPurchase: yearsToPurchase,
@@ -436,14 +437,14 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     };
 
     // Chạy hàm tính toán projection với đối tượng plan tạm thời
-    const projectionData = generateProjections(partialPlan);
+    const projectionData = result.projectionData;
     const targetYearProjection: ProjectionRow | undefined =
-      projectionData.find(p => p.isAffordable);
+      projectionData?.find(p => p.isAffordable);
 
     const displayPlan = { ...partialPlan };
 
     return (
-      <ResultsClient plan={displayPlan as any} firstYearProjection={targetYearProjection} onNext={handleContinueFromResult} />
+      <ResultsClient plan={displayPlan as any} firstYearProjection={targetYearProjection} onNext={handleContinueFromResult} onBack={() => setStep("form2")} />
     );
   }
 
@@ -508,7 +509,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                 </p>
                 <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
                   {content.summary}
-                </p>
+                </p>  
                 <Image
                   src={content.image}
                   alt={`${targetHouseType} tại ${targetLocation}`}
