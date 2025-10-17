@@ -3,10 +3,17 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 // Define public routes that don't require authentication
 // Note the (.*) at the end of sign-in and sign-up routes to match all sub-routes
 const isPublicRoute = createRouteMatcher([
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/api/auth/mobile' // Allow mobile auth endpoint
+  '/',                  // Trang chủ
+  '/api/auth/sign-in(.*)',       // Trang đăng nhập và các trang con
+  '/api/auth/sign-up(.*)',       // Trang đăng ký và các trang con
+  '/docs(.*)',
+
+  // == API CÔNG KHAI CỦA BẠN ==
+  '/api/onboarding/calculate', // API tính toán nhanh
+  '/api/docs',                 // API tài liệu Swagger
+
+  // Có thể thêm các API công khai khác ở đây nếu cần
+  // ví dụ: '/api/market-data'
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
