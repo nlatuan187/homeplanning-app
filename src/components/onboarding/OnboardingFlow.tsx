@@ -8,8 +8,11 @@ import FamilySupport from "./sections/FamilySupport";
 import Spending from "./sections/Spending";
 import Assumption from "./sections/Assumption";
 import { Plan } from "@prisma/client";
-import { useUser } from "@clerk/nextjs";
-import { QuickCheckResultPayload } from "@/actions/createPlanFromOnboarding";
+import { useAuth } from "@clerk/nextjs";
+import { QuickCheckResultPayload, createPlanFromOnboarding } from "@/actions/createPlanFromOnboarding";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import LoadingStep from "./shared/LoadingStep";
 
 type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
 
@@ -21,16 +24,35 @@ interface OnboardingFlowProps {
 export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const [currentSection, setCurrentSection] = useState<OnboardingSection>('quickCheck');
   const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
-  const { isSignedIn } = useUser();
+  const { isSignedIn, userId } = useAuth();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleQuickCheckCompleted = (data: {
+  const handleQuickCheckCompleted = async (data: {
     onboardingData: Partial<OnboardingPlanState>;
     quickCheckResult: QuickCheckResultPayload;
   }) => {
-    setPlanState(prev => ({ ...prev, ...data.onboardingData }));
-    if (isSignedIn) {
-      setCurrentSection('familySupport');
+    const finalOnboardingData = { ...planState, ...data.onboardingData };
+    setPlanState(finalOnboardingData);
+
+    if (isSignedIn && userId) {
+      // *** NEW LOGIC FOR SIGNED-IN USERS ***
+      setIsLoading(true); // Show loading indicator
+      
+      const result = await createPlanFromOnboarding(finalOnboardingData);
+      
+      if (result.success && result.planId) {
+        // No need for localStorage or SignupPrompt. Redirect directly.
+        router.push(`/plan/${result.planId}/familysupport`);
+      } else {
+        toast.error(result.error || "Không thể tạo kế hoạch. Vui lòng thử lại.");
+        setIsLoading(false);
+      }
+
     } else {
+      // *** EXISTING LOGIC FOR GUEST USERS ***
+      // Save to localStorage and show the SignupPrompt
+      localStorage.setItem("pendingOnboardingPlan", JSON.stringify(finalOnboardingData));
       setCurrentSection('signupPrompt');
     }
   };
@@ -48,6 +70,10 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const handleBackFromPrompt = () => {
     setCurrentSection('quickCheck');
   };
+  
+  if (isLoading) {
+    return <LoadingStep message="Đang khởi tạo kế hoạch của bạn..." />;
+  }
 
   const renderSection = () => {
     switch (currentSection) {
