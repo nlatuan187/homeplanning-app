@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 import { generateProjections, PlanWithDetails, preparePlanForProjection } from "@/lib/calculations/projections/generateProjections";
 import { ProjectionRow } from "@/lib/calculations/affordability";
 import ResultsClient from "./ResultsClient";
+import { useAuth } from "@clerk/nextjs";
 
 const currentYear = new Date().getFullYear();
 
@@ -184,6 +185,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
   const [result, setResult] = useState<QuickCheckResultPayload | null>(null);
 
   const router = useRouter();
+  const { isSignedIn } = useAuth();
 
   const processedInitialData = useMemo(() => {
     if (initialData.targetHousePriceN0) {
@@ -378,12 +380,16 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                     >
                       Bắt đầu ngay
                     </Button>
-                    <Button
-                      onClick={() => router.push("/sign-in")}
-                      className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
-                    >
-                      Đăng nhập (Nếu đã có tài khoản)
-                    </Button>
+                    
+                    {/* 3. Chỉ hiển thị nút này khi người dùng CHƯA đăng nhập */}
+                    {!isSignedIn && (
+                      <Button
+                        onClick={() => router.push("/sign-in")}
+                        className="w-full bg-transparent border border-white/50 cursor-pointer text-white hover:bg-white/10 py-4 text-lg font-semibold rounded-lg shadow-lg transition-transform transform active:scale-95"
+                      >
+                        Đăng nhập (Nếu đã có tài khoản)
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <Button

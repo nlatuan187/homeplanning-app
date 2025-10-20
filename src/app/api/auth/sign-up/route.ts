@@ -9,6 +9,7 @@ const signUpSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   emailAddress: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters long"),
+  passwordVerification: z.string().min(8, "Password verification must be at least 8 characters long"),
 });
 
 /**
@@ -29,6 +30,7 @@ const signUpSchema = z.object({
  *               lastName: { type: 'string' }
  *               emailAddress: { type: 'string', format: 'email' }
  *               password: { type: 'string', format: 'password' }
+ *               passwordVerification: { type: 'string', format: 'password' }
  *     responses:
  *       '201':
  *         description: User created successfully.
@@ -47,7 +49,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
     }
 
-    const { firstName, lastName, emailAddress, password } = validation.data;
+    const { firstName, lastName, emailAddress, password, passwordVerification } = validation.data;
+
+    if (password !== passwordVerification) {
+      return NextResponse.json({ error: "Password and password verification do not match" }, { status: 400 });
+    }
 
     // 2. Gọi Clerk Backend SDK để tạo người dùng
     const newUser = await (await clerkClient()).users.createUser({
@@ -55,10 +61,6 @@ export async function POST(req: Request) {
       lastName,
       emailAddress: [emailAddress],
       password,
-    });
-
-    await (await clerkClient()).users.updateUser(newUser.id, {
-      publicMetadata: { "auto_verified": true }
     });
 
     // 3. Trả về thành công
