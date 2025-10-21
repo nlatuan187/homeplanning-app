@@ -57,7 +57,7 @@ export default function Spending({
   console.log("defaultValues", defaultValues);
 
   const spendingQuestionsPart1: Question[] = useMemo(() => [
-    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác?', type: 'number', unit: 'triệu VNĐ' },
+    { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác? (đơn vị: triệu VNĐ)', type: 'number', unit: 'triệu VNĐ' },
     { key: 'currentAnnualInsurancePremium', 
       text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu? (BHXH, BHYT, ...) (đơn vị: triệu VNĐ)', 
       type: 'number', 
