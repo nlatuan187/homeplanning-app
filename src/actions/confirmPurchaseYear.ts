@@ -47,7 +47,6 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
 
     // Update the local plan object with the confirmed year before generating projections
     const projectionData = generateProjections(plan as PlanWithDetails);
-    const purchaseProjection = projectionData.find((p: ProjectionRow) => p.year === confirmedPurchaseYear) || projectionData[0];
 
     // Update the plan with the confirmed purchase year
     await db.plan.update({
@@ -56,7 +55,7 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       },
       data: {
         affordabilityOutcome: "ScenarioB",
-        confirmedPurchaseYear: confirmedPurchaseYear,
+        confirmedPurchaseYear: confirmedPurchaseYear + new Date().getFullYear(),
         // Use upsert to handle cases where the report doesn't exist yet.
         // This will create a new PlanReport if one isn't found, or update
         // the existing one.

@@ -154,7 +154,7 @@ export default function FamilySupport({
       return;
     }
 
-    setStep("loading");
+    // setStep("loading");
 
     const familySupportPayload = {
       coApplicantMonthlyIncome: (finalData.coApplicantMonthlyIncome || 0),
@@ -171,8 +171,9 @@ export default function FamilySupport({
     const result = await updateAndRecalculateFamilySupport(planId, familySupportPayload);
     
     if (result.success) {
-      setResult(result as RecalculationResult);
-      setStep("result");
+      // setResult(result as RecalculationResult);
+      // setStep("result");
+      router.push(`/plan/${planId}/spending`);
     } else {
       toast.error(result.error || "Có lỗi xảy ra, vui lòng thử lại.");
       setStep("form1");
