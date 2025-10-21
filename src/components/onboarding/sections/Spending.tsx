@@ -191,7 +191,7 @@ export default function Spending({
         />
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
           <div className="max-w-5xl mx-auto absolute top-4 left-4 z-20">
-            <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${planId}/familySupport`)}>
+            <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${planId}/familysupport`)}>
                 <ArrowLeftIcon className="w-6 h-6 text-white" />
             </Button>
           </div>
