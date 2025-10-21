@@ -126,7 +126,7 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
       chartDataKey: "pctSalaryGrowth" as const,
       name: "Tiền lương",
       title: "Tốc độ tăng lương",
-      label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu?",
+      label: "Tốc độ tăng lương hàng năm của bạn là bao nhiêu? (đơn vị: %)",
       explanations: [
         {
           sub: "Tại sao cần tăng lương ít nhất 7%/năm?",
@@ -148,7 +148,7 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
         "Tốc độ tăng giá nhà là 10%/năm (dựa trên dữ liệu thị trường). Bạn có thể điều chỉnh theo khu vực của bạn nếu muốn.",
       explanations: [
         {
-          sub: "Tại sao giá nhà lại tăng 10%/năm?",
+          sub: "Tại sao giá nhà lại tăng 10%/năm? (đơn vị: %)",
           main: "Nhu cầu nhà ở cao, tốc độ đô thị hóa nhanh, chi phí xây dựng tăng và dòng tiền đầu tư liên tục đổ vào bất động sản. Ngoài ra, đây cũng là mức tăng giá ổn định hằng năm, nhất là tại TP.HCM và Hà Nội – nơi quỹ đất khan hiếm và hạ tầng liên tục mở rộng.",
         },
       ],

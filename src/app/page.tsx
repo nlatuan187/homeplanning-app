@@ -29,7 +29,11 @@ export default function Home() {
   }, [isLoaded, isSignedIn, userId, router]);
 
   if (!isLoaded || isCheckingPlan) {
-    return <LoadingStep message="Đang tải..." />;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingStep message="Đang tải..." />
+      </div>
+    );
   }
 
   // Both guests and new users without a plan will see the OnboardingFlow.
