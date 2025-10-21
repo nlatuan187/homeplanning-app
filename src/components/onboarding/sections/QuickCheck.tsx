@@ -37,7 +37,7 @@ const quickCheckQuestionsPart1: Question[] = [
   },
   {
     key: "targetHousePriceN0",
-    text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu?",
+    text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu? (đơn vị: tỷ VNĐ)",
     type: "number",
     unit: "tỷ VNĐ",
   },
@@ -77,8 +77,8 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "initialSavings",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "Các bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?"
-        : "Bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi?",
+        ? "Các bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi? (đơn vị: triệu VNĐ)"
+        : "Bạn đã tích lũy được bao nhiêu tiền để mua nhà rồi? (đơn vị: triệu VNĐ)",
     type: "number",
     unit: "triệu VNĐ",
   },
@@ -86,8 +86,8 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "userMonthlyIncome",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "TỔNG thu nhập hàng tháng của các bạn là bao nhiêu?"
-        : "Lương hàng tháng của bạn là bao nhiêu?",
+        ? "TỔNG thu nhập hàng tháng của các bạn là bao nhiêu? (đơn vị: triệu VNĐ)"
+        : "Lương hàng tháng của bạn là bao nhiêu? (đơn vị: triệu VNĐ)",
     type: "number",
     unit: "triệu VNĐ",
   },
@@ -95,8 +95,8 @@ const quickCheckQuestionsPart2: Question[] = [
     key: "monthlyLivingExpenses",
     text: (ans) =>
       ans.hasCoApplicant
-        ? "TỔNG chi phí hàng tháng của các bạn là bao nhiêu?"
-        : "Chi phí hàng tháng của bạn là bao nhiêu?",
+        ? "TỔNG chi phí hàng tháng của các bạn là bao nhiêu? (đơn vị: triệu VNĐ)"
+        : "Chi phí hàng tháng của bạn là bao nhiêu? (đơn vị: triệu VNĐ)",
     type: "number",
     unit: "triệu VNĐ",
   },
@@ -345,7 +345,13 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                     <h3 className="font-semibold text-lg">
                       Chúng tôi có thể
                     </h3>
-                    <CheckCircle className="max-md:w-4 max-md:h-4 w-6 h-6 flex-shrink-0" />
+                    <Image
+                      src="/icons/accept.png"
+                      alt="Kiểm tra khả năng mua nhà"
+                      width={20}
+                      height={20}
+                      className="mb-6 w-6 h-6"
+                    />
                   </div>
                   <p className="text-lg max-md:text-xs text-white/80">
                     Tính toán và chỉ ra tất cả các con đường giúp bạn mua được
@@ -359,7 +365,13 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                     <h3 className="font-semibold text-lg">
                       Chúng tôi không thể
                     </h3>
-                    <XCircle className="max-md:w-4 max-md:h-4 w-6 h-6 flex-shrink-0" />
+                    <Image
+                      src="/icons/reject.png"
+                      alt="Kiểm tra khả năng mua nhà"
+                      width={20}
+                      height={20}
+                      className="mb-6 w-6 h-6"
+                    />                  
                   </div>
                   <p className="text-lg max-md:text-xs text-white/80">
                     Quyết định thay bạn. Chúng tôi chỉ nhận nhu cầu, tình hình

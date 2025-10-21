@@ -74,8 +74,8 @@ export default function FamilySupport({
         key: 'monthlyOtherIncome',
         text: (ans) =>
           ans.hasCoApplicant
-            ? 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu?'
-            : 'Tổng thu nhập khác (ngoài lương) của bạn mỗi tháng là bao nhiêu?',
+            ? 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)'
+            : 'Tổng thu nhập khác (ngoài lương) của bạn mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)',
         type: 'number', unit: 'triệu VNĐ'
       },
   ], []);
@@ -91,7 +91,7 @@ export default function FamilySupport({
       },
       // @ts-ignore
       { key: 'familySupportGiftAmount',
-        text: 'Số tiền được tặng (triệu VNĐ)',
+        text: 'Số tiền được tặng (đơn vị: triệu VNĐ)',
         type: 'number',
         unit: 'triệu VNĐ',
         condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT'
@@ -99,7 +99,7 @@ export default function FamilySupport({
       // @ts-ignore
       { key: 'familySupportGiftTiming', text: 'Khi nào bạn sẽ nhận được số tiền này?', type: 'options', options: [{label: 'Ngay bây giờ (có thể mang đi đầu tư để tích luỹ)', value: 'NOW'}, {label: 'Khi thanh toán mua nhà', value: 'AT_PURCHASE'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT' },
       // @ts-ignore
-      { key: 'familySupportLoanAmount', text: 'Số tiền đi vay (triệu VNĐ)', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+      { key: 'familySupportLoanAmount', text: 'Số tiền đi vay (đơn vị: triệu VNĐ)', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
       { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (đơn vị: %/năm) (Nếu vay không cần trả lãi, vui lòng nhập 0)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
       // @ts-ignore
