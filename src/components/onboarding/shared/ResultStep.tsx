@@ -63,7 +63,7 @@ export default function ResultStep({
               (caseNumber % 3 === 1) ? (
                 <>
                   <div className="rounded-lg mb-8 flex items-center justify-center">
-                    <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
+                    <Image src="/onboarding/resultcase1.png" alt="Result" width={320} height={256} />
                   </div>
                   (caseNumber === 1) ? (
                     <p className="text-xl font-bold text-white">
@@ -79,7 +79,7 @@ export default function ResultStep({
                 (caseNumber % 3 === 2) ? (
                   <>
                     <div className="rounded-lg mb-8 flex items-center justify-center">
-                      <Image src="/onboarding/resultcase1.png" alt="Result" width={320} height={256} />
+                      <Image src="/onboarding/resultcase3.png" alt="Result" width={320} height={256} />
                     </div>
                       <p className="text-xl font-bold text-white">
                         Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?
@@ -88,7 +88,7 @@ export default function ResultStep({
                 ) : (
                   <>
                     <div className="rounded-lg mb-8 flex items-center justify-center">
-                      <Image src="/onboarding/resultcase3.png" alt="Result" width={320} height={256} />
+                      <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
                     </div>
                     <p className="text-xl font-bold text-white">
                       Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
