@@ -465,7 +465,7 @@ export default function Assumption({
                           <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
                         </div>
                         <div className="text-center text-slate-400">
-                          Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
+                          Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear + new Date().getFullYear()}                  
                         </div>
                         <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
                         <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
@@ -480,7 +480,7 @@ export default function Assumption({
                           </div>
                           <div className="mt-auto pt-4">
                               <Button onClick={() => onFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                                Mua nhà năm {result.earliestPurchaseYear}
+                                Mua nhà năm {result.earliestPurchaseYear + new Date().getFullYear()}
                               </Button>
                           </div>
                         </div>
