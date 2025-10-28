@@ -31,7 +31,7 @@ export default function Home() {
   if (!isLoaded || isCheckingPlan) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <LoadingStep message="Đang tải..." />
+        <LoadingStep message="Đang tải..." percentage={100} />
       </div>
     );
   }

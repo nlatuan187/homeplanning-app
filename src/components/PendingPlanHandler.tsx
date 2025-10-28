@@ -48,7 +48,11 @@ export default function PendingPlanHandler() {
   }, [router]);
 
   if (isProcessing) {
-    return <LoadingStep message={message} percentage={100}/>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingStep message={message} percentage={100}/>
+      </div>
+    );
   }
 
   return null;

@@ -46,7 +46,7 @@ export default function FamilySupportClient({ plan }: FamilySupportClientProps) 
       familySupport={plan.familySupport as OnboardingPlanState}
       initialData={{}}
       planId={plan.id}
-      onCompleted={handleContinue}
+      onSubmit={handleContinue}
       onBackFromFirst={handleBackFromFirst}
     />
   );

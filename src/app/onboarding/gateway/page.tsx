@@ -28,5 +28,9 @@ export default async function OnboardingGatewayPage() {
   }
 
   // Display a loading screen while the server-side checks are performed.
-  return <LoadingStep message="Đang chuẩn bị hành trình của bạn..." />;
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <LoadingStep message="Đang chuẩn bị hành trình của bạn..." percentage={100} />
+    </div>
+  );
 }
