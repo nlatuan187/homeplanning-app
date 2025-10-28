@@ -13,6 +13,12 @@ export default async function DashboardPage() {
 
     const plan = await getPlansForUser(user.id);
 
+    // THÊM LOGIC KIỂM TRA VÀ CHUYỂN HƯỚNG
+    // Nếu không tìm thấy plan, chuyển người dùng về trang chủ để bắt đầu onboarding
+    if (!plan) {
+        redirect("/");
+    }
+
     // LẤY DỮ LIỆU ONBOARDING NGAY TẠI ĐÂY
     // Chỉ lấy progress nếu có plan tồn tại
     const onboardingProgress = plan ? await getOnboardingProgress(plan.id) : null;
