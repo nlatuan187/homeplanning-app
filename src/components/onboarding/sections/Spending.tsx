@@ -254,6 +254,7 @@ export default function Spending({
       return <ResultStep
         plan={result.plan}
         title="Dòng tiền đi ra "
+        caseNumber={result.caseNumber}
         message={result.message}
         earliestPurchaseYear={result.earliestPurchaseYear}
         onContinue={handleContinue}

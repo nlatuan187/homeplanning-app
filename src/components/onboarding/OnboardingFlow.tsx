@@ -72,7 +72,11 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   };
   
   if (isLoading) {
-    return <LoadingStep message="Đang khởi tạo kế hoạch của bạn..." />;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingStep message="Đang khởi tạo kế hoạch của bạn..." percentage={100} />
+      </div>
+    );
   }
 
   const renderSection = () => {

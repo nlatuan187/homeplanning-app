@@ -42,6 +42,7 @@ export async function updateSpendingAndRecalculate(
 
     let result = { earliestPurchaseYear: 0, message: "" };
     let customMessage = "";
+    let caseNumber: number = 0;
     
     if (hasChanged) {
       await db.$transaction([
@@ -53,10 +54,13 @@ export async function updateSpendingAndRecalculate(
       result = await runProjectionWithEngine(plan.id);
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Chi tiêu rất ấn tượng đấy 😀"
+        caseNumber = 4;
       } else if (result.earliestPurchaseYear > existingResult.earliestPurchaseYear) {
         customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵"
+        caseNumber = 3;
       } else {
         customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
+        caseNumber = 5;
       }
       await db.$transaction([
         db.planReport.upsert({
@@ -73,13 +77,16 @@ export async function updateSpendingAndRecalculate(
       result = existingResult;
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
+        caseNumber = 2;
       } else {
         customMessage = "Ấn tượng đấy 😀";
+        caseNumber = 1;
       }
     }
 
     revalidatePath(`/plan/${plan.id}`);
     return { 
+      caseNumber: caseNumber,
       planId: plan.id,
       plan: plan,
       success: true, 
