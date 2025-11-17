@@ -29,6 +29,8 @@ export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
+    console.log(`Attempting to sign in with email: "${email}"`);
+
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
@@ -47,17 +49,22 @@ export async function POST(request: Request) {
       userId: user.id,
       password: password,
     });
+
+    // Log chi tiết phản hồi từ Clerk để tìm nguyên nhân
+    console.log('Clerk verification response:', verification);
     
     if (!verification.verified) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 3. Tạo session token (JWT) cho người dùng
-    const sessionToken = await (await clerkClient()).sessions.createSession({ userId: user.id });
+    // 3. Create a session and token for the user
+    const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
+    const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
+        
     return NextResponse.json({ sessionToken });
 
   } catch (error) {
-    console.error('Error signing in user:', JSON.stringify(error, null, 2));
+    console.error('Error signing in user:', error);
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
