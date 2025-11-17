@@ -20,6 +20,15 @@ import { NextResponse } from 'next/server';
  *     responses:
  *       '200':
  *         description: User signed in successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sessionToken:
+ *                   type: string
+ *                 userId:
+ *                   type: string
  *       '401':
  *         description: Invalid credentials.
  *       '500':
@@ -61,7 +70,7 @@ export async function POST(request: Request) {
     const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
     const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
         
-    return NextResponse.json({ sessionToken });
+    return NextResponse.json({ sessionToken, userId: user.id });
 
   } catch (error) {
     console.error('Error signing in user:', error);
