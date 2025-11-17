@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',       // Trang giao diện đăng ký
   '/api/auth/sign-in(.*)',       // API đăng nhập
   '/api/auth/sign-up(.*)',       // API đăng ký
+  '/api/auth/mobile(.*)',      // THÊM DÒNG NÀY
   '/docs(.*)',
 
   // == API CÔNG KHAI CỦA BẠN ==
