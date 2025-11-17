@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 
 /**
  * @swagger
@@ -52,42 +52,55 @@ import { auth, currentUser } from '@clerk/nextjs/server';
  *                 lastName:
  *                   type: string
  *                   description: User's last name
- *       '401':
- *         description: Authentication failed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
+ *                 sessionToken:
  *                   type: string
- *                   example: "Authentication failed"
+ *                   description: The JWT for the session.
+ *       '400':
+ *         description: Bad Request - Missing email or password.
+ *       '401':
+ *         description: Authentication failed - Invalid credentials.
  *       '500':
  *         description: Internal server error
  */
 export async function POST(req: Request) {
   try {
-    // Clerk sẽ xử lý authentication thông qua middleware
-    // Chúng ta chỉ cần lấy thông tin user từ session
-    const { userId } = await auth();
-    const user = await currentUser();
+    const { email, password } = await req.json();
 
-    if (!userId || !user) {
-      return NextResponse.json({ 
-        error: 'Authentication failed' 
-      }, { status: 401 });
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
+    
+    // 1. Tìm người dùng bằng email
+    const { data: userList } = await (await clerkClient()).users.getUserList({ emailAddress: [email] });
+
+    if (userList.length === 0) {
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
     }
 
-    // Trả về thông tin user cho mobile app
-    // JWT token sẽ được gửi qua cookies hoặc headers tự động bởi Clerk
+    const user = userList[0];
+
+    // 2. Xác thực mật khẩu
+    const verification = await (await clerkClient()).users.verifyPassword({
+      userId: user.id,
+      password: password,
+    });
+    
+    if (!verification.verified) {
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+
+    // 3. Tạo session và JWT token cho người dùng
+    const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
+    const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
+
+    // 4. Trả về thông tin người dùng và token
     return NextResponse.json({
       success: true,
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      // Clerk JWT sẽ có sẵn trong request headers
-      // Mobile app có thể sử dụng để gọi các API khác
+      sessionToken: sessionToken,
     });
 
   } catch (error) {
