@@ -526,36 +526,36 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                   Bạn muốn mua {targetHouseType} tại {targetLocation}
                 </p>
                 <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
-                  {content.summary}
-                </p>  
-                <Image
-                  src={content.image}
+          {content.summary}
+        </p>
+        <Image
+          src={content.image}
                   alt={`${targetHouseType} tại ${targetLocation}`}
-                  width={400}
-                  height={400}
+          width={400}
+          height={400}
                   className="mb-6"
-                />
+        />
                 <div className="space-y-4 w-full max-w-5xl text-left text-sm">
-                  {Object.entries(content.points).map(([key, value]) => (
-                    <div key={key}>
-                      <h3 className="font-semibold text-cyan-400 mb-1">{key}</h3>
-                      <p className="text-white/80">{value as string}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
-                <div className="max-w-5xl mx-auto p-4">
+          {Object.entries(content.points).map(([key, value]) => (
+            <div key={key}>
+              <h3 className="font-semibold text-cyan-400 mb-1">{key}</h3>
+              <p className="text-white/80">{value as string}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+         <div className="max-w-5xl mx-auto p-4">
                   <Button
                     onClick={handleContinueFromAnalysis}
                     className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
                   >
                     Tiếp tục
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
+            </Button>
+         </div>
+      </div>
+    </div>
+  );
         })()
       )}
 

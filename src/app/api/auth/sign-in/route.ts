@@ -51,11 +51,10 @@ export async function POST(request: Request) {
     if (!verification.verified) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
-    return NextResponse.json({ success: true, userId: user.id }, { status: 200 });
 
-    // // 3. Tạo session token (JWT) cho người dùng
-    // const sessionToken = await (await clerkClient()).users.createSessionToken(user.id);
-    // return NextResponse.json({ sessionToken });
+    // 3. Tạo session token (JWT) cho người dùng
+    const sessionToken = await (await clerkClient()).sessions.createSession({ userId: user.id });
+    return NextResponse.json({ sessionToken });
 
   } catch (error) {
     console.error('Error signing in user:', JSON.stringify(error, null, 2));

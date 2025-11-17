@@ -71,6 +71,62 @@ const options: swaggerJsdoc.Options = {
                         description: 'User last name'
                     }
                 }
+            },
+            QuestionCondition: {
+                type: 'object',
+                properties: {
+                    field: {
+                        type: 'string',
+                        description: 'The key of the question this condition depends on.'
+                    },
+                    operator: {
+                        type: 'string',
+                        enum: ['equals'],
+                        description: 'The comparison operator.'
+                    },
+                    value: {
+                        description: 'The value to compare against. Can be string, number, or boolean.'
+                    }
+                }
+            },
+            ApiQuestion: {
+                type: 'object',
+                properties: {
+                    key: { type: 'string' },
+                    type: {
+                        type: 'string',
+                        enum: ['options', 'number', 'text']
+                    },
+                    text: { type: 'string' },
+                    options: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                label: { type: 'string' },
+                                value: { description: 'Can be string, number, or boolean.' }
+                            }
+                        }
+                    },
+                    unit: { type: 'string' },
+                    description: { type: 'string' },
+                    condition: {
+                        '$ref': '#/components/schemas/QuestionCondition'
+                    }
+                }
+            },
+            ApiSection: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    title: { type: 'string' },
+                    questions: {
+                        type: 'array',
+                        items: {
+                            '$ref': '#/components/schemas/ApiQuestion'
+                        }
+                    }
+                }
             }
         }
     },
