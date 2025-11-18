@@ -13,6 +13,7 @@ const isPublicRoute = createRouteMatcher([
 
   // == API CÔNG KHAI CỦA BẠN ==
   '/api/onboarding/calculate', // API tính toán nhanh
+  '/api/section/next-step(.*)', // << THÊM DÒNG NÀY VÀO ĐÂY
   '/api/docs',                 // API tài liệu Swagger
 
   // Có thể thêm các API công khai khác ở đây nếu cần
@@ -20,6 +21,7 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  console.log(`[MIDDLEWARE] Request đến: ${req.nextUrl.pathname}`); // << THÊM DÒNG NÀY
   // If the route is not public, protect it
   if (!isPublicRoute(req)) {
     await auth.protect();
