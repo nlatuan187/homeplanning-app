@@ -71,7 +71,7 @@ export default function ResultStep({
                     </p>
                   ) : (
                     <p className="text-xl font-bold text-white">
-                    Thời gian mua được nhà của bạn sớm nhất vẫn là năm {earliestPurchaseYear}
+                      Thời gian mua được nhà của bạn sớm nhất vẫn là năm {earliestPurchaseYear}
                     </p>
                   )
                 </>

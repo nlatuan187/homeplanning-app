@@ -821,7 +821,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-slate-950 text-white w-full">
+    <div className="flex flex-col items-center min-h-screen bg-[#121212] text-white w-full">
       {/* SỬA LỖI 2: Di chuyển Modal vào trong cây JSX được return */}
       {isContactModalOpen && (
         <ContactModal
