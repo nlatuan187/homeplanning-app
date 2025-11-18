@@ -16,6 +16,7 @@ import { RecalculationResult } from "../shared/ResultStep";
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { OnboardingSectionState } from "@prisma/client";
 import { ArrowLeftIcon } from "lucide-react";
+import { motion } from "framer-motion"; // Thêm import này
 
 
 interface SpendingProps {
@@ -182,6 +183,29 @@ export default function Spending({
     }
   };
 
+  // --- Thêm các định nghĩa animation ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2, // Delay 0.2s giữa mỗi phần tử con
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: -20, opacity: 0 }, // Bắt đầu từ vị trí y = -20 và ẩn
+    visible: {
+      y: 0,
+      opacity: 1, // Di chuyển đến y = 0 và hiện ra
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+  // --- Kết thúc phần thêm ---
+
   if (step === "intro") {
     return (
       <>
@@ -282,7 +306,13 @@ export default function Spending({
       )}
 
       {step === "analysis" && (
-        <div className="flex flex-col h-full flex-grow">
+        <motion.div // Thay thế 'div' bằng 'motion.div'
+          className="flex flex-col h-full flex-grow"
+          // Thêm các thuộc tính animation
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <div className="relative flex items-center h-10 mb-4">
             <div className="absolute left-0 top-1/2 -translate-y-1/2">
               <Button
@@ -302,31 +332,49 @@ export default function Spending({
             </div>
           </div>
           <div className="flex-grow flex flex-col items-center text-center pb-17 px-4">
-            <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
-                <h2 className="text-2xl font-bold mb-6 max-w-sm">Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến</h2>
-                <Image
-                    src="/onboarding/analysis.png" // Placeholder image
-                    alt="Analysis"
-                    width={400}
-                    height={300}
-                    className="mb-6"
-                />
-                <p className="text-white/90 max-w-md">
-                    Hãy cân nhắc thật kỹ về thời điểm sinh em bé để đảm bảo bạn vững vàng nhất về tài chính cũng như kế hoạch mua nhà không bị thay đổi đột ngột ngoài dự kiến.
-                </p>
-                </div>
-                <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
-                    <div className="max-w-5xl mx-auto p-4">
-                        <Button
-                        onClick={handleContinueFromAnalysis}
-                        className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
-                        >
-                        Tiếp tục
-                        </Button>
-                    </div>
-                </div>
+            <motion.p // Thêm motion và variants
+              variants={itemVariants}
+              className="text-white/80 font-semibold mb-4"
+            >
+              Bạn có biết?
+            </motion.p>
+            <motion.h2 // Thêm motion và variants
+              variants={itemVariants}
+              className="text-2xl font-bold mb-6 max-w-sm"
+            >
+              Một trong những lý do phổ biến nhất khiến việc mua nhà chậm lại là có em bé ngoài dự kiến
+            </motion.h2>
+            <motion.div variants={itemVariants}> {/* Bọc Image trong motion.div */}
+              <Image
+                src="/onboarding/analysis.png"
+                alt="Analysis"
+                width={400}
+                height={300}
+                className="mb-6"
+              />
+            </motion.div>
+            <motion.p // Thêm motion và variants
+              variants={itemVariants}
+              className="text-white/90 max-w-md"
+            >
+              Hãy cân nhắc thật kỹ về thời điểm sinh em bé để đảm bảo bạn vững vàng nhất về tài chính cũng như kế hoạch mua nhà không bị thay đổi đột ngột ngoài dự kiến.
+            </motion.p>
+          </div>
+          <motion.div // Thêm motion và variants cho cả phần footer
+            variants={itemVariants}
+            className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <div className="max-w-5xl mx-auto p-4">
+              <Button
+                onClick={handleContinueFromAnalysis}
+                className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+              >
+                Tiếp tục
+              </Button>
             </div>
-        )}
+          </motion.div>
+        </motion.div>
+      )}
 
         {step === "form2" && (
             <MultiStepQuestionForm

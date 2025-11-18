@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/docs(.*)',
 
   // == API CÔNG KHAI CỦA BẠN ==
+  '/api/image(.*)',            // API lấy ảnh và media
   '/api/onboarding/calculate', // API tính toán nhanh
   '/api/section/next-step(.*)', // << THÊM DÒNG NÀY VÀO ĐÂY
   '/api/docs',                 // API tài liệu Swagger

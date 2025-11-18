@@ -16,6 +16,7 @@ import { FamilyGiftTiming, FamilyLoanRepaymentType, FamilySupportType, Onboardin
 import { updateOnboardingSectionProgress } from "@/actions/onboardingActions";
 import { ArrowLeftIcon } from "lucide-react";
 import ProgressBar from "../shared/ProgressBar";
+import { motion } from "framer-motion";
 
 interface FamilySupportProps {
   initialData: OnboardingPlanState;
@@ -185,6 +186,30 @@ export default function FamilySupport({
     router.push(`/plan/${planId}/spending`);
   };
 
+  // --- Thêm các định nghĩa animation ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2, // Delay 0.2s giữa mỗi phần tử con
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: -20, opacity: 0 }, // Bắt đầu từ vị trí y = -20 và ẩn
+    visible: {
+      y: 0,
+      opacity: 1, // Di chuyển đến y = 0 và hiện ra
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+  // --- Kết thúc phần thêm ---
+
+
   if (step === "intro") {
     return (
       <>
@@ -280,7 +305,13 @@ export default function FamilySupport({
       )}
 
       {step === "analysis" && (
-        <div className="flex flex-col h-full flex-grow">
+        <motion.div // Thay thế 'div' bằng 'motion.div'
+          className="flex flex-col h-full flex-grow"
+          // Thêm các thuộc tính animation
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           <div className="relative flex items-center h-10 mb-4">
             <div className="absolute left-0 top-1/2 -translate-y-1/2">
               <Button
@@ -300,20 +331,38 @@ export default function FamilySupport({
             </div>
           </div>
           <div className="flex-grow flex flex-col items-center text-center pb-17 px-4 overflow-y-auto">
-            <p className="text-white/80 font-semibold mb-4">Bạn có biết?</p>
-            <h2 className="text-2xl font-bold mb-6">Hỗ trợ từ người thân không nhất thiết phải là một khoản cho không!</h2>
-            <Image
-              src="/onboarding/familyanalys.png"
-              alt="Analysis"
-              width={400}
-              height={300}
-              className="mb-6"
-            />
-            <p className="text-white/90 max-w-5xl">
+            <motion.p // Thêm motion và variants
+              variants={itemVariants}
+              className="text-white/80 font-semibold mb-4"
+            >
+              Bạn có biết?
+            </motion.p>
+            <motion.h2 // Thêm motion và variants
+              variants={itemVariants}
+              className="text-2xl font-bold mb-6"
+            >
+              Hỗ trợ từ người thân không nhất thiết phải là một khoản cho không!
+            </motion.h2>
+            <motion.div variants={itemVariants}> {/* Bọc Image trong motion.div */}
+              <Image
+                src="/onboarding/familyanalys.png"
+                alt="Analysis"
+                width={400}
+                height={300}
+                className="mb-6"
+              />
+            </motion.div>
+            <motion.p // Thêm motion và variants
+              variants={itemVariants}
+              className="text-white/90 max-w-5xl"
+            >
               Bằng cách định lượng rõ tiềm năng lợi nhuận và rủi ro của cơ hội mua nhà, bạn có thể mời họ 'cùng đầu tư' và chia sẻ lợi nhuận. Đây là một cách huy động vốn rất thông minh.
-            </p>
+            </motion.p>
           </div>
-          <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm">
+          <motion.div // Thêm motion và variants cho cả phần footer
+            variants={itemVariants}
+            className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm"
+          >
             <div className="max-w-5xl mx-auto p-4">
               <Button
               onClick={handleContinueFromAnalysis}
@@ -322,8 +371,8 @@ export default function FamilySupport({
                 Tiếp tục
               </Button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {step === "form2" && (
