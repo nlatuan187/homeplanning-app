@@ -195,7 +195,7 @@ export default function MultiStepQuestionForm({
             <Button
               key={option.label}
               onClick={() => handleOptionClick(option.value)}
-              className={`w-full py-6 text-base justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'text-slate-900 bg-white hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white'}`}
+              className={`w-full py-6 text-base justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'text-white bg-slate-900 border hover:bg-slate-900 border-cyan-500' : 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white'}`}
             >
               {option.label}
             </Button>

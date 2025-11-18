@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import LottieAnimation from "@/components/ui/lottieAnimation";
+import HcmcChungCuAnimation from "../../../../public/lottie/HCMCCScene2.json";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -134,7 +136,7 @@ const analysisContent: any = {
   "TP. Hồ Chí Minh": {
     "Chung cư": {
       summary: "Bạn đang lựa chọn một thị trường của giá trị thực và bền vững.",
-      image: "/onboarding/hcmc-chungcu.png", // Placeholder image
+      animation: HcmcChungCuAnimation,
       points: {
         "Bức tranh toàn cảnh":
           "Tương tự Hà Nội, chung cư TP.HCM là một kênh giữ giá trị tốt với mức tăng trưởng tổng thể 35% đến 50% trong 5 năm, chủ yếu là do sự khan hiếm nguồn cung sơ cấp. Đà tăng có phần chậm hơn so với Hà Nội do mặt bằng giá ban đầu đã ở mức cao.",
@@ -528,12 +530,10 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
                 <p className="text-xl font-bold text-cyan-400 mb-6 max-w-5xl">
           {content.summary}
         </p>
-        <Image
-          src={content.image}
-                  alt={`${targetHouseType} tại ${targetLocation}`}
-          width={400}
-          height={400}
-                  className="mb-6"
+        <LottieAnimation
+          animationData={content.animation}
+          style={{ width: 400, height: 400 }}
+          className="mb-6"
         />
                 <div className="space-y-4 w-full max-w-5xl text-left text-sm">
           {Object.entries(content.points).map(([key, value]) => (
