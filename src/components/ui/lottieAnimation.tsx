@@ -13,6 +13,7 @@ interface LottieAnimationProps {
   // Các tùy chọn điều khiển animation
   loop?: boolean;
   autoplay?: boolean;
+  onComplete?: () => void; // Thêm prop onComplete
 }
 
 const LottieAnimation = ({
@@ -21,6 +22,7 @@ const LottieAnimation = ({
   style,
   loop = true,
   autoplay = true,
+  onComplete, // Nhận prop onComplete
 }: LottieAnimationProps) => {
   return (
     <Lottie
@@ -29,6 +31,7 @@ const LottieAnimation = ({
       style={style}
       loop={loop}
       autoplay={autoplay}
+      onComplete={onComplete} // Truyền vào component Lottie
     />
   );
 };

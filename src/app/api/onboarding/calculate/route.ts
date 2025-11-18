@@ -4,6 +4,47 @@ import { z } from 'zod';
 import { calculateOnboardingProjection } from '@/actions/calculateOnboardingProjection';
 import { OnboardingPlanState } from '@/components/onboarding/types';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ProjectionRow:
+ *       type: object
+ *       properties:
+ *         year:
+ *           type: integer
+ *           description: "The calendar year for this row of data."
+ *           example: 2025
+ *         age:
+ *           type: integer
+ *           description: "User's age in that year."
+ *           example: 30
+ *         isAffordable:
+ *           type: boolean
+ *           description: "Whether the house is affordable in this year."
+ *           example: true
+ *         affordabilityShortfall:
+ *           type: number
+ *           description: "The amount of money missing to afford the house. 0 if affordable."
+ *           example: 0
+ *     QuickCheckResult:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         isAffordable:
+ *           type: boolean
+ *         affordableYear:
+ *           type: integer
+ *           nullable: true
+ *         message:
+ *           type: string
+ *         projectionData:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/ProjectionRow'
+ */
+
 // Schema để validate dữ liệu đầu vào (có thể tái sử dụng từ nơi khác)
 const quickCheckSchema = z.object({
   yearsToPurchase: z.number().int().min(new Date().getFullYear()),
