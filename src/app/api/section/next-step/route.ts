@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import { quickCheckStepOrder } from '@/lib/quickcheck-flow-definition';
+import { familySupportStepOrder } from '@/lib/family-support-flow-definition'; // New import
+import { spendingStepOrder } from '@/lib/spending-flow-definition'; // New import
 import { z } from 'zod';
 
-// Define a schema for validating the incoming request body
+// Define a map to hold all section flows
+const sectionFlows = {
+  quickCheck: quickCheckStepOrder,
+  familySupport: familySupportStepOrder,
+  spending: spendingStepOrder,
+};
+
+// Update schema to accept the new sections
 const requestBodySchema = z.object({
-  currentSection: z.literal('quickCheck'),
+  currentSection: z.enum(['quickCheck', 'familySupport', 'spending']),
   answers: z.record(z.any()), // Allow answers to be any object
 });
 
@@ -34,7 +43,7 @@ const requestBodySchema = z.object({
  *             properties:
  *               currentSection:
  *                 type: string
- *                 enum: [quickCheck]
+ *                 enum: [quickCheck, familySupport, spending]
  *                 description: The section flow being processed.
  *               answers:
  *                 type: object
@@ -75,8 +84,7 @@ const requestBodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    // Read the 1-based index from the query, defaulting to 1.
-    let currentIndex = parseInt(searchParams.get('index') || '1', 10);
+    let requestedIndex = parseInt(searchParams.get('index') || '1', 10);
 
     const body = await request.json();
     
@@ -84,56 +92,67 @@ export async function POST(request: Request) {
     if (!validation.success) {
       return NextResponse.json({ error: 'Invalid request body', details: validation.error.flatten() }, { status: 400 });
     }
-    const { answers } = validation.data;
+    const { answers, currentSection } = validation.data;
 
-    // --- Dynamic Total Step Calculation ---
-    let totalStep = quickCheckStepOrder.length;
-    const marketAnalysisStepDefinition = quickCheckStepOrder.find(step => step.id === 'marketAnalysis');
-
-    if (marketAnalysisStepDefinition && typeof marketAnalysisStepDefinition.payload === 'function') {
-      const analysisPayload = marketAnalysisStepDefinition.payload(answers);
-      if (!analysisPayload) {
-        totalStep--;
-      }
+    const stepOrder = sectionFlows[currentSection];
+    if (!stepOrder) {
+      return NextResponse.json({ error: `Unsupported section: ${currentSection}` }, { status: 400 });
     }
 
-    let finalPayload;
-    let nextStepDefinition;
+    // --- NEW LOGIC ---
 
-    // Use a while loop with 1-based index logic
-    while (currentIndex <= quickCheckStepOrder.length) {
-      // Convert 1-based index to 0-based for array access
-      const arrayIndex = currentIndex - 1;
-      nextStepDefinition = quickCheckStepOrder[arrayIndex];
-
-      if (typeof nextStepDefinition.payload === 'function') {
-        finalPayload = nextStepDefinition.payload(answers);
+    // 1. Build the path of VISIBLE steps based on the user's answers.
+    const visibleStepsPath: { type: string; payload: any; masterIndex: number }[] = [];
+    stepOrder.forEach((step, index) => {
+      const masterIndex = index + 1;
+      let stepPayload;
+      if (typeof step.payload === 'function') {
+        stepPayload = step.payload(answers);
       } else {
-        finalPayload = nextStepDefinition.payload;
+        stepPayload = step.payload;
       }
 
-      if (!(nextStepDefinition.type === 'EDUCATION' && !finalPayload)) {
-        break; // Found a valid step, break the loop.
+      // If the payload is not null, it's a visible step.
+      if (stepPayload) {
+        visibleStepsPath.push({
+          ...step,
+          payload: stepPayload,
+          masterIndex: masterIndex, // Keep track of the original index
+        });
       }
+    });
 
-      currentIndex++; // If skippable, increment and check the next step.
+    const totalStep = visibleStepsPath.length;
+
+    // 2. Find the next valid step in the visible path.
+    let nextStepInPath = null;
+    let currentVisibleStepIndex = -1; // This will be our new, consistent currentStep
+
+    for (let i = 0; i < visibleStepsPath.length; i++) {
+      // Find the first visible step whose masterIndex is at or after the requested index.
+      if (visibleStepsPath[i].masterIndex >= requestedIndex) {
+        nextStepInPath = visibleStepsPath[i]; 
+        currentVisibleStepIndex = i + 1; // The 1-based index within the VISIBLE path
+        break;
+      }
     }
 
-    // Check if the loop finished because all remaining steps were skipped or the index was out of bounds.
-    if (currentIndex > quickCheckStepOrder.length || !nextStepDefinition) {
+    // 3. If no next step is found, the section is complete.
+    if (!nextStepInPath) {
       return NextResponse.json({
         stepType: 'FINAL',
         status: 'completed',
-        message: 'Quick check completed. Ready to calculate.',
+        message: 'Section completed.',
       });
     }
 
+    // 4. Build and return the consistent response.
     const response = {
-      currentStep: currentIndex, // Return the 1-based index
-      totalStep: totalStep,
-      stepType: nextStepDefinition.type,
+      currentStep: currentVisibleStepIndex, // User-friendly step number
+      totalStep: totalStep,                 // Consistent total number
+      stepType: nextStepInPath.type,
       status: 'activate',
-      payload: finalPayload,
+      payload: nextStepInPath.payload,
     };
 
     return NextResponse.json(response);
