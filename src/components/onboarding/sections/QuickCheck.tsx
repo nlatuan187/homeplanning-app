@@ -54,7 +54,6 @@ import "swiper/css/pagination";
 
 const currentYear = new Date().getFullYear();
 
-// Define the 7 questions for the Quick Check section
 const quickCheckQuestionsPart1: Question[] = [
   {
     key: "yearsToPurchase",
@@ -134,9 +133,6 @@ const quickCheckQuestionsPart2: Question[] = [
   },
 ];
 
-// 1. CẤU TRÚC LẠI DỮ LIỆU ANALYSISCONTENT
-// Mỗi lựa chọn (ví dụ: "Hà Nội" -> "Chung cư") sẽ là một mảng các bước.
-// Mỗi bước có animation và nội dung riêng.
 const analysisContent: any = {
   "Hà Nội": {
     "Chung cư": [
@@ -286,7 +282,7 @@ const analysisContent: any = {
       {
         animation: HcmcNhaDatAnimation4, // Trang 3
         title: "Động lực chính",
-        description:"Các cơn sốt đất nền vùng ven (2020-2022) được thúc đẩy bởi dòng tiền đầu cơ và các thông tin quy hoạch hạ tầng.",
+        description: "Các cơn sốt đất nền vùng ven (2020-2022) được thúc đẩy bởi dòng tiền đầu cơ và các thông tin quy hoạch hạ tầng.",
       },
       {
         animation: HcmcNhaDatAnimation5, // Trang 4
@@ -325,25 +321,17 @@ interface QuickCheckProps {
     quickCheckResult: QuickCheckResultPayload;
   }) => void;
   isEditMode?: boolean;
+  initialStep?: "intro" | "form1";
 }
 
-// 1. Định nghĩa chuỗi animation bằng một mảng
-const animationSequence = [
-  HcmcChungCuAnimation2,
-  HcmcChungCuAnimation3,
-  HcmcChungCuAnimation4,
-  HcmcChungCuAnimation5,
-  HcmcChungCuAnimation6,
-];
-
-export default function QuickCheck({ onCompleted, initialData = {}, isEditMode = false }: QuickCheckProps) {
+export default function QuickCheck({ onCompleted, initialData = {}, isEditMode = false, initialStep = "intro" }: QuickCheckProps) {
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2" | "loading" | "result">(
-    "intro",
+    initialStep,
   );
   // 2. State bây giờ sẽ lưu chỉ số (index) của animation hiện tại
   const [currentAnimationIndex, setCurrentAnimationIndex] = useState(0);
   const [result, setResult] = useState<QuickCheckResultPayload | null>(null);
-  
+
   // 2. STATE MỚI ĐỂ THEO DÕI TRANG HIỆN TẠI CỦA PHẦN ANALYSIS
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0);
   // 2. State để theo dõi hướng chuyển động (1: next, -1: back)
@@ -399,6 +387,11 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     }
   }, [step]);
 
+  // Sync step with initialStep prop
+  useEffect(() => {
+    setStep(initialStep);
+  }, [initialStep]);
+
   const defaultValues = useMemo(() => processedInitialData, [processedInitialData]);
 
   const questions1 = useMemo(() => quickCheckQuestionsPart1, []);
@@ -412,7 +405,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     const combinedData = { ...defaultValues, ...formData };
     return questions2.filter((q) => !q.condition || q.condition(combinedData));
   }, [questions2, formData, defaultValues]);
-  
+
   const totalSteps = useMemo(() => {
     const hasAnalysisStep = getAnalysisContent(
       formData.targetLocation,
@@ -465,8 +458,6 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     setStep("form2");
   }, []);
 
-  // --- LOGIC MỚI CHO ANALYSIS ---
-  // Lấy dữ liệu analysis một cách an toàn
   const analysisSteps = useMemo(() => {
     if (step !== 'analysis') return null;
     return getAnalysisContent(
@@ -475,7 +466,6 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     );
   }, [step, formData.targetLocation, formData.targetHouseType]);
 
-  // Di chuyển các hàm xử lý ra ngoài và bọc trong useCallback
   const handleAnalysisBack = useCallback(() => {
     setDirection(-1); // 4. Đặt hướng là 'back'
     if (analysisStepIndex > 0) {
@@ -499,7 +489,6 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     }
   }, [analysisStepIndex, analysisSteps, handleContinueFromAnalysis]);
 
-  // Di chuyển useEffect ra cấp cao nhất
   useEffect(() => {
     // Chỉ chạy logic khi ở đúng bước và ref đã sẵn sàng
     if (step !== 'analysis' || !analysisContainerRef.current) {
@@ -552,12 +541,12 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
 
     const processedData: Partial<OnboardingPlanState> = {
       ...finalData,
-        hasCoApplicant: (finalData.hasCoApplicant || false),
-        targetHousePriceN0: (finalData.targetHousePriceN0 || 0),
-        initialSavings: (finalData.initialSavings || 0),
-        userMonthlyIncome: (finalData.userMonthlyIncome || 0),
-        monthlyLivingExpenses: (finalData.monthlyLivingExpenses || 0),
-        yearsToPurchase: (finalData.yearsToPurchase || 0),
+      hasCoApplicant: (finalData.hasCoApplicant || false),
+      targetHousePriceN0: (finalData.targetHousePriceN0 || 0),
+      initialSavings: (finalData.initialSavings || 0),
+      userMonthlyIncome: (finalData.userMonthlyIncome || 0),
+      monthlyLivingExpenses: (finalData.monthlyLivingExpenses || 0),
+      yearsToPurchase: (finalData.yearsToPurchase || 0),
     };
 
     try {
@@ -719,153 +708,153 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
   // 3. CẬP NHẬT GIAO DIỆN PHẦN ANALYSIS
   // Xóa bỏ hoàn toàn logic cũ của `analysis` và thay bằng logic dưới đây
   if (step === "analysis") {
-      const { targetLocation, targetHouseType } = formData;
-      const content = getAnalysisContent(
-        targetLocation as string,
-        targetHouseType as string,
-      );
-      if (!content) return null;
-      // Bây giờ, analysisSteps đã được tính toán ở trên
-      if (!analysisSteps || analysisSteps.length === 0) {
-        // Nếu không có nội dung, chuyển thẳng tới form 2
-        setStep("form2");
-        return null;
-      }
+    const { targetLocation, targetHouseType } = formData;
+    const content = getAnalysisContent(
+      targetLocation as string,
+      targetHouseType as string,
+    );
+    if (!content) return null;
+    // Bây giờ, analysisSteps đã được tính toán ở trên
+    if (!analysisSteps || analysisSteps.length === 0) {
+      // Nếu không có nội dung, chuyển thẳng tới form 2
+      setStep("form2");
+      return null;
+    }
 
-      const currentStepContent = analysisSteps[analysisStepIndex];
-      const isLastStep = analysisStepIndex === analysisSteps.length - 1;
+    const currentStepContent = analysisSteps[analysisStepIndex];
+    const isLastStep = analysisStepIndex === analysisSteps.length - 1;
 
-      // 3. Định nghĩa các variants cho animation
-      const slideVariants = {
-        enter: (direction: number) => ({
-          x: direction > 0 ? "100%" : "-100%",
-          opacity: 0,
-        }),
-        center: {
-          zIndex: 1,
-          x: 0,
-          opacity: 1,
-        },
-        exit: (direction: number) => ({
-          zIndex: 0,
-          x: direction < 0 ? "100%" : "-100%",
-          opacity: 0,
-        }),
-      };
+    // 3. Định nghĩa các variants cho animation
+    const slideVariants = {
+      enter: (direction: number) => ({
+        x: direction > 0 ? "100%" : "-100%",
+        opacity: 0,
+      }),
+      center: {
+        zIndex: 1,
+        x: 0,
+        opacity: 1,
+      },
+      exit: (direction: number) => ({
+        zIndex: 0,
+        x: direction < 0 ? "100%" : "-100%",
+        opacity: 0,
+      }),
+    };
 
-      return (
-        // 4. Gắn ref vào container chính
-        <div
-          ref={analysisContainerRef}
-          className="flex flex-col h-full flex-grow overflow-hidden mt-2" // Thêm overflow-hidden
-        >
-          <div className="pb-3">
-            <div className="relative flex items-center h-10">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                <Button variant="ghost" size="icon" onClick={handleAnalysisBack}>
-                  <ArrowLeftIcon className="h-12 w-12" />
-                </Button>
-              </div>
-              {/* Thêm whitespace-nowrap để ngăn tiêu đề xuống dòng */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg whitespace-nowrap">
-                Phân tích thị trường
-              </div>
+    return (
+      // 4. Gắn ref vào container chính
+      <div
+        ref={analysisContainerRef}
+        className="flex flex-col h-full flex-grow overflow-hidden mt-2" // Thêm overflow-hidden
+      >
+        <div className="pb-3">
+          <div className="relative flex items-center h-10">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2">
+              <Button variant="ghost" size="icon" onClick={handleAnalysisBack}>
+                <ArrowLeftIcon className="h-12 w-12" />
+              </Button>
             </div>
-          </div>
-          <div className="relative flex-grow flex flex-col items-center text-center">
-            {/* 6. Bọc nội dung động bằng AnimatePresence và motion.div */}
-            <AnimatePresence initial={false} custom={direction}>
-              <motion.div
-                key={analysisStepIndex} // Key rất quan trọng để AnimatePresence hoạt động
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: "spring", stiffness: 300, damping: 30 },
-                  opacity: { duration: 0.2 },
-                }}
-                className="absolute w-full h-full flex flex-col items-center" // Thêm padding top
-              >
-
-                {/* 2. Render có điều kiện dựa trên dữ liệu */}
-                {currentStepContent.animation ? (
-                  // Giao diện cho các trang chi tiết (có animation)
-                  // 1. Sửa typo và thêm flex-grow để cho phép cuộn
-                  // 2. Dọn dẹp các class con để code sạch hơn
-                  <div className="w-full max-w-5xl pl-3 flex-grow overflow-y-auto pb-12">
-                    <h2 className="text-xl max-md:text-base text-left font-bold text-cyan-400 mb-4">
-                      {currentStepContent.title}
-                    </h2>
-                    <p className="text-white/80 text-left mb-4 max-md:text-sm pr-2">
-                      {currentStepContent.description}
-                    </p>
-                    <LottieAnimation
-                      animationData={currentStepContent.animation}
-                      style={{ width: "80%", maxWidth: 350, height: "auto" }}
-                      className="mb-6 mx-auto" // Tự động căn giữa animation
-                      loop={false}
-                    />
-                  </div>
-                ) : (
-                  // Giao diện cho trang giới thiệu đầu tiên (có ảnh tĩnh)
-                  <>
-                      <p className="text-base font-bold px-12 pb-4">
-                        Bạn muốn mua 
-                        <br/>
-                        {targetHouseType} tại {targetLocation}
-                      </p>
-                    <Image
-                      src={currentStepContent.image}
-                      alt="Phân tích lựa chọn"
-                      width={500}
-                      height={500}
-                      className="w-full max-w-lg object-contain mb-8 px-2"
-                    />
-                    {/* Render lại theo cấu trúc dữ liệu mới */}
-                    <p className="text-lg text-white/80 text-center">
-                      {currentStepContent.summaryParts[0].text}
-                      <br />
-                      {currentStepContent.summaryParts.slice(1).map((part: { text: string; highlight: boolean }, index: number) => (
-                        <span
-                          key={index}
-                          className={part.highlight ? "text-cyan-400" : ""}
-                        >
-                          {part.text}
-                        </span>
-                      ))}
-                    </p>
-                  </>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          {/* Nút điều hướng không đổi */}
-          <div className="fixed bottom-0 left-0 right-0 z-20 bg-[#121212]">
-            <div className="max-w-5xl mx-auto p-4">
-              {isLastStep ? (
-                <Button
-                  onClick={handleAnalysisNext}
-                  className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
-                >
-                  Tiếp tục
-                </Button>
-              ) : (
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleAnalysisNext}
-                    size="icon"
-                    className="bg-cyan-500 text-white hover:bg-cyan-600 rounded-full h-14 w-14"
-                  >
-                    <ArrowRightIcon className="h-9 w-9" />
-                  </Button>
-                </div>
-              )}
+            {/* Thêm whitespace-nowrap để ngăn tiêu đề xuống dòng */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg whitespace-nowrap">
+              Phân tích thị trường
             </div>
           </div>
         </div>
-      );
+        <div className="relative flex-grow flex flex-col items-center text-center">
+          {/* 6. Bọc nội dung động bằng AnimatePresence và motion.div */}
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+              key={analysisStepIndex} // Key rất quan trọng để AnimatePresence hoạt động
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+              }}
+              className="absolute w-full h-full flex flex-col items-center" // Thêm padding top
+            >
+
+              {/* 2. Render có điều kiện dựa trên dữ liệu */}
+              {currentStepContent.animation ? (
+                // Giao diện cho các trang chi tiết (có animation)
+                // 1. Sửa typo và thêm flex-grow để cho phép cuộn
+                // 2. Dọn dẹp các class con để code sạch hơn
+                <div className="w-full max-w-5xl pl-3 flex-grow overflow-y-auto pb-12">
+                  <h2 className="text-xl max-md:text-base text-left font-bold text-cyan-400 mb-4">
+                    {currentStepContent.title}
+                  </h2>
+                  <p className="text-white/80 text-left mb-4 max-md:text-sm pr-2">
+                    {currentStepContent.description}
+                  </p>
+                  <LottieAnimation
+                    animationData={currentStepContent.animation}
+                    style={{ width: "80%", maxWidth: 350, height: "auto" }}
+                    className="mb-6 mx-auto" // Tự động căn giữa animation
+                    loop={false}
+                  />
+                </div>
+              ) : (
+                // Giao diện cho trang giới thiệu đầu tiên (có ảnh tĩnh)
+                <>
+                  <p className="text-base font-bold px-12 pb-4">
+                    Bạn muốn mua
+                    <br />
+                    {targetHouseType} tại {targetLocation}
+                  </p>
+                  <Image
+                    src={currentStepContent.image}
+                    alt="Phân tích lựa chọn"
+                    width={500}
+                    height={500}
+                    className="w-full max-w-lg object-contain mb-8 px-2"
+                  />
+                  {/* Render lại theo cấu trúc dữ liệu mới */}
+                  <p className="text-lg text-white/80 text-center">
+                    {currentStepContent.summaryParts[0].text}
+                    <br />
+                    {currentStepContent.summaryParts.slice(1).map((part: { text: string; highlight: boolean }, index: number) => (
+                      <span
+                        key={index}
+                        className={part.highlight ? "text-cyan-400" : ""}
+                      >
+                        {part.text}
+                      </span>
+                    ))}
+                  </p>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        {/* Nút điều hướng không đổi */}
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-[#121212]">
+          <div className="max-w-5xl mx-auto p-4">
+            {isLastStep ? (
+              <Button
+                onClick={handleAnalysisNext}
+                className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+              >
+                Tiếp tục
+              </Button>
+            ) : (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleAnalysisNext}
+                  size="icon"
+                  className="bg-cyan-500 text-white hover:bg-cyan-600 rounded-full h-14 w-14"
+                >
+                  <ArrowRightIcon className="h-9 w-9" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

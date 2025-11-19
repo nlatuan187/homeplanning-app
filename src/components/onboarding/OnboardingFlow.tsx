@@ -14,14 +14,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import LoadingStep from "./shared/LoadingStep";
 
-type OnboardingSection = 'quickCheck' | 'signupPrompt'| 'familySupport' | 'spending' | 'assumptions';
+type OnboardingSection = 'quickCheck' | 'signupPrompt' | 'familySupport' | 'spending' | 'assumptions';
 
 // Add planId to the props
 interface OnboardingFlowProps {
   planId: string;
+  initialStep?: "intro" | "form1";
 }
 
-export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
+export default function OnboardingFlow({ planId, initialStep = "intro" }: OnboardingFlowProps) {
   const [currentSection, setCurrentSection] = useState<OnboardingSection>('quickCheck');
   const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
   const { isSignedIn, userId } = useAuth();
@@ -38,9 +39,9 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
     if (isSignedIn && userId) {
       // *** NEW LOGIC FOR SIGNED-IN USERS ***
       setIsLoading(true); // Show loading indicator
-      
+
       const result = await createPlanFromOnboarding(finalOnboardingData);
-      
+
       if (result.success && result.planId) {
         // No need for localStorage or SignupPrompt. Redirect directly.
         router.push(`/plan/${result.planId}/familysupport`);
@@ -70,7 +71,7 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const handleBackFromPrompt = () => {
     setCurrentSection('quickCheck');
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -82,18 +83,18 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   const renderSection = () => {
     switch (currentSection) {
       case 'quickCheck':
-        return <QuickCheck planId={planId} initialData={planState} onCompleted={handleQuickCheckCompleted} />;
+        return <QuickCheck planId={planId} initialData={planState} onCompleted={handleQuickCheckCompleted} initialStep={initialStep} />;
       case 'signupPrompt':
         return <SignupPrompt planData={planState} onBack={handleBackFromPrompt} />;
       case 'familySupport':
         // Now we pass the correct planId from props
         return <FamilySupport initialData={planState} familySupport={planState} planId={planId} onSubmit={handleFamilySupportCompleted} />;
       case 'spending':
-        return <Spending initialData={planState} plan={planState} onCompleted={handleSpendingCompleted} planId={planId} isEditMode={false}/>;
+        return <Spending initialData={planState} plan={planState} onCompleted={handleSpendingCompleted} planId={planId} isEditMode={false} />;
       case 'assumptions':
-        return <Assumption plan={planState as Plan} onFinalChoice={() => {}} onConfirm={() => {}} step="intro" setStep={() => {}} assumptionStep={0} onNext={() => {}} onPrev={() => {}} result={null} assumptions={{pctSalaryGrowth: 0, pctHouseGrowth: 0, pctInvestmentReturn: 0}} onSliderChange={() => {}} chartData={[]}/>;
+        return <Assumption plan={planState as Plan} onFinalChoice={() => { }} onConfirm={() => { }} step="intro" setStep={() => { }} assumptionStep={0} onNext={() => { }} onPrev={() => { }} result={null} assumptions={{ pctSalaryGrowth: 0, pctHouseGrowth: 0, pctInvestmentReturn: 0 }} onSliderChange={() => { }} chartData={[]} />;
       default:
-        return <QuickCheck onCompleted={handleQuickCheckCompleted} />;
+        return <QuickCheck onCompleted={handleQuickCheckCompleted} initialStep={initialStep} />;
     }
   };
 
