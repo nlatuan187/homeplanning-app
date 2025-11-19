@@ -59,9 +59,10 @@ export default function Spending({
 
   const spendingQuestionsPart1: Question[] = useMemo(() => [
     { key: 'monthlyNonHousingDebt', text: 'Số tiền bạn đang trả cho các khoản vay hàng tháng khác? (đơn vị: triệu VNĐ)', type: 'number', unit: 'triệu VNĐ' },
-    { key: 'currentAnnualInsurancePremium', 
-      text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu? (BHXH, BHYT, ...) (đơn vị: triệu VNĐ)', 
-      type: 'number', 
+    {
+      key: 'currentAnnualInsurancePremium',
+      text: 'Chi phí bạn đang trả cho bảo hiểm nhân thọ hàng năm là bao nhiêu? (BHXH, BHYT, ...) (đơn vị: triệu VNĐ)',
+      type: 'number',
       unit: 'triệu VNĐ',
       description: "* Nếu bạn đã đóng bảo hiểm xã hội ở nơi làm việc, chỉ cần nhập giá trị bảo hiểm nhân thọ ở đây."
     },
@@ -69,9 +70,9 @@ export default function Spending({
 
   const spendingQuestionsPart2: Question[] = useMemo(() => [
     // @ts-ignore
-    { 
-      key: 'hasNewChild', text: 'Bạn có dự định sinh thêm em bé không?', 
-      type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}],
+    {
+      key: 'hasNewChild', text: 'Bạn có dự định sinh thêm em bé không?',
+      type: 'options', options: [{ label: 'Có', value: true }, { label: 'Không', value: false }],
       condition: (ans: any) => ans.hasCoApplicant === true
     },
     {
@@ -119,7 +120,7 @@ export default function Spending({
   }, [totalSteps, visibleQuestionsPart1.length]);
 
   const handleForm2DataChange = useCallback(({ formData: newData }: { formData: Partial<OnboardingPlanState> }) => {
-    setFormData(prev => ({...prev, ...newData}));
+    setFormData(prev => ({ ...prev, ...newData }));
   }, []);
 
   console.log("formData", { ...defaultValues, ...formData });
@@ -157,7 +158,7 @@ export default function Spending({
     // Nếu đang ở luồng chỉnh sửa, chỉ cần thu thập dữ liệu và báo cáo lên cha
     if (isEditMode) {
       onCompleted(finalData);
-      
+
       return; // Dừng hàm tại đây
     }
 
@@ -173,7 +174,7 @@ export default function Spending({
     };
 
     const result = await updateSpendingAndRecalculate(plan, spendingPayload);
-    
+
     if (result.success) {
       setResult(result as RecalculationResult);
       setStep("result");
@@ -216,12 +217,12 @@ export default function Spending({
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
           <div className="max-w-5xl mx-auto absolute top-4 left-4 z-20">
             <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${planId}/familysupport`)}>
-                <ArrowLeftIcon className="w-6 h-6 text-white" />
+              <ArrowLeftIcon className="w-6 h-6 text-white" />
             </Button>
           </div>
           <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
             <div className="text-white/80 font-semibold mb-8">
-                Mục 2/3
+              Mục 2/3
             </div>
             <Image
               src="/icons/suitcase 3.png"
@@ -231,10 +232,10 @@ export default function Spending({
               className="mb-6"
             />
             <h1 className="text-4xl max-md:text-3xl font-bold text-white mb-3">
-                Dòng tiền đi ra
+              Dòng tiền đi ra
             </h1>
             <p className="text-base text-white/90 max-w-sm">
-                Ngồi vững ghế nhé, có thể năm mua nhà sớm nhất của bạn sẽ bị đẩy lùi đi đó!            
+              Ngồi vững ghế nhé, có thể năm mua nhà sớm nhất của bạn sẽ bị đẩy lùi đi đó!
             </p>
           </div>
           <Button
@@ -267,26 +268,25 @@ export default function Spending({
   }
 
   if (step === "loading" && !isEditMode) {
-      return (
-        <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
-            <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>
-        </div>
-      )
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
+        <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100} />
+      </div>
+    )
   }
 
   if (step === "result" && result && !isEditMode) {
-      return <ResultStep
-        plan={result.plan}
-        title="Dòng tiền đi ra "
-        caseNumber={result.caseNumber}
-        message={result.message}
-        earliestPurchaseYear={result.earliestPurchaseYear}
-        onContinue={handleContinue}
-        hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
-      />
+    return <ResultStep
+      plan={result.plan}
+      title="Dòng tiền đi ra "
+      caseNumber={result.caseNumber}
+      message={result.message}
+      earliestPurchaseYear={result.earliestPurchaseYear}
+      onContinue={handleContinue}
+      hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
+    />
   }
 
-  // Common layout for form steps
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-[#121212] text-white">
       {step === "form1" && (
@@ -376,25 +376,25 @@ export default function Spending({
         </motion.div>
       )}
 
-        {step === "form2" && (
-            <MultiStepQuestionForm
-            key="spending2"
-            questions={spendingQuestionsPart2}
-            onSubmit={handleSubmit}
-            title="Dòng tiền đi ra"
-            subtitle="Thời gian mua nhà có ảnh hưởng không"
-            defaultValues={{ ...formData, ...defaultValues }}
-            onBackFromFirst={() => {
-                setStep("analysis");
-                setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
-            }}
-            onStepChange={handleStep2Change}
-            onDataChange={handleForm2DataChange}
-            progressCurrent={progress.current}
-            progressTotal={totalSteps}
-            isFinalForm={true}
+      {step === "form2" && (
+        <MultiStepQuestionForm
+          key="spending2"
+          questions={spendingQuestionsPart2}
+          onSubmit={handleSubmit}
+          title="Dòng tiền đi ra"
+          subtitle="Thời gian mua nhà có ảnh hưởng không"
+          defaultValues={{ ...formData, ...defaultValues }}
+          onBackFromFirst={() => {
+            setStep("analysis");
+            setProgress({ current: visibleQuestionsPart1.length + 1, total: totalSteps });
+          }}
+          onStepChange={handleStep2Change}
+          onDataChange={handleForm2DataChange}
+          progressCurrent={progress.current}
+          progressTotal={totalSteps}
+          isFinalForm={true}
         />
-        )}
+      )}
     </div>
   );
 }

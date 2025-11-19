@@ -30,11 +30,11 @@ export async function updateSpendingAndRecalculate(
     const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
 
     const currentData = {
-        monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
-        currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
-        hasNewChild: plan.hasNewChild,
-        yearToHaveChild: plan.yearToHaveChild,
-        monthlyChildExpenses: plan.monthlyChildExpenses,
+      monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
+      currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
+      hasNewChild: plan.hasNewChild,
+      yearToHaveChild: plan.yearToHaveChild,
+      monthlyChildExpenses: plan.monthlyChildExpenses,
     };
 
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
@@ -43,12 +43,12 @@ export async function updateSpendingAndRecalculate(
     let result = { earliestPurchaseYear: 0, message: "" };
     let customMessage = "";
     let caseNumber: number = 0;
-    
+
     if (hasChanged) {
       await db.$transaction([
         db.plan.update({
-            where: { id: plan.id },
-            data: formData,
+          where: { id: plan.id },
+          data: formData,
         })
       ]);
       result = await runProjectionWithEngine(plan.id);
@@ -64,9 +64,9 @@ export async function updateSpendingAndRecalculate(
       }
       await db.$transaction([
         db.planReport.upsert({
-            where: { planId: plan.id },
-            update: { projectionCache: result },
-            create: { planId: plan.id, projectionCache: result },
+          where: { planId: plan.id },
+          update: { projectionCache: result },
+          create: { planId: plan.id, projectionCache: result },
         })
       ]);
       await db.plan.update({
@@ -76,20 +76,20 @@ export async function updateSpendingAndRecalculate(
     } else {
       result = existingResult;
       if (result.earliestPurchaseYear === 0) {
-        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
-        caseNumber = 2;
-      } else {
         customMessage = "Ấn tượng đấy 😀";
         caseNumber = 1;
+      } else {
+        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
+        caseNumber = 2;
       }
     }
 
     revalidatePath(`/plan/${plan.id}`);
-    return { 
+    return {
       caseNumber: caseNumber,
       planId: plan.id,
       plan: plan,
-      success: true, 
+      success: true,
       earliestPurchaseYear: result.earliestPurchaseYear,
       message: customMessage,
       hasWorsened: previousFirstViableYear && result.earliestPurchaseYear > previousFirstViableYear

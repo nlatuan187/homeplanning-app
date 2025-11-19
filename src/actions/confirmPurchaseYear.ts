@@ -55,7 +55,7 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       },
       data: {
         affordabilityOutcome: "ScenarioB",
-        confirmedPurchaseYear: confirmedPurchaseYear + new Date().getFullYear(),
+        confirmedPurchaseYear: confirmedPurchaseYear,
         // Use upsert to handle cases where the report doesn't exist yet.
         // This will create a new PlanReport if one isn't found, or update
         // the existing one.

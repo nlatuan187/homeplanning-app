@@ -39,7 +39,7 @@ export default function ResultStep({
 }: ResultStepProps) {
   const router = useRouter();
 
-  console.log("caseNumber", caseNumber);
+  console.log("earliestPurchaseYear", earliestPurchaseYear);
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212]">
       <div className="relative flex items-center h-10 mx-2">
@@ -59,7 +59,7 @@ export default function ResultStep({
           {message}
         </p>
 
-        {caseNumber && (
+        {caseNumber && earliestPurchaseYear !== undefined && earliestPurchaseYear !== null && (
           (caseNumber % 3 === 1) ? (
             <>
               <div className="rounded-lg mb-8 flex items-center justify-center">
@@ -67,11 +67,11 @@ export default function ResultStep({
               </div>
               {(caseNumber === 1) ? (
                 <p className="text-xl font-bold text-white">
-                  Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
+                  Bạn sẽ mua được nhà sớm nhất vào năm {new Date().getFullYear() + earliestPurchaseYear}
                 </p>
               ) : (
                 <p className="text-xl font-bold text-white">
-                  Thời gian mua được nhà của bạn sớm nhất vẫn là năm {earliestPurchaseYear}
+                  Thời gian mua được nhà của bạn sớm nhất vẫn là năm {new Date().getFullYear() + earliestPurchaseYear}
                 </p>
               )}
             </>
@@ -91,7 +91,7 @@ export default function ResultStep({
                   <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
                 </div>
                 <p className="text-xl font-bold text-white">
-                  Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
+                  Bạn sẽ mua được nhà sớm nhất vào năm {new Date().getFullYear() + earliestPurchaseYear}
                 </p>
               </>
             )
