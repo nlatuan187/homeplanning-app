@@ -38,11 +38,11 @@ function HomeContent() {
             if (result.success && result.planId) {
               toast.success("Đã tạo kế hoạch thành công từ thông tin bạn đã cung cấp!");
               localStorage.removeItem('pendingOnboardingPlan');
-              router.push(`/plan/${result.planId}/familysupport`); // Chuyển đến bước tiếp theo
+              router.push(`/plan/${result.planId}/familysupport`);
             } else {
               toast.error(result.error || "Không thể tạo kế hoạch. Vui lòng thử lại.");
-              localStorage.removeItem('pendingOnboardingPlan'); // Xóa dữ liệu lỗi
-              setIsCheckingPlan(false); // Hiển thị lại onboarding để bắt đầu lại
+              localStorage.removeItem('pendingOnboardingPlan');
+              setIsCheckingPlan(false);
             }
           } catch (error) {
             toast.error("Dữ liệu tạm thời bị lỗi. Vui lòng bắt đầu lại.");
