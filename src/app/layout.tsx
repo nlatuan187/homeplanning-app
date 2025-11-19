@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider localization={viVN}>
-      <html lang="vi" className="dark">
+      <html lang="vi" className="dark" suppressHydrationWarning>
         <body className={inter.className}>
           <Suspense fallback={null}>
             <Analytics />

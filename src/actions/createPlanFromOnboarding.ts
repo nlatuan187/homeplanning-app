@@ -8,15 +8,22 @@ import { computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { runProjectionWithEngine } from "./projectionHelpers";
-import { createOnboardingProgress } from "./onboardingActions";
+import { createOnboardingProgress, getNextOnboardingStep } from "./onboardingActions";
 
 export type QuickCheckResultPayload = ProjectionResult;
 
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
 ) {
+  console.log("[createPlanFromOnboarding] Called with data:", {
+    yearsToPurchase: onboardingData.yearsToPurchase,
+    targetHousePriceN0: onboardingData.targetHousePriceN0,
+    monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+  });
+
   const clerkUser = await currentUser();
   if (!clerkUser) {
+    console.error("[createPlanFromOnboarding] Unauthorized - no clerk user");
     return { success: false, error: "Unauthorized" };
   }
 
@@ -38,40 +45,58 @@ export async function createPlanFromOnboarding(
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
-   // If user already has a plan, update its core fields from onboarding
-   const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
-   const updates = {
-     planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
-     yearsToPurchase: yearsToPurchase,
-     hasCoApplicant: onboardingData.hasCoApplicant || false,
-     targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
-     targetHouseType: onboardingData.targetHouseType,
-     targetLocation: onboardingData.targetLocation,
-     initialSavings: onboardingData.initialSavings || 0,
-     userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
-     monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
-   } as const;
+    console.log("[createPlanFromOnboarding] Found existing plan:", existingPlan.id);
+    try {
+      // If user already has a plan, update its core fields from onboarding
+      const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+      console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
+      const updates = {
+        planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
+        yearsToPurchase: yearsToPurchase,
+        hasCoApplicant: onboardingData.hasCoApplicant || false,
+        targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
+        targetHouseType: onboardingData.targetHouseType,
+        targetLocation: onboardingData.targetLocation,
+        initialSavings: onboardingData.initialSavings || 0,
+        userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+        monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+      } as const;
 
-   const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+      const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
 
-   await createOnboardingProgress(existingPlan.id);
-   try {
-     const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
-     const isAffordable = outcome.purchaseProjection?.isAffordable; 
+      await createOnboardingProgress(existingPlan.id);
+      try {
+        const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
+        const isAffordable = outcome.purchaseProjection?.isAffordable;
 
-     await db.plan.update({
-       where: { id: updated.id },
-       data: {
-         firstViableYear: outcome.purchaseProjection.year,
-         affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
-       },
-     });
-   } catch (e) {
-     logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
-   }
+        await db.plan.update({
+          where: { id: updated.id },
+          data: {
+            firstViableYear: outcome.purchaseProjection.year,
+            affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+          },
+        });
+      } catch (e) {
+        logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+      }
 
-   return { success: true, planId: existingPlan.id, existed: true };
+      // Determine the next step based on onboarding progress
+      const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
+      console.log("[createPlanFromOnboarding] Next step for existing plan:", nextStepUrl);
+
+      return { success: true, planId: existingPlan.id, existed: true, nextStepUrl };
+    } catch (updateError) {
+      console.error("[createPlanFromOnboarding] CRITICAL: Failed to update existing plan:", updateError);
+      logger.error("[createPlanFromOnboarding] Failed to update existing plan", {
+        error: String(updateError),
+        stack: (updateError as Error)?.stack,
+        planId: existingPlan.id,
+      });
+      return { success: false, error: `Failed to update plan: ${(updateError as Error).message}` };
+    }
   }
+
+  console.log("[createPlanFromOnboarding] No existing plan, creating new one");
 
   try {
     // The rest of the logic proceeds as if the user is new,
@@ -123,7 +148,7 @@ export async function createPlanFromOnboarding(
         familySupportAmount: 0,
         familyGiftTiming: null,
         familyLoanRepaymentType: null,
-        familyLoanInterestRate: 0, 
+        familyLoanInterestRate: 0,
         familyLoanTermYears: 0,
         coApplicantMonthlyIncome: 0,
         monthlyOtherIncome: 0,
