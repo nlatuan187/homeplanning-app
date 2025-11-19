@@ -46,44 +46,54 @@ export async function createPlanFromOnboarding(
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
     console.log("[createPlanFromOnboarding] Found existing plan:", existingPlan.id);
-    // If user already has a plan, update its core fields from onboarding
-    const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
-    console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
-    const updates = {
-      planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
-      yearsToPurchase: yearsToPurchase,
-      hasCoApplicant: onboardingData.hasCoApplicant || false,
-      targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
-      targetHouseType: onboardingData.targetHouseType,
-      targetLocation: onboardingData.targetLocation,
-      initialSavings: onboardingData.initialSavings || 0,
-      userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
-      monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
-    } as const;
-
-    const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
-
-    await createOnboardingProgress(existingPlan.id);
     try {
-      const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
-      const isAffordable = outcome.purchaseProjection?.isAffordable;
+      // If user already has a plan, update its core fields from onboarding
+      const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+      console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
+      const updates = {
+        planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
+        yearsToPurchase: yearsToPurchase,
+        hasCoApplicant: onboardingData.hasCoApplicant || false,
+        targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
+        targetHouseType: onboardingData.targetHouseType,
+        targetLocation: onboardingData.targetLocation,
+        initialSavings: onboardingData.initialSavings || 0,
+        userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+        monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+      } as const;
 
-      await db.plan.update({
-        where: { id: updated.id },
-        data: {
-          firstViableYear: outcome.purchaseProjection.year,
-          affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
-        },
+      const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+
+      await createOnboardingProgress(existingPlan.id);
+      try {
+        const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
+        const isAffordable = outcome.purchaseProjection?.isAffordable;
+
+        await db.plan.update({
+          where: { id: updated.id },
+          data: {
+            firstViableYear: outcome.purchaseProjection.year,
+            affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+          },
+        });
+      } catch (e) {
+        logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+      }
+
+      // Determine the next step based on onboarding progress
+      const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
+      console.log("[createPlanFromOnboarding] Next step for existing plan:", nextStepUrl);
+
+      return { success: true, planId: existingPlan.id, existed: true, nextStepUrl };
+    } catch (updateError) {
+      console.error("[createPlanFromOnboarding] CRITICAL: Failed to update existing plan:", updateError);
+      logger.error("[createPlanFromOnboarding] Failed to update existing plan", {
+        error: String(updateError),
+        stack: (updateError as Error)?.stack,
+        planId: existingPlan.id,
       });
-    } catch (e) {
-      logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+      return { success: false, error: `Failed to update plan: ${(updateError as Error).message}` };
     }
-
-    // Determine the next step based on onboarding progress
-    const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
-    console.log("[createPlanFromOnboarding] Next step for existing plan:", nextStepUrl);
-
-    return { success: true, planId: existingPlan.id, existed: true, nextStepUrl };
   }
 
   console.log("[createPlanFromOnboarding] No existing plan, creating new one");
