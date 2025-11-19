@@ -8,6 +8,7 @@ import LoadingStep from "@/components/onboarding/shared/LoadingStep";
 import { createPlanFromOnboarding } from "@/actions/createPlanFromOnboarding";
 import { toast } from "react-hot-toast";
 import { OnboardingPlanState } from "@/components/onboarding/types";
+import { getPlan } from "@/actions/onboardingActions";
 
 export default function HomeClient() {
     const { isSignedIn, userId, isLoaded } = useAuth();
@@ -16,6 +17,8 @@ export default function HomeClient() {
     const stepParam = searchParams.get("step");
     const initialStep = stepParam === "form1" ? "form1" : "intro";
     const [isCheckingPlan, setIsCheckingPlan] = useState(true);
+    const [planData, setPlanData] = useState<Partial<OnboardingPlanState>>({});
+    const [planId, setPlanId] = useState("");
 
     useEffect(() => {
         const handleUserSession = async () => {
@@ -61,7 +64,36 @@ export default function HomeClient() {
             }
         };
 
+        // Load existing plan data if user is logged in
+        const loadExistingPlan = async () => {
+            if (isLoaded && isSignedIn && userId) {
+                try {
+                    const response = await fetch('/api/user/plan');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.plan) {
+                            setPlanId(data.plan.id);
+                            // Convert DB values back to UI format
+                            setPlanData({
+                                targetHousePriceN0: data.plan.targetHousePriceN0 / 1000, // triệu → tỷ
+                                yearsToPurchase: data.plan.yearsToPurchase + new Date().getFullYear(), // relative → absolute
+                                initialSavings: data.plan.initialSavings,
+                                userMonthlyIncome: data.plan.userMonthlyIncome,
+                                monthlyLivingExpenses: data.plan.monthlyLivingExpenses,
+                                hasCoApplicant: data.plan.hasCoApplicant,
+                                targetHouseType: data.plan.targetHouseType,
+                                targetLocation: data.plan.targetLocation,
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load plan:', error);
+                }
+            }
+        };
+
         handleUserSession();
+        loadExistingPlan();
     }, [isLoaded, isSignedIn, userId, router, stepParam]);
 
     if (!isLoaded || isCheckingPlan) {
@@ -72,5 +104,5 @@ export default function HomeClient() {
         );
     }
 
-    return <OnboardingFlow planId={""} initialStep={initialStep} />;
+    return <OnboardingFlow planId={planId} initialStep={initialStep} initialData={planData} />;
 }

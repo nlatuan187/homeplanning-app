@@ -20,11 +20,12 @@ type OnboardingSection = 'quickCheck' | 'signupPrompt' | 'familySupport' | 'spen
 interface OnboardingFlowProps {
   planId: string;
   initialStep?: "intro" | "form1";
+  initialData?: Partial<OnboardingPlanState>;
 }
 
-export default function OnboardingFlow({ planId, initialStep = "intro" }: OnboardingFlowProps) {
+export default function OnboardingFlow({ planId, initialStep = "intro", initialData = {} }: OnboardingFlowProps) {
   const [currentSection, setCurrentSection] = useState<OnboardingSection>('quickCheck');
-  const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>({});
+  const [planState, setPlanState] = useState<Partial<OnboardingPlanState>>(initialData);
   const { isSignedIn, userId } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);

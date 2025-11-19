@@ -40,20 +40,8 @@ export async function createPlanFromOnboarding(
     return { success: false, error: errorMessage };
   }
 
-
   const userId = clerkUser.id;
   const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-  // Ensure User exists in database (webhook might not have run yet)
-  console.log("[createPlanFromOnboarding] Ensuring user exists in DB:", userId);
-  await db.user.upsert({
-    where: { id: userId },
-    update: {}, // Don't update if exists
-    create: {
-      id: userId,
-      email: userEmail || "",
-    },
-  });
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
@@ -201,16 +189,8 @@ export async function createPlanFromOnboarding(
     console.error("!!! Critical error in createPlanFromOnboarding:", error);
     const projectionResult = await calculateOnboardingProjection(onboardingData);
 
-    // Return detailed error for debugging (remove in production!)
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    return {
-      success: false,
-      error: `Database error: ${errorMessage}`,
-      errorStack: errorStack,
-      projectionResult: projectionResult
-    };
+    // We still return a generic error to the client for security.
+    return { success: false, error: "Database error", projectionResult: projectionResult };
   }
 }
 

@@ -22,9 +22,9 @@ import AccumulationChart from "./playground/AccumulationChart";
 import { generateAccumulationMilestones } from "@/lib/calculations/projections/generateChartData";
 import { useUser } from "@clerk/nextjs";
 import { confirmPurchaseYear } from "@/actions/confirmPurchaseYear";
-import { 
-  updateQuickCheckSection, 
-  updateFamilySupportSection, 
+import {
+  updateQuickCheckSection,
+  updateFamilySupportSection,
   updateSpendingSection,
   runProjectionForPlan,
   deleteOnboardingProgress // <-- IMPORT ACTION MỚI
@@ -64,46 +64,46 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
       },
     ],
     options: [
-        {
-            value: "safety",
-            title: "Ưu tiên sự an toàn, không muốn mất vốn",
-            sub: "Đề xuất định hướng: ",
-            targetReturn: "4% - 6%/năm",
-            description: "Gửi tiết kiệm, tích luỹ an toàn,...",
-            minReturn: 4,
-            maxReturn: 6,
-            returnRate: 5
-        },
-        {
-            value: "balanced",
-            title: "Chấp nhận biến động để có tăng trưởng tốt hơn",
-            sub: "Đề xuất định hướng: ",
-            targetReturn: "6% - 10%/năm",
-            description: "Tích luỹ an toàn, đầu tư tăng trưởng",
-            minReturn: 6,
-            maxReturn: 10,
-            returnRate: 8
-        },
-        {
-            value: "growth",
-            title: "Chấp nhận rủi ro cao để tối đa hoá tăng trưởng",
-            sub: "Sản phẩm tài chính đề xuất: ",
-            targetReturn: "10% - 14%/năm",
-            description: "Đầu tư tăng trưởng thông qua các sản phẩm uỷ thác.",
-            minReturn: 10,
-            maxReturn: 14,
-            returnRate: 12
-        },
-        {
-            value: "expert",
-            title: "Cần sự tư vấn trực tiếp của chuyên gia",
-            sub: "Sản phẩm tài chính đề xuất: ",
-            targetReturn: "14% - 20%/năm",
-            description: "Đầu tư tăng trưởng thông với sự đồng hành của chuyên gia từ Finful.",
-            minReturn: 14,
-            maxReturn: 20,
-            returnRate: 17
-        }
+      {
+        value: "safety",
+        title: "Ưu tiên sự an toàn, không muốn mất vốn",
+        sub: "Đề xuất định hướng: ",
+        targetReturn: "4% - 6%/năm",
+        description: "Gửi tiết kiệm, tích luỹ an toàn,...",
+        minReturn: 4,
+        maxReturn: 6,
+        returnRate: 5
+      },
+      {
+        value: "balanced",
+        title: "Chấp nhận biến động để có tăng trưởng tốt hơn",
+        sub: "Đề xuất định hướng: ",
+        targetReturn: "6% - 10%/năm",
+        description: "Tích luỹ an toàn, đầu tư tăng trưởng",
+        minReturn: 6,
+        maxReturn: 10,
+        returnRate: 8
+      },
+      {
+        value: "growth",
+        title: "Chấp nhận rủi ro cao để tối đa hoá tăng trưởng",
+        sub: "Sản phẩm tài chính đề xuất: ",
+        targetReturn: "10% - 14%/năm",
+        description: "Đầu tư tăng trưởng thông qua các sản phẩm uỷ thác.",
+        minReturn: 10,
+        maxReturn: 14,
+        returnRate: 12
+      },
+      {
+        value: "expert",
+        title: "Cần sự tư vấn trực tiếp của chuyên gia",
+        sub: "Sản phẩm tài chính đề xuất: ",
+        targetReturn: "14% - 20%/năm",
+        description: "Đầu tư tăng trưởng thông với sự đồng hành của chuyên gia từ Finful.",
+        minReturn: 14,
+        maxReturn: 20,
+        returnRate: 17
+      }
     ]
   };
 
@@ -122,19 +122,19 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
   }));
 
   const investmentReturnStep = {
-      key: "pctInvestmentReturn" as const,
-      type: "slider" as const,
-      chartDataKey: "pctInvestmentReturn" as const,
-      name: "Tích lũy của bạn",
-      title: "Tỷ suất tích lũy",
-      label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (đơn vị: %)",
-      explanations: [],
-      min: 4,
-      max: 20,
-      step: 0.5,
-      suffix: "%",
-      isCustom: true,
-      colorRanges: sliderColorRanges,
+    key: "pctInvestmentReturn" as const,
+    type: "slider" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
+    name: "Tích lũy của bạn",
+    title: "Tỷ suất tích lũy",
+    label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (đơn vị: %)",
+    explanations: [],
+    min: 4,
+    max: 20,
+    step: 0.5,
+    suffix: "%",
+    isCustom: true,
+    colorRanges: sliderColorRanges,
   };
 
   const assumptionItems: any[] = [
@@ -178,7 +178,7 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
     riskProfileStep,
     investmentReturnStep,
   ];
- 
+
   return assumptionItems;
 };
 
@@ -196,12 +196,12 @@ interface EditPlanFlowProps {
 
 export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
   const router = useRouter();
-  
+
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [contactModalSource, setContactModalSource] = useState<'expert' | 'result' | null>(null);
   const { user, isLoaded } = useUser();
   const [assumptionStep, setAssumptionStep] = useState(0);
-  
+
 
   function AssumptionFormStep({
     planData,
@@ -233,14 +233,14 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
       };
       return generateAccumulationMilestones(tempPlan as PlanWithDetails, dataKey as DataKey);
     }, [planData, assumptions, dataKey]);
-  
+
     const currentAssumption = assumptionData[assumptionStep];
     const isLastStep = assumptionStep === assumptionData.length - 1;
     const handleOpenContactModal = (source: 'expert' | 'result') => {
       setContactModalSource(source);
       setIsContactModalOpen(true);
     };
-  
+
     return (
       <div className="flex flex-col h-full flex-grow w-full max-w-5xl mx-auto fixed inset-0">
         <div className=" z-10 bg-[#121212]">
@@ -251,7 +251,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                   <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </Button>
               </div>
-  
+
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg">
                 Giả định & chiến lược
               </div>
@@ -259,11 +259,11 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             <ProgressBar current={assumptionStep + 1} total={assumptionData.length} />
           </div>
         </div>
-  
+
         <div className="z-10 bg-[#121212] px-2 mt-3 overflow-y-auto">
           <div className="p-2 w-full pb-20">
             <h2 className="text-lg font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
-  
+
             {currentAssumption.type === 'radio' ? (
               <div className="py-1">
                 {currentAssumption.explanations.map((exp: any, index: number) => (
@@ -340,8 +340,8 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                   />
                 </div>
                 <div className="w-full h-auto rounded-md">
-                  <AccumulationChart 
-                    data={chartData} 
+                  <AccumulationChart
+                    data={chartData}
                     name={currentAssumption.name}
                     name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
                     hasComparisonData={currentAssumption.chartDataKey === 'pctInvestmentReturn'}
@@ -356,26 +356,26 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
               </>
             )}
           </div>
-  
+
           {/* Action Button */}
           <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-              <Button 
-                onClick={onNext} 
-                className={cn(
-                  "w-full text-lg font-semibold rounded-sm",
-                  isLastStep
-                    ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                    : "bg-white text-slate-900 hover:bg-slate-200",
-                )}
-              >
-                  {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
-              </Button>
+            <Button
+              onClick={onNext}
+              className={cn(
+                "w-full text-lg font-semibold rounded-sm",
+                isLastStep
+                  ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                  : "bg-white text-slate-900 hover:bg-slate-200",
+              )}
+            >
+              {isLastStep ? "Chốt và Lập kế hoạch" : "Tiếp tục"}
+            </Button>
           </div>
         </div>
       </div>
     );
   }
-  
+
   function AssumptionResultStep({
     planData,
     result,
@@ -401,12 +401,12 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
         console.error("Failed to finalize plan:", error);
       }
     };
-  
+
     const handleOpenContactModal = (source: 'expert' | 'result') => {
       setContactModalSource(source);
       setIsContactModalOpen(true);
     };
-  
+
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white">
         <div className="relative flex items-center h-10 mb-4">
@@ -421,44 +421,44 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
           </div>
         </div>
         <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
-            {
-              // Case 1: Can purchase, but later than planned
-              result.earliestPurchaseYear > (planData.confirmedPurchaseYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - planData.confirmedPurchaseYear! > 1) ? (
-              <div className="flex flex-col mx-4">
-                <div className="text-lg mb-4">
-                  Kế hoạch <br/> 
-                  <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
-                  của bạn đã sẵn sàng.
-                </div>
-                <div className="flex items-center justify-center text-center">
-                  <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                </div>
-                <div className="text-center text-slate-400">
-                  Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
-                </div>
-                <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
-                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                  <div className="mt-auto pt-4">
-                    <Button 
-                      onClick={() => router.push(`/plan/${planData.id}/edit`)}
-                      variant="outline" 
-                      className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                    >
-                      Điều chỉnh mong muốn
-                    </Button>
-                  </div>
-                  <div className="mt-auto pt-4">
-                      <Button onClick={() => handleFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                        Mua nhà năm {result.earliestPurchaseYear}
-                      </Button>
-                  </div>
-                </div>
-              </div>
-            // Case 2: Can purchase earlier or on time
-            ) : (result.earliestPurchaseYear > 0 && result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - planData.confirmedPurchaseYear! > 1) ? (
+        {
+          // Case 1: Can purchase, but later than planned
+          result.earliestPurchaseYear > (planData.confirmedPurchaseYear ?? Infinity) && (result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - planData.confirmedPurchaseYear! > 1) ? (
             <div className="flex flex-col mx-4">
               <div className="text-lg mb-4">
-                Kế hoạch <br/> 
+                Kế hoạch <br />
+                <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
+                của bạn đã sẵn sàng.
+              </div>
+              <div className="flex items-center justify-center text-center">
+                <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+              </div>
+              <div className="text-center text-slate-400">
+                Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}
+              </div>
+              <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br />👇👇👇</div>
+              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                <div className="mt-auto pt-4">
+                  <Button
+                    onClick={() => router.push(`/plan/${planData.id}/edit`)}
+                    variant="outline"
+                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
+                  >
+                    Điều chỉnh mong muốn
+                  </Button>
+                </div>
+                <div className="mt-auto pt-4">
+                  <Button onClick={() => handleFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                    Mua nhà năm {result.earliestPurchaseYear}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            // Case 2: Can purchase earlier or on time
+          ) : (result.earliestPurchaseYear > 0 && result.earliestPurchaseYear - new Date().getFullYear() <= 3 && result.earliestPurchaseYear - planData.confirmedPurchaseYear! > 1) ? (
+            <div className="flex flex-col mx-4">
+              <div className="text-lg mb-4">
+                Kế hoạch <br />
                 <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
                 của bạn đã sẵn sàng.
               </div>
@@ -468,13 +468,13 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
               <div className="text-center text-slate-400">
                 Bạn có thể mua nhà vào năm {planData.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
               </div>
-              <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
+              <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br />👇👇👇</div>
               <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <div className="mt-auto pt-4">
-                  <Button 
+                  <Button
                     onClick={() => handleFinalChoice(result.earliestPurchaseYear)}
-                    variant="outline" 
-                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                    variant="outline"
+                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
                   >
                     Mua nhà năm {result.earliestPurchaseYear}
                   </Button>
@@ -485,13 +485,13 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                   </Button>
                 </div>
               </div>
-  
+
             </div>
             // Case 3: Cannot purchase
-            ) : (result.earliestPurchaseYear === planData.confirmedPurchaseYear && result.earliestPurchaseYear - new Date().getFullYear() >= 1) ? (
+          ) : (result.earliestPurchaseYear === planData.confirmedPurchaseYear && result.earliestPurchaseYear - new Date().getFullYear() >= 1) ? (
             <div className="flex flex-col mx-4">
               <div className="text-lg mb-4">
-                Kế hoạch <br/> 
+                Kế hoạch <br />
                 <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
                 của bạn đã sẵn sàng.
               </div>
@@ -509,24 +509,24 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             </div>
           ) : (planData.confirmedPurchaseYear && planData.confirmedPurchaseYear - result.earliestPurchaseYear <= 1) ? (
             <div className="flex flex-col mx-4">
-              <div className="text-lg mb-4"> 
-                Bạn có thể<br/> 
-                <div className="text-cyan-500 font-bold">mua được nhà</div>  
+              <div className="text-lg mb-4">
+                Bạn có thể<br />
+                <div className="text-cyan-500 font-bold">mua được nhà</div>
                 trong vòng 1 năm tới
               </div>
               <div className="flex items-center justify-center text-center">
                 <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
               </div>
               <div className="text-center text-slate-400">
-                Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết. 
+                Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết.
               </div>
-              
+
               <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <div className="mt-auto pt-4">
-                  <Button 
+                  <Button
                     onClick={() => handleFinalChoice(result.earliestPurchaseYear)}
-                    variant="outline" 
-                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
+                    variant="outline"
+                    className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
                   >
                     Tiếp tục hành trình tích lũy
                   </Button>
@@ -541,8 +541,8 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
           ) : (
             <div className="flex flex-col mx-4">
               <div className="text-lg mb-4">
-                Bạn chưa thể<br/> 
-                <div className="text-cyan-500 font-bold">mua được căn nhà như mong muốn</div> 
+                Bạn chưa thể<br />
+                <div className="text-cyan-500 font-bold">mua được căn nhà như mong muốn</div>
               </div>
               <div className="flex items-center justify-center text-center">
                 <Image src="/onboarding/result 4.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
@@ -558,7 +558,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             </div>
           )}
       </div>
-  );
+    );
   }
   const [currentSection, setCurrentSection] = useState<EditPlanSection>('quickCheck');
   const [result, setResult] = useState<any | null>(null);
@@ -578,19 +578,19 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
       await saveContact(phone, userId);
       toast.success("Thông tin của bạn đã được gửi thành công. Chúng tôi sẽ liên hệ với bạn sớm nhất có thể.");
       setIsContactModalOpen(false);
-  
+
       if (contactModalSource === 'expert') {
         // Tạo lại dữ liệu assumption ở đây thay vì nhận từ tham số
         const assumptionData = getAssumptionData(planData, assumptions);
         const riskProfileStep = assumptionData.find((item: any) => item.key === "riskProfile");
         if (riskProfileStep && (riskProfileStep as any).options) {
-            const expertOption = (riskProfileStep as any).options.find((opt: any) => opt.value === 'expert');
-            if (expertOption) {
-                handleSliderChange('pctInvestmentReturn', expertOption.returnRate);
-            }
+          const expertOption = (riskProfileStep as any).options.find((opt: any) => opt.value === 'expert');
+          if (expertOption) {
+            handleSliderChange('pctInvestmentReturn', expertOption.returnRate);
+          }
         }
         // Đợi một chút để state được cập nhật trước khi submit
-        setTimeout(handleAssumptionsSubmit, 100); 
+        setTimeout(handleAssumptionsSubmit, 100);
       } else {
         setAssumptionUiStep("accept");
       }
@@ -605,9 +605,9 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
 
   // State `assumptions` vẫn được dùng để điều khiển UI của slider ngay lập tức
   const [assumptions, setAssumptions] = useState({
-      pctSalaryGrowth: initialPlan.pctSalaryGrowth ?? 7,
-      pctHouseGrowth: initialPlan.pctHouseGrowth ?? 10,
-      pctInvestmentReturn: initialPlan.pctInvestmentReturn ?? 11,
+    pctSalaryGrowth: initialPlan.pctSalaryGrowth ?? 7,
+    pctHouseGrowth: initialPlan.pctHouseGrowth ?? 10,
+    pctInvestmentReturn: initialPlan.pctInvestmentReturn ?? 11,
   });
 
   // Sử dụng debounce cho giá trị assumptions
@@ -615,47 +615,47 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
 
   // useEffect để theo dõi sự thay đổi của giá trị đã debounce
   useEffect(() => {
-      // Hàm này sẽ so sánh giá trị đã debounce với giá trị ban đầu (initialPlan)
-      // để chỉ gọi update cho những trường thực sự thay đổi.
-      const updateChangedFields = async () => {
-          if (debouncedAssumptions.pctSalaryGrowth !== initialPlan.pctSalaryGrowth) {
-              await updateSinglePlanField(initialPlan.id, 'pctSalaryGrowth', debouncedAssumptions.pctSalaryGrowth);
-          }
-          if (debouncedAssumptions.pctHouseGrowth !== initialPlan.pctHouseGrowth) {
-              await updateSinglePlanField(initialPlan.id, 'pctHouseGrowth', debouncedAssumptions.pctHouseGrowth);
-          }
-          if (debouncedAssumptions.pctInvestmentReturn !== initialPlan.pctInvestmentReturn) {
-              await updateSinglePlanField(initialPlan.id, 'pctInvestmentReturn', debouncedAssumptions.pctInvestmentReturn);
-          }
-          // Sau khi update, có thể refresh lại dữ liệu plan để initialPlan luôn mới nhất
-          // router.refresh(); // Cân nhắc dùng để tránh stale data
-      };
+    // Hàm này sẽ so sánh giá trị đã debounce với giá trị ban đầu (initialPlan)
+    // để chỉ gọi update cho những trường thực sự thay đổi.
+    const updateChangedFields = async () => {
+      if (debouncedAssumptions.pctSalaryGrowth !== initialPlan.pctSalaryGrowth) {
+        await updateSinglePlanField(initialPlan.id, 'pctSalaryGrowth', debouncedAssumptions.pctSalaryGrowth);
+      }
+      if (debouncedAssumptions.pctHouseGrowth !== initialPlan.pctHouseGrowth) {
+        await updateSinglePlanField(initialPlan.id, 'pctHouseGrowth', debouncedAssumptions.pctHouseGrowth);
+      }
+      if (debouncedAssumptions.pctInvestmentReturn !== initialPlan.pctInvestmentReturn) {
+        await updateSinglePlanField(initialPlan.id, 'pctInvestmentReturn', debouncedAssumptions.pctInvestmentReturn);
+      }
+      // Sau khi update, có thể refresh lại dữ liệu plan để initialPlan luôn mới nhất
+      // router.refresh(); // Cân nhắc dùng để tránh stale data
+    };
 
-      updateChangedFields();
+    updateChangedFields();
 
   }, [debouncedAssumptions, initialPlan.id, initialPlan]);
 
 
   // Hàm này được truyền vào component Assumption
   const handleSliderChange = (key: keyof typeof assumptions, value: number) => {
-      setAssumptions((prev) => ({ ...prev, [key]: value }));
-      // Cập nhật cả planData để biểu đồ được vẽ lại ngay lập tức
-      setPlanData((prev) => ({ ...prev, [key]: value }));
+    setAssumptions((prev) => ({ ...prev, [key]: value }));
+    // Cập nhật cả planData để biểu đồ được vẽ lại ngay lập tức
+    setPlanData((prev) => ({ ...prev, [key]: value }));
   };
 
   // Nút "Tiếp theo" ở cuối Assumption bây giờ sẽ chỉ tính toán và hiển thị kết quả
   const handleAssumptionsSubmit = async () => {
-      setAssumptionUiStep('loading');
-      // Gọi action chỉ để tính toán, không cần truyền data vì DB đã được cập nhật
-      const result = await runProjectionForPlan(initialPlan.id); // Cần một action mới chỉ để tính toán
+    setAssumptionUiStep('loading');
+    // Gọi action chỉ để tính toán, không cần truyền data vì DB đã được cập nhật
+    const result = await runProjectionForPlan(initialPlan.id); // Cần một action mới chỉ để tính toán
 
-      if (result.success) {
-          setResult(result as unknown as RecalculationResult);
-          setAssumptionUiStep('result');
-      } else {
-          toast.error(result.error || "Lỗi khi tính toán");
-          setAssumptionUiStep('form');
-      }
+    if (result.success) {
+      setResult(result as unknown as RecalculationResult);
+      setAssumptionUiStep('result');
+    } else {
+      toast.error(result.error || "Lỗi khi tính toán");
+      setAssumptionUiStep('form');
+    }
   };
 
   // Các hàm xử lý khi một section hoàn thành để chuyển sang section tiếp theo
@@ -684,10 +684,10 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
     toast.dismiss();
 
     if (result.success) {
-        setPlanData(prev => ({ ...prev, ...data })); // Cập nhật state để truyền cho các bước sau
-        setCurrentSection('spending');
+      setPlanData(prev => ({ ...prev, ...data })); // Cập nhật state để truyền cho các bước sau
+      setCurrentSection('spending');
     } else {
-        toast.error(result.error || "Lưu thất bại");
+      toast.error(result.error || "Lưu thất bại");
     }
   };
 
@@ -697,10 +697,10 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
     toast.dismiss();
 
     if (result.success) {
-        setPlanData(prev => ({ ...prev, ...data })); // Cập nhật state để truyền cho các bước sau
-        setCurrentSection('assumptions');
+      setPlanData(prev => ({ ...prev, ...data })); // Cập nhật state để truyền cho các bước sau
+      setCurrentSection('assumptions');
     } else {
-        toast.error(result.error || "Lưu thất bại");
+      toast.error(result.error || "Lưu thất bại");
     }
   };
   // Cập nhật logic render
@@ -740,7 +740,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             isEditMode={true} // <-- BÁO CHO NÓ BIẾT ĐANG Ở LUỒNG EDIT
           />
         );
-      
+
       case 'assumptions':
         // Lấy dữ liệu giả định ra ngoài để có thể truy cập độ dài của nó
         const assumptionData = getAssumptionData(planData, assumptions);
@@ -785,7 +785,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                 </div>
               </>
             );
-          
+
           case 'form':
             return (
               <AssumptionFormStep
@@ -798,10 +798,10 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                 router={router}
               />
             );
-            
+
           case 'loading':
             return <LoadingStep title="Đang cập nhật & tính toán lại" message="Quá trình này có thể mất vài giây..." />;
-            
+
           case 'result':
             return (
               <AssumptionResultStep
@@ -813,7 +813,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
             );
           case 'schedule':
             return <Schedule onConfirm={() => setAssumptionUiStep('accept')} />;
-          
+
           case 'accept':
             return <Accept />;
         }
