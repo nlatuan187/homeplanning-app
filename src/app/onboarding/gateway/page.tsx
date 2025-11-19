@@ -24,7 +24,7 @@ export default async function OnboardingGatewayPage() {
   } else {
     // This is a genuine new user. Send them to the homepage to start the onboarding flow.
     // The homepage will now handle the logic for an authenticated user without a plan.
-    redirect('/');
+    redirect('/?step=form1');
   }
 
   // Display a loading screen while the server-side checks are performed.

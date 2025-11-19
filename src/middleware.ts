@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth/sign-up(.*)',       // API đăng ký
   '/api/auth/mobile(.*)',      // THÊM DÒNG NÀY
   '/docs(.*)',
+  '/api/webhooks/clerk(.*)',   // Webhook của Clerk
 
   // == API CÔNG KHAI CỦA BẠN ==
   '/api/image(.*)',            // API lấy ảnh và media

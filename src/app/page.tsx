@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import HomeClient from "@/components/onboarding/HomeClient";
+import { Suspense } from "react";
 
 export default async function Home() {
   const user = await currentUser();
@@ -20,5 +21,9 @@ export default async function Home() {
   }
 
   // If no user or no plan, render the client component
-  return <HomeClient />;
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <HomeClient />
+    </Suspense>
+  );
 }

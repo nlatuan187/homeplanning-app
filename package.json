@@ -43,6 +43,7 @@
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.0.0",
+    "svix": "^1.81.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.29.0",
     "swiper": "^12.0.3",

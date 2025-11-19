@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { OnboardingPlanState } from "../types";
 import MultiStepQuestionForm, {
   Question,
@@ -17,7 +17,6 @@ import QuickCheckResult from "./quick-check/QuickCheckResult";
 
 const currentYear = new Date().getFullYear();
 
-// Define the 7 questions for the Quick Check section
 const quickCheckQuestionsPart1: Question[] = [
   {
     key: "yearsToPurchase",
@@ -106,11 +105,17 @@ interface QuickCheckProps {
     quickCheckResult: QuickCheckResultPayload;
   }) => void;
   isEditMode?: boolean;
+  initialStep?: "intro" | "form1";
 }
 
-export default function QuickCheck({ onCompleted, initialData = {}, isEditMode = false }: QuickCheckProps) {
+export default function QuickCheck({
+  onCompleted,
+  initialData = {},
+  isEditMode = false,
+  initialStep = "intro"
+}: QuickCheckProps) {
   const [step, setStep] = useState<"intro" | "form1" | "analysis" | "form2" | "loading" | "result">(
-    "intro",
+    initialStep,
   );
   const [result, setResult] = useState<QuickCheckResultPayload | null>(null);
 
@@ -128,6 +133,13 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
     useState<Partial<OnboardingPlanState>>(processedInitialData);
   const [progress, setProgress] = useState({ current: 0, total: 1 });
   const [form1InitialIndex, setForm1InitialIndex] = useState(0);
+
+  // Sync step with initialStep prop
+  useEffect(() => {
+    if (initialStep && initialStep !== step && (initialStep === 'intro' || initialStep === 'form1')) {
+      setStep(initialStep);
+    }
+  }, [initialStep]);
 
   const defaultValues = useMemo(() => processedInitialData, [processedInitialData]);
 

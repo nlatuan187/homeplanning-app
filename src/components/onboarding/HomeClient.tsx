@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import LoadingStep from "@/components/onboarding/shared/LoadingStep";
@@ -12,6 +12,9 @@ import { OnboardingPlanState } from "@/components/onboarding/types";
 export default function HomeClient() {
     const { isSignedIn, userId, isLoaded } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const stepParam = searchParams.get("step");
+    const initialStep = stepParam === "form1" ? "form1" : "intro";
     const [isCheckingPlan, setIsCheckingPlan] = useState(true);
 
     useEffect(() => {
@@ -45,6 +48,11 @@ export default function HomeClient() {
                     }
                 } else {
                     // No pending data, treat as new user
+                    // If logged in but no plan, skip intro and go to form1
+                    if (!stepParam) {
+                        router.replace('/?step=form1');
+                        return;
+                    }
                     setIsCheckingPlan(false);
                 }
             } else if (isLoaded && !isSignedIn) {
@@ -54,7 +62,7 @@ export default function HomeClient() {
         };
 
         handleUserSession();
-    }, [isLoaded, isSignedIn, userId, router]);
+    }, [isLoaded, isSignedIn, userId, router, stepParam]);
 
     if (!isLoaded || isCheckingPlan) {
         return (
@@ -64,5 +72,5 @@ export default function HomeClient() {
         );
     }
 
-    return <OnboardingFlow planId={""} />;
+    return <OnboardingFlow planId={""} initialStep={initialStep} />;
 }

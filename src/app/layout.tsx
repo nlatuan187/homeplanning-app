@@ -4,7 +4,6 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { viVN } from "@clerk/localizations/vi-VN";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { UserSync } from "@/components/UserSync";
 import { Suspense } from "react";
 import { Analytics } from "@/components/analytics";
 // import { FeedbackButton } from "@/components/feedback-button"; // Removed FeedbackButton import
@@ -29,7 +28,6 @@ export default function RootLayout({
             <Analytics />
           </Suspense>
           <TooltipProvider>
-            <UserSync />
             {children}
             {/* <FeedbackButton /> */} {/* Removed FeedbackButton component */}
           </TooltipProvider>
