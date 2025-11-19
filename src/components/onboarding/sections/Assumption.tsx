@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import LoadingStep from "../shared/LoadingStep";
 import ProgressBar from "../shared/ProgressBar";
-import { ArrowLeftIcon} from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import AccumulationChart from "@/components/plan/playground/AccumulationChart";
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
 import FinancialSliders from "@/components/plan/playground/FinancialSliders";
@@ -46,46 +46,46 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
       },
     ],
     options: [
-        {
-            value: "safety",
-            title: "Ưu tiên sự an toàn, không muốn mất vốn",
-            sub: "Đề xuất định hướng: ",
-            targetReturn: "4% - 6%/năm",
-            description: "Gửi tiết kiệm, tích luỹ an toàn,...",
-            minReturn: 4,
-            maxReturn: 6,
-            returnRate: 5
-        },
-        {
-            value: "balanced",
-            title: "Chấp nhận biến động để có tăng trưởng tốt hơn",
-            sub: "Đề xuất định hướng: ",
-            targetReturn: "6% - 10%/năm",
-            description: "Tích luỹ an toàn, đầu tư tăng trưởng",
-            minReturn: 6,
-            maxReturn: 10,
-            returnRate: 8
-        },
-        {
-            value: "growth",
-            title: "Chấp nhận rủi ro cao để tối đa hoá tăng trưởng",
-            sub: "Sản phẩm tài chính đề xuất: ",
-            targetReturn: "10% - 14%/năm",
-            description: "Đầu tư tăng trưởng thông qua các sản phẩm uỷ thác.",
-            minReturn: 10,
-            maxReturn: 14,
-            returnRate: 12
-        },
-        {
-            value: "expert",
-            title: "Cần sự tư vấn trực tiếp của chuyên gia",
-            sub: "Sản phẩm tài chính đề xuất: ",
-            targetReturn: "14% - 20%/năm",
-            description: "Đầu tư tăng trưởng thông với sự đồng hành của chuyên gia từ Finful.",
-            minReturn: 14,
-            maxReturn: 20,
-            returnRate: 17
-        }
+      {
+        value: "safety",
+        title: "Ưu tiên sự an toàn, không muốn mất vốn",
+        sub: "Đề xuất định hướng: ",
+        targetReturn: "4% - 6%/năm",
+        description: "Gửi tiết kiệm, tích luỹ an toàn,...",
+        minReturn: 4,
+        maxReturn: 6,
+        returnRate: 5
+      },
+      {
+        value: "balanced",
+        title: "Chấp nhận biến động để có tăng trưởng tốt hơn",
+        sub: "Đề xuất định hướng: ",
+        targetReturn: "6% - 10%/năm",
+        description: "Tích luỹ an toàn, đầu tư tăng trưởng",
+        minReturn: 6,
+        maxReturn: 10,
+        returnRate: 8
+      },
+      {
+        value: "growth",
+        title: "Chấp nhận rủi ro cao để tối đa hoá tăng trưởng",
+        sub: "Sản phẩm tài chính đề xuất: ",
+        targetReturn: "10% - 14%/năm",
+        description: "Đầu tư tăng trưởng thông qua các sản phẩm uỷ thác.",
+        minReturn: 10,
+        maxReturn: 14,
+        returnRate: 12
+      },
+      {
+        value: "expert",
+        title: "Cần sự tư vấn trực tiếp của chuyên gia",
+        sub: "Sản phẩm tài chính đề xuất: ",
+        targetReturn: "14% - 20%/năm",
+        description: "Đầu tư tăng trưởng thông với sự đồng hành của chuyên gia từ Finful.",
+        minReturn: 14,
+        maxReturn: 20,
+        returnRate: 17
+      }
     ]
   };
 
@@ -104,19 +104,19 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
   }));
 
   const investmentReturnStep = {
-      key: "pctInvestmentReturn" as const,
-      type: "slider" as const,
-      chartDataKey: "pctInvestmentReturn" as const,
-      name: "Tích lũy của bạn",
-      title: "Tỷ suất tích lũy",
-      label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (đơn vị: %)",
-      explanations: [],
-      min: 4,
-      max: 20,
-      step: 0.5,
-      suffix: "%",
-      isCustom: true,
-      colorRanges: sliderColorRanges,
+    key: "pctInvestmentReturn" as const,
+    type: "slider" as const,
+    chartDataKey: "pctInvestmentReturn" as const,
+    name: "Tích lũy của bạn",
+    title: "Tỷ suất tích lũy",
+    label: "Cụ thể mục tiêu tăng trưởng tài sản của bạn mỗi năm là bao nhiêu? (đơn vị: %)",
+    explanations: [],
+    min: 4,
+    max: 20,
+    step: 0.5,
+    suffix: "%",
+    isCustom: true,
+    colorRanges: sliderColorRanges,
   };
 
   const assumptionItems: any[] = [
@@ -160,45 +160,45 @@ const getAssumptionData = (plan: Plan, assumptions: { pctInvestmentReturn: numbe
     riskProfileStep,
     investmentReturnStep,
   ];
- 
+
   return assumptionItems;
 };
 
 // --- Main Component ---
 interface AssumptionProps {
-    plan: Plan;
-    step: "intro" | "form" | "loading" | "result" | "accept" | "schedule";
-    setStep: (step: "intro" | "form" | "loading" | "result" | "accept" | "schedule") => void;
-    assumptionStep: number;
-    onNext: () => void;
-    onPrev: () => void;
-    onConfirm: () => void;
-    result: any | null;
-    assumptions: {
-        pctSalaryGrowth: number;
-        pctHouseGrowth: number;
-        pctInvestmentReturn: number;
-    };
-    onSliderChange: (key: keyof AssumptionProps['assumptions'], value: number) => void;
-    onFinalChoice: (year: number) => void;
-    chartData: ChartMilestone[];
-    loadingTitle?: string;
+  plan: Plan;
+  step: "intro" | "form" | "loading" | "result" | "accept" | "schedule";
+  setStep: (step: "intro" | "form" | "loading" | "result" | "accept" | "schedule") => void;
+  assumptionStep: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onConfirm: () => void;
+  result: any | null;
+  assumptions: {
+    pctSalaryGrowth: number;
+    pctHouseGrowth: number;
+    pctInvestmentReturn: number;
+  };
+  onSliderChange: (key: keyof AssumptionProps['assumptions'], value: number) => void;
+  onFinalChoice: (year: number) => void;
+  chartData: ChartMilestone[];
+  loadingTitle?: string;
 }
 
-export default function Assumption({ 
-    plan,
-    step, 
-    setStep,
-    assumptionStep,
-    onNext,
-    onPrev,
-    onConfirm,
-    result,
-    assumptions,
-    onSliderChange,
-    onFinalChoice,
-    chartData,
-    loadingTitle,
+export default function Assumption({
+  plan,
+  step,
+  setStep,
+  assumptionStep,
+  onNext,
+  onPrev,
+  onConfirm,
+  result,
+  assumptions,
+  onSliderChange,
+  onFinalChoice,
+  chartData,
+  loadingTitle,
 }: AssumptionProps) {
   console.log("result", result);
   console.log("plan yearsToPurchase", plan.yearsToPurchase);
@@ -221,10 +221,10 @@ export default function Assumption({
       if (contactModalSource === 'expert') {
         const riskProfileStep = assumptionData.find(item => item.key === "riskProfile");
         if (riskProfileStep && (riskProfileStep as any).options) {
-            const expertOption = (riskProfileStep as any).options.find((opt: any) => opt.value === 'expert');
-            if (expertOption) {
-                onSliderChange('pctInvestmentReturn', expertOption.returnRate);
-            }
+          const expertOption = (riskProfileStep as any).options.find((opt: any) => opt.value === 'expert');
+          if (expertOption) {
+            onSliderChange('pctInvestmentReturn', expertOption.returnRate);
+          }
         }
         onNext();
       } else {
@@ -263,7 +263,7 @@ export default function Assumption({
               <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col p-4 z-10">
                 <div className="max-w-5xl mx-auto absolute top-4 left-4 z-20">
                   <Button variant="ghost" size="icon" onClick={() => router.push(`/plan/${plan.id}/spending`)}>
-                      <ArrowLeftIcon className="w-6 h-6 text-white" />
+                    <ArrowLeftIcon className="w-6 h-6 text-white" />
                   </Button>
                 </div>
                 <div className="flex-grow flex flex-col items-center pt-30 px-2 text-center">
@@ -278,13 +278,13 @@ export default function Assumption({
                     Hãy thử tư duy như một nhà hoạch định chiến lược. Bằng cách điều chỉnh các giả định, bạn sẽ thấy tác động của từng quyết định đến tốc độ chạm tay vào ngôi nhà mơ ước.
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => {
-                    setStep("form"); 
+                    setStep("form");
                     updateOnboardingSectionProgress(plan.id, "assumption", OnboardingSectionState.IN_PROGRESS);
                     updateOnboardingSectionProgress(plan.id, "spending", OnboardingSectionState.COMPLETED);
                     updateOnboardingSectionProgress(plan.id, "familySupport", OnboardingSectionState.COMPLETED);
-                  }} 
+                  }}
                   className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95">
                   Bắt đầu thôi
                 </Button>
@@ -392,8 +392,8 @@ export default function Assumption({
                           />
                         </div>
                         <div className="w-full h-auto rounded-md">
-                          <AccumulationChart 
-                            data={chartData} 
+                          <AccumulationChart
+                            data={chartData}
                             name={currentAssumption.name}
                             name2={currentAssumption.chartDataKey === 'pctInvestmentReturn' ? 'Số tiền cần vay' : undefined}
                             hasComparisonData={currentAssumption.chartDataKey === 'pctInvestmentReturn'}
@@ -409,11 +409,11 @@ export default function Assumption({
                     )}
                   </div>
                 </div>
-                  
+
                 {/* Action Button */}
                 <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                  <Button 
-                    onClick={onNext} 
+                  <Button
+                    onClick={onNext}
                     className={cn(
                       "w-full text-lg font-semibold rounded-sm",
                       isLastStep
@@ -421,7 +421,7 @@ export default function Assumption({
                         : "bg-white text-slate-900 hover:bg-slate-200",
                     )}
                   >
-                      {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
+                    {isLastStep ? "Xem kết quả cuối cùng" : "Tiếp tục"}
                   </Button>
                 </div>
               </div>
@@ -438,162 +438,164 @@ export default function Assumption({
         }
 
         if (step === "result" && result) {
+          console.log("Result step", result);
+          console.log("plan", plan)
           return (
-              <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white">
-                <div className="relative flex items-center h-10 mb-4">
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setStep('form')}
-                    >
-                      <ArrowLeftIcon className="w-6 h-6 text-white" />
-                    </Button>
-                  </div>
+            <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white">
+              <div className="relative flex items-center h-10 mb-4">
+                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setStep('form')}
+                  >
+                    <ArrowLeftIcon className="w-6 h-6 text-white" />
+                  </Button>
                 </div>
-                <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
-                    {
-                      // Case 1: Can purchase, but later than planned
-                      result.earliestPurchaseYear > (plan.yearsToPurchase ?? Infinity) && (result.earliestPurchaseYear <= 3 && result.earliestPurchaseYear > 1) ? (
-                      <div className="flex flex-col mx-4">
-                        <div className="text-lg mb-4">
-                          Kế hoạch <br/> 
-                          <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div> 
-                          của bạn đã sẵn sàng.
-                        </div>
-                        <div className="flex items-center justify-center text-center">
-                          <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                        </div>
-                        <div className="text-center text-slate-400">
-                          Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear + new Date().getFullYear()}                  
-                        </div>
-                        <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
-                        <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                          <div className="mt-auto pt-4">
-                            <Button 
-                              onClick={() => router.push(`/plan/${plan.id}/edit`)}
-                              variant="outline" 
-                              className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                            >
-                              Điều chỉnh mong muốn
-                            </Button>
-                          </div>
-                          <div className="mt-auto pt-4">
-                              <Button onClick={() => onFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                                Mua nhà năm {result.earliestPurchaseYear + new Date().getFullYear()}
-                              </Button>
-                          </div>
-                        </div>
-                      </div>
-                    // Case 2: Can purchase earlier or on time
-                    ) : (result.earliestPurchaseYear >= 0 && result.earliestPurchaseYear < plan.yearsToPurchase) ? (
-                    <div className="flex flex-col mx-4">
-                      <div className="text-lg mb-4">
-                        Kế hoạch <br/> 
-                        <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
-                        của bạn đã sẵn sàng.
-                      </div>
-                      <div className="flex items-center justify-center text-center">
-                        <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                      </div>
-                      <div className="text-center text-slate-400">
-                        Bạn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear + new Date().getFullYear()}!
-                      </div>
-                      <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                        <div className="mt-auto pt-4">
-                          <Button 
-                            onClick={() => onFinalChoice(result.earliestPurchaseYear)}
-                            variant="outline" 
-                            className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                          >
-                            Mua nhà năm {result.earliestPurchaseYear + new Date().getFullYear()}
-                          </Button>
-                        </div>
-                        <div className="mt-auto pt-4">
-                          <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                            Mua nhà năm {plan.confirmedPurchaseYear}
-                          </Button>
-                        </div>
-                      </div>
-          
-                    </div>
-                    // Case 3: Cannot purchase
-                    ) : (result.earliestPurchaseYear === plan.yearsToPurchase && result.earliestPurchaseYear >= 1) ? (
-                    <div className="flex flex-col mx-4">
-                      <div className="text-lg mb-4">
-                        Kế hoạch <br/> 
-                        <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
-                        của bạn đã sẵn sàng.
-                      </div>
-                      <div className="flex items-center justify-center text-center">
-                        <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                      </div>
-                      <div className="text-center text-slate-400">
-                        Bạn hoàn toàn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn của mình
-                      </div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                        <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                          Lập kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (plan.confirmedPurchaseYear && plan.confirmedPurchaseYear - result.earliestPurchaseYear <= 1) ? (
-                    <div className="flex flex-col mx-4">
-                      <div className="text-lg mb-4"> 
-                        Bạn có thể<br/> 
-                        <div className="text-cyan-500 font-bold">mua được nhà</div>  
-                        trong vòng 1 năm tới
-                      </div>
-                      <div className="flex items-center justify-center text-center">
-                        <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                      </div>
-                      <div className="text-center text-slate-400">
-                        Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết. 
-                      </div>
-                      
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                        <div className="mt-auto pt-4">
-                          <Button 
-                            onClick={() => onFinalChoice(result.earliestPurchaseYear)}
-                            variant="outline" 
-                            className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer" 
-                          >
-                            Tiếp tục hành trình tích lũy
-                          </Button>
-                        </div>
-                        <div className="mt-auto pt-4">
-                          <Button onClick={() => setStep('schedule')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                            Đặt lịch tư vấn 1-1
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col mx-4">
-                      <div className="text-lg mb-4">
-                        Bạn chưa thể<br/> 
-                        <div className="text-cyan-500 font-bold">mua được căn nhà như mong muốn</div> 
-                      </div>
-                      <div className="flex items-center justify-center text-center">
-                        <Image src="/onboarding/result 4.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
-                      </div>
-                      <div className="text-center text-slate-400">
-                        Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?
-                      </div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
-                        <Button onClick={() => handleOpenContactModal('result')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
-                          Trò chuyện cùng chuyên gia
-                        </Button>
-                      </div>
-                    </div>
-                  )}
               </div>
+              <h2 className="text-2xl font-bold mb-2 mx-4 text-cyan-500">{user?.firstName}, </h2>
+              {
+                // Case 1: Can purchase, but later than planned
+                result.earliestPurchaseYear > (plan.yearsToPurchase ?? Infinity) && (result.earliestPurchaseYear <= 3 && result.earliestPurchaseYear > 1) ? (
+                  <div className="flex flex-col mx-4">
+                    <div className="text-lg mb-4">
+                      Kế hoạch <br />
+                      <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
+                      của bạn đã sẵn sàng.
+                    </div>
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 1.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
+                    <div className="text-center text-slate-400">
+                      Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear + new Date().getFullYear()}
+                    </div>
+                    <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br />👇👇👇</div>
+                    <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                      <div className="mt-auto pt-4">
+                        <Button
+                          onClick={() => router.push(`/plan/${plan.id}/edit`)}
+                          variant="outline"
+                          className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
+                        >
+                          Điều chỉnh mong muốn
+                        </Button>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <Button onClick={() => onFinalChoice(result.earliestPurchaseYear)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                          Mua nhà năm {result.earliestPurchaseYear + new Date().getFullYear()}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  // Case 2: Can purchase earlier or on time
+                ) : (result.earliestPurchaseYear >= 0 && result.earliestPurchaseYear < plan.yearsToPurchase) ? (
+                  <div className="flex flex-col mx-4">
+                    <div className="text-lg mb-4">
+                      Kế hoạch <br />
+                      <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
+                      của bạn đã sẵn sàng.
+                    </div>
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
+                    <div className="text-center text-slate-400">
+                      Bạn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear + new Date().getFullYear()}!
+                    </div>
+                    <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br />👇👇👇</div>
+                    <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                      <div className="mt-auto pt-4">
+                        <Button
+                          onClick={() => onFinalChoice(result.earliestPurchaseYear)}
+                          variant="outline"
+                          className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
+                        >
+                          Mua nhà năm {result.earliestPurchaseYear + new Date().getFullYear()}
+                        </Button>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                          Mua nhà năm {plan.confirmedPurchaseYear}
+                        </Button>
+                      </div>
+                    </div>
+
+                  </div>
+                  // Case 3: Cannot purchase
+                ) : (result.earliestPurchaseYear === plan.yearsToPurchase) ? (
+                  <div className="flex flex-col mx-4">
+                    <div className="text-lg mb-4">
+                      Kế hoạch <br />
+                      <div className="text-cyan-500 font-bold">chinh phục căn nhà đầu tiên</div>
+                      của bạn đã sẵn sàng.
+                    </div>
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 3.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
+                    <div className="text-center text-slate-400">
+                      Bạn hoàn toàn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn của mình
+                    </div>
+                    <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                      <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                        Lập kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (plan.yearsToPurchase && plan.yearsToPurchase - result.earliestPurchaseYear <= 1) ? (
+                  <div className="flex flex-col mx-4">
+                    <div className="text-lg mb-4">
+                      Bạn có thể<br />
+                      <div className="text-cyan-500 font-bold">mua được nhà</div>
+                      trong vòng 1 năm tới
+                    </div>
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 2.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
+                    <div className="text-center text-slate-400">
+                      Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết.
+                    </div>
+
+                    <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                      <div className="mt-auto pt-4">
+                        <Button
+                          onClick={() => onFinalChoice(result.earliestPurchaseYear)}
+                          variant="outline"
+                          className="w-full bg-slate-700 py-4 font-semibold border-slate-600 text-lg hover:bg-slate-600 text-slate-200 cursor-pointer"
+                        >
+                          Tiếp tục hành trình tích lũy
+                        </Button>
+                      </div>
+                      <div className="mt-auto pt-4">
+                        <Button onClick={() => setStep('schedule')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                          Đặt lịch tư vấn 1-1
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col mx-4">
+                    <div className="text-lg mb-4">
+                      Bạn chưa thể<br />
+                      <div className="text-cyan-500 font-bold">mua được căn nhà như mong muốn</div>
+                    </div>
+                    <div className="flex items-center justify-center text-center">
+                      <Image src="/onboarding/result 4.png" alt="Giả định & Chiến lược" width={300} height={300} className="mb-6" />
+                    </div>
+                    <div className="text-center text-slate-400">
+                      Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?
+                    </div>
+                    <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
+                      <Button onClick={() => handleOpenContactModal('result')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
+                        Trò chuyện cùng chuyên gia
+                      </Button>
+                    </div>
+                  </div>
+                )}
+            </div>
           );
         }
         return null;
       })()}
-      
+
       {isContactModalOpen && (
         <ContactModal
           isOpen={isContactModalOpen}

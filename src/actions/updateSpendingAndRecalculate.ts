@@ -27,31 +27,41 @@ export async function updateSpendingAndRecalculate(
     if (!plan) return { success: false, error: "Plan not found." };
 
     const planReport = await db.planReport.findUnique({ where: { planId: plan.id } });
-    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
 
     const currentData = {
-        monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
-        currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
-        hasNewChild: plan.hasNewChild,
-        yearToHaveChild: plan.yearToHaveChild,
-        monthlyChildExpenses: plan.monthlyChildExpenses,
+      monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
+      currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
+      hasNewChild: plan.hasNewChild,
+      yearToHaveChild: plan.yearToHaveChild,
+      monthlyChildExpenses: plan.monthlyChildExpenses,
     };
 
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
     const previousFirstViableYear = plan.firstViableYear;
 
-    let result = { earliestPurchaseYear: 0, message: "" };
+    let result = { earliestPurchaseYear: 0, message: "", isAffordable: false };
     let customMessage = "";
     let caseNumber: number = 0;
-    
+
     if (hasChanged) {
       await db.$transaction([
         db.plan.update({
-            where: { id: plan.id },
-            data: formData,
+          where: { id: plan.id },
+          data: formData,
         })
       ]);
       result = await runProjectionWithEngine(plan.id);
+
+      console.log("DEBUG:", {
+        hasChanged,
+        earliestPurchaseYear: result.earliestPurchaseYear,
+        existingEarliestYear: existingResult.earliestPurchaseYear,
+        isAffordable: result.isAffordable,
+        formData,
+        currentData
+      });
+
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Chi tiêu rất ấn tượng đấy 😀"
         caseNumber = 4;
@@ -64,9 +74,9 @@ export async function updateSpendingAndRecalculate(
       }
       await db.$transaction([
         db.planReport.upsert({
-            where: { planId: plan.id },
-            update: { projectionCache: result },
-            create: { planId: plan.id, projectionCache: result },
+          where: { planId: plan.id },
+          update: { projectionCache: result },
+          create: { planId: plan.id, projectionCache: result },
         })
       ]);
       await db.plan.update({
@@ -75,7 +85,7 @@ export async function updateSpendingAndRecalculate(
       });
     } else {
       result = existingResult;
-      if (result.earliestPurchaseYear === 0) {
+      if (!result.isAffordable) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
         caseNumber = 2;
       } else {
@@ -85,11 +95,11 @@ export async function updateSpendingAndRecalculate(
     }
 
     revalidatePath(`/plan/${plan.id}`);
-    return { 
+    return {
       caseNumber: caseNumber,
       planId: plan.id,
       plan: plan,
-      success: true, 
+      success: true,
       earliestPurchaseYear: result.earliestPurchaseYear,
       message: customMessage,
       hasWorsened: previousFirstViableYear && result.earliestPurchaseYear > previousFirstViableYear

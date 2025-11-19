@@ -38,8 +38,9 @@ export default function ResultStep({
   hasWorsened
 }: ResultStepProps) {
   const router = useRouter();
-
   console.log("caseNumber", caseNumber);
+
+  console.log("earliestPurchaseYear", earliestPurchaseYear);
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212]">
       <div className="relative flex items-center h-10 mx-2">
@@ -59,7 +60,7 @@ export default function ResultStep({
           {message}
         </p>
 
-        {caseNumber && (
+        {caseNumber && earliestPurchaseYear !== undefined && earliestPurchaseYear !== null && (
           (caseNumber % 3 === 1) ? (
             <>
               <div className="rounded-lg mb-8 flex items-center justify-center">
