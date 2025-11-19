@@ -118,6 +118,12 @@ export async function createPlanFromOnboarding(
       initialSavings: onboardingData.initialSavings || 0,
       userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
       monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+      // Spending section defaults
+      monthlyNonHousingDebt: 0,
+      currentAnnualInsurancePremium: 0,
+      hasNewChild: null,
+      yearToHaveChild: null,
+      monthlyChildExpenses: 0,
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
