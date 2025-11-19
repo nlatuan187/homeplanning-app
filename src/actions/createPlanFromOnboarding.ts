@@ -40,8 +40,20 @@ export async function createPlanFromOnboarding(
     return { success: false, error: errorMessage };
   }
 
+
   const userId = clerkUser.id;
   const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+  // Ensure User exists in database (webhook might not have run yet)
+  console.log("[createPlanFromOnboarding] Ensuring user exists in DB:", userId);
+  await db.user.upsert({
+    where: { id: userId },
+    update: {}, // Don't update if exists
+    create: {
+      id: userId,
+      email: userEmail || "",
+    },
+  });
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
