@@ -33,26 +33,32 @@ export default function OnboardingFlow({ planId, initialStep = "intro" }: Onboar
     onboardingData: Partial<OnboardingPlanState>;
     quickCheckResult: QuickCheckResultPayload;
   }) => {
+    console.log("[OnboardingFlow] QuickCheck completed", { isSignedIn, userId });
     const finalOnboardingData = { ...planState, ...data.onboardingData };
     setPlanState(finalOnboardingData);
 
     if (isSignedIn && userId) {
       // *** NEW LOGIC FOR SIGNED-IN USERS ***
+      console.log("[OnboardingFlow] User is signed in, creating/updating plan...");
       setIsLoading(true); // Show loading indicator
 
       const result = await createPlanFromOnboarding(finalOnboardingData);
+      console.log("[OnboardingFlow] createPlanFromOnboarding result:", result);
 
       if (result.success && result.planId) {
         // Use nextStepUrl if provided (for returning users), otherwise default to familysupport
         const redirectUrl = result.nextStepUrl || `/plan/${result.planId}/familysupport`;
+        console.log("[OnboardingFlow] Redirecting to:", redirectUrl);
         router.push(redirectUrl);
       } else {
+        console.error("[OnboardingFlow] Failed to create plan:", result.error);
         toast.error(result.error || "Không thể tạo kế hoạch. Vui lòng thử lại.");
         setIsLoading(false);
       }
 
     } else {
       // *** EXISTING LOGIC FOR GUEST USERS ***
+      console.log("[OnboardingFlow] Guest user, saving to localStorage");
       // Save to localStorage and show the SignupPrompt
       localStorage.setItem("pendingOnboardingPlan", JSON.stringify(finalOnboardingData));
       setCurrentSection('signupPrompt');

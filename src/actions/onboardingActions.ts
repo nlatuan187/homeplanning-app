@@ -134,31 +134,42 @@ export async function updatePlanViableYear(planId: string, firstViableYear: numb
  * @returns The URL path to redirect to.
  */
 export async function getNextOnboardingStep(planId: string): Promise<string> {
+  console.log("[getNextOnboardingStep] Determining next step for plan:", planId);
   try {
     const progress = await getOnboardingProgress(planId);
+    console.log("[getNextOnboardingStep] Progress state:", {
+      familySupport: progress?.familySupportState,
+      spending: progress?.spendingState,
+      assumption: progress?.assumptionState,
+    });
 
     if (!progress) {
+      console.log("[getNextOnboardingStep] No progress found, returning familysupport");
       // No progress record, start from family support
       return `/plan/${planId}/familysupport`;
     }
 
     // Check each section in order and return the first incomplete one
     if (progress.familySupportState !== OnboardingSectionState.COMPLETED) {
+      console.log("[getNextOnboardingStep] FamilySupport incomplete, returning familysupport");
       return `/plan/${planId}/familysupport`;
     }
 
     if (progress.spendingState !== OnboardingSectionState.COMPLETED) {
+      console.log("[getNextOnboardingStep] Spending incomplete, returning spending");
       return `/plan/${planId}/spending`;
     }
 
     if (progress.assumptionState !== OnboardingSectionState.COMPLETED) {
+      console.log("[getNextOnboardingStep] Assumption incomplete, returning assumption");
       return `/plan/${planId}/assumption`;
     }
 
+    console.log("[getNextOnboardingStep] All sections completed, returning roadmap");
     // All sections completed, go to roadmap
     return `/plan/${planId}/roadmap`;
   } catch (error) {
-    console.error("Error determining next onboarding step:", error);
+    console.error("[getNextOnboardingStep] Error determining next step:", error);
     // Default to family support if there's an error
     return `/plan/${planId}/familysupport`;
   }

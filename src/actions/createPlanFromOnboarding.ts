@@ -15,8 +15,15 @@ export type QuickCheckResultPayload = ProjectionResult;
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
 ) {
+  console.log("[createPlanFromOnboarding] Called with data:", {
+    yearsToPurchase: onboardingData.yearsToPurchase,
+    targetHousePriceN0: onboardingData.targetHousePriceN0,
+    monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+  });
+
   const clerkUser = await currentUser();
   if (!clerkUser) {
+    console.error("[createPlanFromOnboarding] Unauthorized - no clerk user");
     return { success: false, error: "Unauthorized" };
   }
 
@@ -38,8 +45,10 @@ export async function createPlanFromOnboarding(
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
+    console.log("[createPlanFromOnboarding] Found existing plan:", existingPlan.id);
     // If user already has a plan, update its core fields from onboarding
     const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+    console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
     const updates = {
       planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
       yearsToPurchase: yearsToPurchase,
@@ -72,9 +81,12 @@ export async function createPlanFromOnboarding(
 
     // Determine the next step based on onboarding progress
     const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
+    console.log("[createPlanFromOnboarding] Next step for existing plan:", nextStepUrl);
 
     return { success: true, planId: existingPlan.id, existed: true, nextStepUrl };
   }
+
+  console.log("[createPlanFromOnboarding] No existing plan, creating new one");
 
   try {
     // The rest of the logic proceeds as if the user is new,
