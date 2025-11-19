@@ -3,7 +3,7 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 
 /**
  * @swagger
- * /auth/mobile:
+ * /api/auth/mobile:
  *   post:
  *     summary: Authenticate mobile user with Clerk
  *     description: |
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
-    
+
     // 1. Tìm người dùng bằng email
     const { data: userList } = await (await clerkClient()).users.getUserList({ emailAddress: [email] });
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       userId: user.id,
       password: password,
     });
-    
+
     if (!verification.verified) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
     }
@@ -105,8 +105,8 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('[MOBILE_AUTH_ERROR]', error);
-    return NextResponse.json({ 
-      error: 'Internal server error' 
+    return NextResponse.json({
+      error: 'Internal server error'
     }, { status: 500 });
   }
 }
@@ -154,8 +154,8 @@ export async function GET(req: Request) {
     const user = await currentUser();
 
     if (!userId || !user) {
-      return NextResponse.json({ 
-        error: 'Unauthorized' 
+      return NextResponse.json({
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
@@ -169,8 +169,8 @@ export async function GET(req: Request) {
 
   } catch (error) {
     console.error('[MOBILE_AUTH_GET_ERROR]', error);
-    return NextResponse.json({ 
-      error: 'Internal server error' 
+    return NextResponse.json({
+      error: 'Internal server error'
     }, { status: 500 });
   }
 }
