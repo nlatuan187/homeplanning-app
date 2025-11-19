@@ -189,8 +189,16 @@ export async function createPlanFromOnboarding(
     console.error("!!! Critical error in createPlanFromOnboarding:", error);
     const projectionResult = await calculateOnboardingProjection(onboardingData);
 
-    // We still return a generic error to the client for security.
-    return { success: false, error: "Database error", projectionResult: projectionResult };
+    // Return detailed error for debugging (remove in production!)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    return {
+      success: false,
+      error: `Database error: ${errorMessage}`,
+      errorStack: errorStack,
+      projectionResult: projectionResult
+    };
   }
 }
 
