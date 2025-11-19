@@ -25,7 +25,7 @@ export async function calculateOnboardingProjection(
     return { success: false, error: "Invalid yearsToPurchase" };
   }
   const planForEngine: Partial<PlanWithDetails> = {
-    yearsToPurchase: yearsToPurchase,
+    yearsToPurchase: yearToPurchase,
     hasCoApplicant: coApplicantMonthlyIncome ?? false,
     targetHousePriceN0: (targetHousePriceN0 ?? 0) * 1000,
     initialSavings: initialSavings ?? 0,

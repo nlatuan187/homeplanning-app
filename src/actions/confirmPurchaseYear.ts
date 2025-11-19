@@ -24,11 +24,27 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       throw new Error("Unauthorized");
     }
 
-    await db.onboardingProgress.delete({
+    // Use deleteMany to avoid "Record to delete does not exist" error
+    await db.onboardingProgress.deleteMany({
       where: {
         planId: planId,
       },
     });
+
+    // Validate confirmedPurchaseYear
+    // If the year is unreasonably large (e.g., > 3000), assume it's already an absolute year
+    // If it's small (e.g., < 100), assume it's relative
+    const currentYear = new Date().getFullYear();
+    let finalYear = confirmedPurchaseYear;
+
+    if (confirmedPurchaseYear < 100) {
+      finalYear = currentYear + confirmedPurchaseYear;
+    }
+
+    // Safety check: Ensure year is not in the past
+    if (finalYear < currentYear) {
+      finalYear = currentYear;
+    }
 
     // Verify plan ownership
     const plan = await db.plan.findUnique({
@@ -55,7 +71,7 @@ export async function confirmPurchaseYear(planId: string, confirmedPurchaseYear:
       },
       data: {
         affordabilityOutcome: "ScenarioB",
-        confirmedPurchaseYear: confirmedPurchaseYear,
+        confirmedPurchaseYear: finalYear,
         // Use upsert to handle cases where the report doesn't exist yet.
         // This will create a new PlanReport if one isn't found, or update
         // the existing one.
