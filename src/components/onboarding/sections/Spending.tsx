@@ -52,7 +52,7 @@ export default function Spending({
     currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
     hasNewChild: plan.hasNewChild,
     yearToHaveChild: plan.yearToHaveChild,
-    monthlyChildExpenses: plan.monthlyChildExpenses ? (plan.monthlyChildExpenses) : (plan.monthlyLivingExpenses ?? 0) * 0.25,
+    monthlyChildExpenses: plan.hasNewChild ? (plan.monthlyLivingExpenses ?? 0) * 0.25 : 0,
   };
 
   console.log("defaultValues", defaultValues);
@@ -172,6 +172,7 @@ export default function Spending({
       yearToHaveChild: fullData.yearToHaveChild,
       monthlyChildExpenses: fullData.monthlyChildExpenses,
     };
+    console.log("spendingPayload", spendingPayload);
 
     const result = await updateSpendingAndRecalculate(plan, spendingPayload);
 
@@ -283,7 +284,7 @@ export default function Spending({
       message={result.message}
       earliestPurchaseYear={result.earliestPurchaseYear}
       onContinue={handleContinue}
-      hasWorsened={result.hasWorsened} // 🔥 Pass prop này để ResultStep biết cách hiển thị
+      hasWorsened={result.hasWorsened}
     />
   }
 

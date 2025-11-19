@@ -27,11 +27,11 @@ export async function updateAndRecalculateFamilySupport(
     if (!plan) return { success: false, error: "Plan not found." };
 
     const planReport = await db.planReport.findUnique({ where: { planId } });
-    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
 
     // Fetch familySupport, it might be null if it's the first time
     const familySupport = await db.planFamilySupport.findUnique({ where: { planId } });
-    
+
     // TẠO DỮ LIỆU HIỆN TẠI ĐỂ SO SÁNH
     const currentData = {
       coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome,
@@ -49,16 +49,16 @@ export async function updateAndRecalculateFamilySupport(
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
 
     const previousFirstViableYear = plan.firstViableYear;
-    
+
     let result = { earliestPurchaseYear: 0, message: "" };
     let customMessage = "";
-    
+
     if (hasChanged) {
       await db.$transaction([
         db.planFamilySupport.upsert({
-            where: { planId },
-            update: formData,
-            create: { planId, ...formData },
+          where: { planId },
+          update: formData,
+          create: { planId, ...formData },
         })
       ]);
       result = await runProjectionWithEngine(planId);
@@ -72,12 +72,12 @@ export async function updateAndRecalculateFamilySupport(
 
       await db.$transaction([
         db.planReport.upsert({
-            where: { planId: plan.id },
-            update: { projectionCache: result },
-            create: { planId: plan.id, projectionCache: result },
+          where: { planId: plan.id },
+          update: { projectionCache: result },
+          create: { planId: plan.id, projectionCache: result },
         })
       ]);
-      
+
       await db.plan.update({
         where: { id: planId },
         data: { firstViableYear: result.earliestPurchaseYear }
@@ -93,9 +93,9 @@ export async function updateAndRecalculateFamilySupport(
     }
 
     revalidatePath(`/plan/${planId}`);
-    return { 
+    return {
       plan: plan,
-      success: true, 
+      success: true,
       isChanged: hasChanged,
       earliestPurchaseYear: result.earliestPurchaseYear,
       message: customMessage,

@@ -27,7 +27,7 @@ export async function updateSpendingAndRecalculate(
     if (!plan) return { success: false, error: "Plan not found." };
 
     const planReport = await db.planReport.findUnique({ where: { planId: plan.id } });
-    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
 
     const currentData = {
       monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
@@ -40,7 +40,7 @@ export async function updateSpendingAndRecalculate(
     const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
     const previousFirstViableYear = plan.firstViableYear;
 
-    let result = { earliestPurchaseYear: 0, message: "" };
+    let result = { earliestPurchaseYear: 0, message: "", isAffordable: false };
     let customMessage = "";
     let caseNumber: number = 0;
 
@@ -52,6 +52,16 @@ export async function updateSpendingAndRecalculate(
         })
       ]);
       result = await runProjectionWithEngine(plan.id);
+
+      console.log("DEBUG:", {
+        hasChanged,
+        earliestPurchaseYear: result.earliestPurchaseYear,
+        existingEarliestYear: existingResult.earliestPurchaseYear,
+        isAffordable: result.isAffordable,
+        formData,
+        currentData
+      });
+
       if (result.earliestPurchaseYear === 0) {
         customMessage = "Chi tiêu rất ấn tượng đấy 😀"
         caseNumber = 4;
@@ -75,12 +85,12 @@ export async function updateSpendingAndRecalculate(
       });
     } else {
       result = existingResult;
-      if (result.earliestPurchaseYear === 0) {
-        customMessage = "Ấn tượng đấy 😀";
-        caseNumber = 1;
-      } else {
+      if (!result.isAffordable) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
         caseNumber = 2;
+      } else {
+        customMessage = "Ấn tượng đấy 😀";
+        caseNumber = 1;
       }
     }
 

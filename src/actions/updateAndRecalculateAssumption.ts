@@ -26,7 +26,7 @@ export async function updateAndRecalculateAssumption(
     if (!plan) return { success: false, error: "Plan not found." };
 
     const planReport = await db.planReport.findUnique({ where: { planId } });
-    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; };
+    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
 
     const currentData = {
       pctSalaryGrowth: plan.pctSalaryGrowth,
@@ -40,16 +40,16 @@ export async function updateAndRecalculateAssumption(
     if (hasChanged) {
       await db.$transaction([
         db.plan.update({
-            where: { id: planId },
-            data: formData,
+          where: { id: planId },
+          data: formData,
         }),
       ]);
       result = await runProjectionWithEngine(planId);
       await db.$transaction([
         db.planReport.upsert({
-            where: { planId: plan.id },
-            update: { projectionCache: result },
-            create: { planId: plan.id, projectionCache: result },
+          where: { planId: plan.id },
+          update: { projectionCache: result },
+          create: { planId: plan.id, projectionCache: result },
         })
       ]);
       await db.plan.update({

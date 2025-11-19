@@ -38,39 +38,39 @@ export async function createPlanFromOnboarding(
 
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
-   // If user already has a plan, update its core fields from onboarding
-   const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
-   const updates = {
-     planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
-     yearsToPurchase: yearsToPurchase,
-     hasCoApplicant: onboardingData.hasCoApplicant || false,
-     targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
-     targetHouseType: onboardingData.targetHouseType,
-     targetLocation: onboardingData.targetLocation,
-     initialSavings: onboardingData.initialSavings || 0,
-     userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
-     monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
-   } as const;
+    // If user already has a plan, update its core fields from onboarding
+    const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+    const updates = {
+      planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
+      yearsToPurchase: yearsToPurchase,
+      hasCoApplicant: onboardingData.hasCoApplicant || false,
+      targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
+      targetHouseType: onboardingData.targetHouseType,
+      targetLocation: onboardingData.targetLocation,
+      initialSavings: onboardingData.initialSavings || 0,
+      userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
+      monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+    } as const;
 
-   const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+    const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
 
-   await createOnboardingProgress(existingPlan.id);
-   try {
-     const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
-     const isAffordable = outcome.purchaseProjection?.isAffordable; 
+    await createOnboardingProgress(existingPlan.id);
+    try {
+      const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
+      const isAffordable = outcome.purchaseProjection?.isAffordable;
 
-     await db.plan.update({
-       where: { id: updated.id },
-       data: {
-         firstViableYear: outcome.purchaseProjection.year,
-         affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
-       },
-     });
-   } catch (e) {
-     logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
-   }
+      await db.plan.update({
+        where: { id: updated.id },
+        data: {
+          firstViableYear: outcome.purchaseProjection.year,
+          affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+        },
+      });
+    } catch (e) {
+      logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
+    }
 
-   return { success: true, planId: existingPlan.id, existed: true };
+    return { success: true, planId: existingPlan.id, existed: true };
   }
 
   try {
@@ -93,6 +93,12 @@ export async function createPlanFromOnboarding(
       initialSavings: onboardingData.initialSavings || 0,
       userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
       monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+      // Spending section defaults
+      monthlyNonHousingDebt: 0,
+      currentAnnualInsurancePremium: 0,
+      hasNewChild: null,
+      yearToHaveChild: null,
+      monthlyChildExpenses: 0,
       affordabilityOutcome: projectionResult.isAffordable
         ? "ScenarioA"
         : "ScenarioB",
@@ -123,7 +129,7 @@ export async function createPlanFromOnboarding(
         familySupportAmount: 0,
         familyGiftTiming: null,
         familyLoanRepaymentType: null,
-        familyLoanInterestRate: 0, 
+        familyLoanInterestRate: 0,
         familyLoanTermYears: 0,
         coApplicantMonthlyIncome: 0,
         monthlyOtherIncome: 0,

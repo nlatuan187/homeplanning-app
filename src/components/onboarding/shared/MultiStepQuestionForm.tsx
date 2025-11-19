@@ -66,6 +66,7 @@ export default function MultiStepQuestionForm({
     useState<Partial<OnboardingPlanState>>(defaultValues);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({}); // State mới
   const [inputValue, setInputValue] = useState<string>(""); // State mới để quản lý giá trị input dạng chuỗi
+  const inputRef = useRef<HTMLInputElement>(null); // Ref để focus vào input
 
   // Đồng bộ hóa state của component cha một cách an toàn
   // Effect này sẽ chạy sau khi component con đã render xong
@@ -98,12 +99,16 @@ export default function MultiStepQuestionForm({
 
   const currentQuestion = visibleQuestions[currentQuestionIndex];
   const currentValue = currentQuestion ? formData[currentQuestion.key] : undefined;
-  
+
   useEffect(() => {
     // Cập nhật inputValue với giá trị đã format khi câu hỏi thay đổi
     if (currentQuestion?.type === 'number') {
       const value = formData[currentQuestion.key];
       setInputValue(value != null ? formatNumber(value as number) : '');
+      // Auto-focus vào input khi chuyển đến câu hỏi type number
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   }, [currentQuestion]);
 
@@ -124,7 +129,7 @@ export default function MultiStepQuestionForm({
     if (parts.length > 2) {
       return;
     }
-    
+
     // 2. Cập nhật giá trị số cho state của form
     const numericValue = parseFloat(`${integerPart}.${fractionalPart || ''}`);
     setFormData((prev) => ({
@@ -134,7 +139,7 @@ export default function MultiStepQuestionForm({
 
     // 3. Tạo chuỗi hiển thị đã được định dạng
     const formattedInteger = integerPart ? parseInt(integerPart, 10).toLocaleString("en-US") : "0";
-    
+
     let displayValue;
     if (fractionalPart !== undefined) {
       displayValue = `${formattedInteger}.${fractionalPart}`;
@@ -203,7 +208,7 @@ export default function MultiStepQuestionForm({
         </div>
       );
     }
-    
+
     if (currentQuestion.type === 'number') {
       // Lấy giá trị mặc định cho câu hỏi hiện tại
       const defaultValue = defaultValues[currentQuestion.key];
@@ -211,10 +216,20 @@ export default function MultiStepQuestionForm({
       return (
         <div className="relative w-full">
           <Input
+            ref={inputRef}
             type="text"
             inputMode="decimal"
             value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                // Chỉ submit nếu có giá trị hợp lệ
+                if (currentValue !== undefined && currentValue !== null && currentValue !== '') {
+                  handleNext();
+                }
+              }
+            }}
             className="w-full bg-slate-800 border-slate-600 text-white h-14 text-lg pl-4 pr-24"
             placeholder={
               defaultValue === undefined || defaultValue === null
@@ -226,9 +241,9 @@ export default function MultiStepQuestionForm({
         </div>
       );
     }
-    
+
     return null;
-  // Thêm defaultValues vào dependency array của useMemo
+    // Thêm defaultValues vào dependency array của useMemo
   }, [currentQuestion, currentValue, defaultValues, inputValue]);
 
   if (!currentQuestion) {
@@ -333,16 +348,16 @@ export default function MultiStepQuestionForm({
             <Button
               onClick={() => onSubmit?.(formData)}
               className={cn(
-              "w-full mb-4 py-3.5 text-base rounded-sm",
-              isFinalForm
-                ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                : "bg-white text-[#292929] hover:bg-slate-200",
-            )}
-            disabled={currentValue === undefined}
-          >
-            {isFinalForm ? subtitle : "Tiếp tục"}
-          </Button>
-        )}
+                "w-full mb-4 py-3.5 text-base rounded-sm",
+                isFinalForm
+                  ? "bg-cyan-500 text-white hover:bg-[#008C96]"
+                  : "bg-white text-[#292929] hover:bg-slate-200",
+              )}
+              disabled={currentValue === undefined}
+            >
+              {isFinalForm ? subtitle : "Tiếp tục"}
+            </Button>
+          )}
       </div>
     </div>
   );

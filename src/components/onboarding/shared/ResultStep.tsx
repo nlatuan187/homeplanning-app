@@ -38,6 +38,7 @@ export default function ResultStep({
   hasWorsened
 }: ResultStepProps) {
   const router = useRouter();
+  console.log("caseNumber", caseNumber);
 
   console.log("earliestPurchaseYear", earliestPurchaseYear);
   return (
@@ -67,11 +68,11 @@ export default function ResultStep({
               </div>
               {(caseNumber === 1) ? (
                 <p className="text-xl font-bold text-white">
-                  Bạn sẽ mua được nhà sớm nhất vào năm {new Date().getFullYear() + earliestPurchaseYear}
+                  Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
                 </p>
               ) : (
                 <p className="text-xl font-bold text-white">
-                  Thời gian mua được nhà của bạn sớm nhất vẫn là năm {new Date().getFullYear() + earliestPurchaseYear}
+                  Thời gian mua được nhà của bạn sớm nhất vẫn là năm {earliestPurchaseYear}
                 </p>
               )}
             </>
@@ -91,7 +92,7 @@ export default function ResultStep({
                   <Image src="/onboarding/resultcase2.png" alt="Result" width={320} height={256} />
                 </div>
                 <p className="text-xl font-bold text-white">
-                  Bạn sẽ mua được nhà sớm nhất vào năm {new Date().getFullYear() + earliestPurchaseYear}
+                  Bạn sẽ mua được nhà sớm nhất vào năm {earliestPurchaseYear}
                 </p>
               </>
             )
