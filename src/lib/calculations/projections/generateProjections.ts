@@ -79,7 +79,7 @@ export function preparePlanForProjection(partialPlanData: Partial<PlanWithDetail
     monthlyChildExpenses: 0,
     paymentMethod: "fixed" as "fixed" | "decreasing",
   };
-  
+
   // Gộp dữ liệu người dùng với giá trị mặc định để tạo ra một plan hoàn chỉnh
   return { ...defaults, ...partialPlanData } as PlanWithDetails;
 }
@@ -97,7 +97,7 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
   const familySupport = plan.familySupport;
   const currentYear = plan.createdAt.getFullYear();
   const currentMonth = plan.createdAt.getMonth();
-  const maxYears = Math.min(maxYearsToProject || (plan.yearsToPurchase - new Date().getFullYear() + 5), 10);
+  const maxYears = Math.min(maxYearsToProject || (plan.yearsToPurchase + 5), 10);
   const projectionData: ProjectionRow[] = [];
 
   // BƯỚC 2: XỬ LÝ HỖ TRỢ NHẬN NGAY (GIFT - NOW)
@@ -183,19 +183,19 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     const totalAnnualExpenses = livingExpensesAnnual + (plan.monthlyNonHousingDebt * 12) + plan.currentAnnualInsurancePremium + childExpensesAnnual;
 
     let annualSavings = totalAnnualIncome - totalAnnualExpenses;
-    
+
     // BƯỚC 3: XỬ LÝ TRẢ NỢ GIA ĐÌNH (LOAN - MONTHLY & LUMP_SUM)
     let annualFamilyLoanRepayment = 0;
     if (familySupport?.familySupportType === 'LOAN' && familySupport.familySupportAmount && familySupport.familyLoanTermYears) {
-        if (familySupport.familyLoanRepaymentType === 'MONTHLY' && n >= plan.yearsToPurchase && n < plan.yearsToPurchase + familySupport.familyLoanTermYears) {
-            annualFamilyLoanRepayment = familySupport.familySupportAmount / familySupport.familyLoanTermYears;
-        }
-        if (familySupport.familyLoanRepaymentType === 'LUMP_SUM' && n === plan.yearsToPurchase + familySupport.familyLoanTermYears) {
-            annualFamilyLoanRepayment = familySupport.familySupportAmount;
-        }
+      if (familySupport.familyLoanRepaymentType === 'MONTHLY' && n >= plan.yearsToPurchase && n < plan.yearsToPurchase + familySupport.familyLoanTermYears) {
+        annualFamilyLoanRepayment = familySupport.familySupportAmount / familySupport.familyLoanTermYears;
+      }
+      if (familySupport.familyLoanRepaymentType === 'LUMP_SUM' && n === plan.yearsToPurchase + familySupport.familyLoanTermYears) {
+        annualFamilyLoanRepayment = familySupport.familySupportAmount;
+      }
     }
     annualSavings -= annualFamilyLoanRepayment;
-    
+
     let accumulatedFromMonthly = prev.cumulativeSavingsFromMonthly + prev.annualSavings / 12 * (Math.pow(1 + monthlyRate, 12 - currentMonth) - 1) / monthlyRate;
     let accumulatedFromInitial = prev.cumulativeSavingsFromInitial * Math.pow(1 + monthlyRate, 12 - currentMonth);
     const monthlyNewSavings = annualSavings / 12;
@@ -210,16 +210,16 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
     // BƯỚC 4: XỬ LÝ HỖ TRỢ TẠI NĂM MUA NHÀ
     let equityForPurchase = cumulativeSavings;
     if (n === plan.yearsToPurchase && familySupport?.familySupportAmount) {
-        if (familySupport.familySupportType === 'GIFT' && familySupport.familyGiftTiming === 'AT_PURCHASE') {
-            equityForPurchase += familySupport.familySupportAmount;
-        }
-        if (familySupport.familySupportType === 'LOAN') {
-            equityForPurchase += familySupport.familySupportAmount;
-        }
+      if (familySupport.familySupportType === 'GIFT' && familySupport.familyGiftTiming === 'AT_PURCHASE') {
+        equityForPurchase += familySupport.familySupportAmount;
+      }
+      if (familySupport.familySupportType === 'LOAN') {
+        equityForPurchase += familySupport.familySupportAmount;
+      }
     }
 
     const bankLoanNeeded = Math.max(0, housePriceProjected - equityForPurchase);
-    
+
     const monthlyPayment = calculateMonthlyPayment(bankLoanNeeded, plan.loanInterestRate || 11, plan.loanTermYears || 25, plan.paymentMethod);
     const monthlySurplus = annualSavings / 12;
     const buffer = monthlySurplus - monthlyPayment;
