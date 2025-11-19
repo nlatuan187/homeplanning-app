@@ -241,36 +241,37 @@ export default function QuickCheckAnalysis({ formData, onBack, onNext }: QuickCh
         }
     }, [analysisStepIndex, analysisSteps, onNext]);
 
-    useEffect(() => {
-        if (!analysisContainerRef.current) return;
+    // Swipe logic removed to prevent conflict with scrolling
+    // useEffect(() => {
+    //     if (!analysisContainerRef.current) return;
 
-        const node = analysisContainerRef.current;
-        let touchStartY = 0;
+    //     const node = analysisContainerRef.current;
+    //     let touchStartY = 0;
 
-        const handleTouchStart = (e: TouchEvent) => {
-            touchStartY = e.touches[0].clientY;
-        };
+    //     const handleTouchStart = (e: TouchEvent) => {
+    //         touchStartY = e.touches[0].clientY;
+    //     };
 
-        const handleTouchEnd = (e: TouchEvent) => {
-            const touchEndY = e.changedTouches[0].clientY;
-            const swipeDownDistance = touchEndY - touchStartY;
-            const swipeUpDistance = touchStartY - touchEndY;
+    //     const handleTouchEnd = (e: TouchEvent) => {
+    //         const touchEndY = e.changedTouches[0].clientY;
+    //         const swipeDownDistance = touchEndY - touchStartY;
+    //         const swipeUpDistance = touchStartY - touchEndY;
 
-            if (swipeDownDistance > 50) {
-                handleAnalysisNext();
-            } else if (swipeUpDistance > 50) {
-                handleAnalysisBack();
-            }
-        };
+    //         if (swipeDownDistance > 50) {
+    //             handleAnalysisNext();
+    //         } else if (swipeUpDistance > 50) {
+    //             handleAnalysisBack();
+    //         }
+    //     };
 
-        node.addEventListener("touchstart", handleTouchStart);
-        node.addEventListener("touchend", handleTouchEnd);
+    //     node.addEventListener("touchstart", handleTouchStart);
+    //     node.addEventListener("touchend", handleTouchEnd);
 
-        return () => {
-            node.removeEventListener("touchstart", handleTouchStart);
-            node.removeEventListener("touchend", handleTouchEnd);
-        };
-    }, [handleAnalysisBack, handleAnalysisNext]);
+    //     return () => {
+    //         node.removeEventListener("touchstart", handleTouchStart);
+    //         node.removeEventListener("touchend", handleTouchEnd);
+    //     };
+    // }, [handleAnalysisBack, handleAnalysisNext]);
 
     if (!analysisSteps || analysisSteps.length === 0) return null;
 

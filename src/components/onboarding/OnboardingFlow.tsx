@@ -43,8 +43,9 @@ export default function OnboardingFlow({ planId, initialStep = "intro" }: Onboar
       const result = await createPlanFromOnboarding(finalOnboardingData);
 
       if (result.success && result.planId) {
-        // No need for localStorage or SignupPrompt. Redirect directly.
-        router.push(`/plan/${result.planId}/familysupport`);
+        // Use nextStepUrl if provided (for returning users), otherwise default to familysupport
+        const redirectUrl = result.nextStepUrl || `/plan/${result.planId}/familysupport`;
+        router.push(redirectUrl);
       } else {
         toast.error(result.error || "Không thể tạo kế hoạch. Vui lòng thử lại.");
         setIsLoading(false);

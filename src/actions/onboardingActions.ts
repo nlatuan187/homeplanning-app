@@ -57,7 +57,7 @@ export async function getOnboardingProgress(planId: string) {
 }
 
 export async function updateOnboardingSectionProgress(
-  planId: string, 
+  planId: string,
   section: "familySupport" | "spending" | "assumption" | "quickCheck",
   state: OnboardingSectionState,
 ) {
@@ -125,5 +125,41 @@ export async function updatePlanViableYear(planId: string, firstViableYear: numb
   } catch (error) {
     console.error(`Lỗi khi cập nhật năm khả thi cho plan ${planId}:`, error);
     return { success: false, error: "Không thể cập nhật kế hoạch." };
+  }
+}
+
+/**
+ * Determines the next onboarding step URL based on the current progress state.
+ * @param planId The ID of the plan.
+ * @returns The URL path to redirect to.
+ */
+export async function getNextOnboardingStep(planId: string): Promise<string> {
+  try {
+    const progress = await getOnboardingProgress(planId);
+
+    if (!progress) {
+      // No progress record, start from family support
+      return `/plan/${planId}/familysupport`;
+    }
+
+    // Check each section in order and return the first incomplete one
+    if (progress.familySupportState !== OnboardingSectionState.COMPLETED) {
+      return `/plan/${planId}/familysupport`;
+    }
+
+    if (progress.spendingState !== OnboardingSectionState.COMPLETED) {
+      return `/plan/${planId}/spending`;
+    }
+
+    if (progress.assumptionState !== OnboardingSectionState.COMPLETED) {
+      return `/plan/${planId}/assumption`;
+    }
+
+    // All sections completed, go to roadmap
+    return `/plan/${planId}/roadmap`;
+  } catch (error) {
+    console.error("Error determining next onboarding step:", error);
+    // Default to family support if there's an error
+    return `/plan/${planId}/familysupport`;
   }
 }
