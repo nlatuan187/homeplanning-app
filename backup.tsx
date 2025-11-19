@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function SignUpPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-950">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-[#121212]">
       <Card className="w-full max-w-md bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-bold tracking-tight">BẠN ĐÃ SẴN SÀNG</CardTitle>

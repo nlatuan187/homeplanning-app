@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function SignInPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-950">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-[#121212]">
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <SignIn

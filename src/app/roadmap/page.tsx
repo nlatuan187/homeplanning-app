@@ -22,7 +22,7 @@ export default async function RoadmapLanding() {
 
   // Chưa có kế hoạch: hiển thị hướng dẫn + CTA
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[#121212] text-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <h1 className="text-2xl font-bold mb-3">Chưa có kế hoạch</h1>
         <p className="text-slate-300 mb-6">

@@ -37,7 +37,7 @@ export default function RoadmapClient({
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
+      <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
         <LoadingStep 
           title="Vui lòng chờ" 
           message="Đang chuyển hướng" 
@@ -49,7 +49,7 @@ export default function RoadmapClient({
 
   return (
     <>
-      <main className="min-h-screen bg-slate-950 text-white md:p-4 pb-20">
+      <main className="min-h-screen bg-[#121212] text-white md:p-4 pb-20">
         <div className="container mx-auto max-w-5xl">
           <div className="font-sans">
             <div className="sticky top-0 z-50 pb-2">

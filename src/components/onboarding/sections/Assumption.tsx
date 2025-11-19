@@ -297,7 +297,7 @@ export default function Assumption({
           return (
             <>
               <div className="flex flex-col flex-grow w-full max-w-5xl mx-auto fixed inset-0">
-                <div className="z-10 bg-slate-950">
+                <div className="z-10 bg-[#121212]">
                   {/* Header Section */}
                   <div className="">
                     <div className="relative flex items-center h-10 mb-4 mt-2">
@@ -315,7 +315,7 @@ export default function Assumption({
                   </div>
                 </div>
 
-                <div className="z-10 bg-slate-950 px-2 flex-grow overflow-y-auto pb-24">
+                <div className="z-10 bg-[#121212] px-2 flex-grow overflow-y-auto pb-24">
                   <div className="w-full p-2">
                     <h2 className="text-base font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
                     {currentAssumption.type === 'radio' ? (
@@ -411,7 +411,7 @@ export default function Assumption({
                 </div>
                   
                 {/* Action Button */}
-                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                   <Button 
                     onClick={onNext} 
                     className={cn(
@@ -431,7 +431,7 @@ export default function Assumption({
 
         if (step === "loading") {
           return (
-            <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950">
+            <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212]">
               <LoadingStep title={loadingTitle || "Hoàn thiện kế hoạch"} message={"Đang hoàn thiện kế hoạch"} percentage={100} />
             </div>
           );
@@ -439,7 +439,7 @@ export default function Assumption({
 
         if (step === "result" && result) {
           return (
-              <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950 text-white">
+              <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white">
                 <div className="relative flex items-center h-10 mb-4">
                   <div className="absolute left-0 top-1/2 -translate-y-1/2">
                     <Button
@@ -468,7 +468,7 @@ export default function Assumption({
                           Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear + new Date().getFullYear()}                  
                         </div>
                         <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
-                        <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                        <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                           <div className="mt-auto pt-4">
                             <Button 
                               onClick={() => router.push(`/plan/${plan.id}/edit`)}
@@ -500,7 +500,7 @@ export default function Assumption({
                         Bạn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear + new Date().getFullYear()}!
                       </div>
                       <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                         <div className="mt-auto pt-4">
                           <Button 
                             onClick={() => onFinalChoice(result.earliestPurchaseYear)}
@@ -532,7 +532,7 @@ export default function Assumption({
                       <div className="text-center text-slate-400">
                         Bạn hoàn toàn có thể mua nhà vào năm {plan.confirmedPurchaseYear} như mong muốn của mình
                       </div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                         <Button onClick={() => onFinalChoice(plan.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                           Lập kế hoạch mua nhà năm {plan.confirmedPurchaseYear}
                         </Button>
@@ -552,7 +552,7 @@ export default function Assumption({
                         Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết. 
                       </div>
                       
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                         <div className="mt-auto pt-4">
                           <Button 
                             onClick={() => onFinalChoice(result.earliestPurchaseYear)}
@@ -581,7 +581,7 @@ export default function Assumption({
                       <div className="text-center text-slate-400">
                         Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?
                       </div>
-                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                         <Button onClick={() => handleOpenContactModal('result')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                           Trò chuyện cùng chuyên gia
                         </Button>

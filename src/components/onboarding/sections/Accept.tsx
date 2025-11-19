@@ -9,7 +9,7 @@ export default function Accept() {
   const router = useRouter();
 
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950 text-white px-2">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white px-2">
       <div className="relative flex items-center h-10 mb-4">
         <div className="absolute left-0 top-1/2 -translate-y-1/2">
           <Button

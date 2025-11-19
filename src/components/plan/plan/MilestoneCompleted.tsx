@@ -60,7 +60,7 @@ export default function MilestoneCompleted({
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-white">
+    <div className="relative min-h-screen bg-[#121212] text-white">
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-72px)] text-center px-6">
         <h2 className="text-2xl font-semibold mb-2">{mainText}</h2>
         <p className="text-slate-300 text-base mb-8">{subText}</p>
@@ -77,7 +77,7 @@ export default function MilestoneCompleted({
       </div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 inset-x-0 z-50 bg-slate-950">
+      <div className="fixed bottom-0 inset-x-0 z-50 bg-[#121212]">
         <div className="container mx-auto max-w-5xl px-4 py-4">
           <Button
             onClick={handleNextClick}

@@ -243,7 +243,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
   
     return (
       <div className="flex flex-col h-full flex-grow w-full max-w-5xl mx-auto fixed inset-0">
-        <div className=" z-10 bg-slate-950">
+        <div className=" z-10 bg-[#121212]">
           <div className="mb-4">
             <div className="relative flex items-center h-10 mb-4 mt-2">
               <div className="absolute left-0 top-1/2 -translate-y-1/2">
@@ -260,7 +260,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
           </div>
         </div>
   
-        <div className="z-10 bg-slate-950 px-2 mt-3 overflow-y-auto">
+        <div className="z-10 bg-[#121212] px-2 mt-3 overflow-y-auto">
           <div className="p-2 w-full pb-20">
             <h2 className="text-lg font-semibold text-white max-w-5xl mt-2">{currentAssumption.label}</h2>
   
@@ -358,7 +358,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
           </div>
   
           {/* Action Button */}
-          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+          <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
               <Button 
                 onClick={onNext} 
                 className={cn(
@@ -408,7 +408,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
     };
   
     return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950 text-white">
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212] text-white">
         <div className="relative flex items-center h-10 mb-4">
           <div className="absolute left-0 top-1/2 -translate-y-1/2">
             <Button
@@ -437,7 +437,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                   Bạn có thể mua nhà sớm nhất vào năm {result.earliestPurchaseYear}                  
                 </div>
                 <div className="mb-4 items-center justify-center text-center">Bạn muốn điều chỉnh mong muốn không, hay giữ nguyên và lùi thời gian mua nhà?<br/>👇👇👇</div>
-                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+                <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                   <div className="mt-auto pt-4">
                     <Button 
                       onClick={() => router.push(`/plan/${planData.id}/edit`)}
@@ -469,7 +469,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                 Bạn có thể mua nhà vào năm {planData.confirmedPurchaseYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm {result.earliestPurchaseYear}!
               </div>
               <div className="mb-4 items-center justify-center text-center">Hãy chọn thời gian bạn muốn mua nhà!<br/>👇👇👇</div>
-              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <div className="mt-auto pt-4">
                   <Button 
                     onClick={() => handleFinalChoice(result.earliestPurchaseYear)}
@@ -501,7 +501,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
               <div className="text-center text-slate-400">
                 Bạn hoàn toàn có thể mua nhà vào năm {planData.confirmedPurchaseYear} như mong muốn của mình
               </div>
-              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <Button onClick={() => handleFinalChoice(planData.confirmedPurchaseYear!)} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                   Lập kế hoạch mua nhà năm {planData.confirmedPurchaseYear}
                 </Button>
@@ -521,7 +521,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
                 Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết. 
               </div>
               
-              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <div className="mt-auto pt-4">
                   <Button 
                     onClick={() => handleFinalChoice(result.earliestPurchaseYear)}
@@ -550,7 +550,7 @@ export default function EditPlanFlow({ initialPlan }: EditPlanFlowProps) {
               <div className="text-center text-slate-400">
                 Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?
               </div>
-              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-slate-950 border-t border-slate-800 z-10">
+              <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto p-4 bg-[#121212] border-t border-slate-800 z-10">
                 <Button onClick={() => handleOpenContactModal('result')} className="w-full hover:bg-gray-300 py-4 text-lg font-semibold rounded-sm shadow-lg cursor-pointer">
                   Trò chuyện cùng chuyên gia
                 </Button>

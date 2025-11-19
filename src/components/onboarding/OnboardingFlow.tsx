@@ -98,7 +98,7 @@ export default function OnboardingFlow({ planId }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-[#121212] text-white p-2 sm:p-6">
+    <div className="flex flex-col items-center min-h-screen bg-[#121212] text-white">
       <div className="w-full max-w-5xl flex flex-col h-full flex-1">
         {renderSection()}
       </div>

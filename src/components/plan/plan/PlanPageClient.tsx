@@ -499,8 +499,8 @@ export default function PlanPageClient({
 
   if (showMilestoneCompleted) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
-        <header className="container mx-auto max-w-5xl px-4 flex items-center justify-between sticky top-0 bg-slate-950 z-40 border-b border-slate-800">
+      <main className="min-h-screen bg-[#121212] text-white">
+        <header className="container mx-auto max-w-5xl px-4 flex items-center justify-between sticky top-0 bg-[#121212] z-40 border-b border-slate-800">
           <Button variant="ghost" size="icon" className="text-white" onClick={() => router.push(`/plan/${initialPlan.id}/roadmap`)}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
@@ -555,8 +555,8 @@ export default function PlanPageClient({
   }
   
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <header className="container mx-auto max-w-5xl px-4 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-950 z-40 border-b border-slate-800 relative">
+    <main className="min-h-screen bg-[#121212] text-white">
+      <header className="container mx-auto max-w-5xl px-4 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#121212] z-40 border-b border-slate-800 relative">
         <div className="flex flex-col items-start md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:items-center">
           <div className="text-2xl font-bold">
             {currentMilestoneData ? currentMilestoneData.title : "Cột mốc"}
