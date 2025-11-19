@@ -71,42 +71,39 @@ export default function FamilySupport({
   console.log("formData", planId);
 
   const familySupportQuestionsPart1: Question[] = useMemo(() => [
-      {
-        key: 'monthlyOtherIncome',
-        text: (ans) =>
-          ans.hasCoApplicant
-            ? 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)'
-            : 'Tổng thu nhập khác (ngoài lương) của bạn mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)',
-        type: 'number', unit: 'triệu VNĐ'
-      },
+    {
+      key: 'monthlyOtherIncome',
+      text: (ans) =>
+        ans.hasCoApplicant
+          ? 'Tổng thu nhập khác (ngoài lương) của bạn và người đồng hành tài chính mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)'
+          : 'Tổng thu nhập khác (ngoài lương) của bạn mỗi tháng là bao nhiêu? (đơn vị: triệu VNĐ)',
+      type: 'number', unit: 'triệu VNĐ'
+    },
   ], []);
 
-    const familySupportQuestionsPart2: Question[] = useMemo(() => [
-      { key: 'hasFamilySupport', text: 'Bạn có nhận được hỗ trợ tài chính từ gia đình (bố mẹ, họ hàng,...) không?', type: 'options', options: [{label: 'Có', value: true}, {label: 'Không', value: false}] },
-      {
-        key: 'familySupportType',
-        text: 'Đây là khoản cho TẶNG hay cho VAY?',
-        type: 'options',
-        options: [{label: 'Cho tặng (không cần hoàn lại)', value: 'GIFT'}, {label: 'Cho vay (cần hoàn lại)',
-          value: 'LOAN'}], condition: (ans: any) => ans.hasFamilySupport === true
-      },
-      // @ts-ignore
-      { key: 'familySupportGiftAmount',
-        text: 'Số tiền được tặng (đơn vị: triệu VNĐ)',
-        type: 'number',
-        unit: 'triệu VNĐ',
-        condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT'
-      },
-      // @ts-ignore
-      { key: 'familySupportGiftTiming', text: 'Khi nào bạn sẽ nhận được số tiền này?', type: 'options', options: [{label: 'Ngay bây giờ (có thể mang đi đầu tư để tích luỹ)', value: 'NOW'}, {label: 'Khi thanh toán mua nhà', value: 'AT_PURCHASE'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT' },
-      // @ts-ignore
-      { key: 'familySupportLoanAmount', text: 'Số tiền đi vay (đơn vị: triệu VNĐ)', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
-      // @ts-ignore
-      { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (đơn vị: %/năm) (Nếu vay không cần trả lãi, vui lòng nhập 0)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
-      // @ts-ignore
-      { key: 'familySupportLoanRepayment', text: 'Bạn sẽ trả nợ theo hình thức nào?', type: 'options', options: [{label: 'Trả góp đều hàng tháng', value: 'MONTHLY'}, {label: 'Trả một lần khi đủ tiền', value: 'LUMP_SUM'}], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
-      // @ts-ignore
-      { key: 'familySupportLoanTerm', text: 'Thời hạn của khoản vay này là bao lâu (năm)', type: 'number', unit: 'năm', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' && ans.familySupportLoanRepayment === 'MONTHLY' },
+  const familySupportQuestionsPart2: Question[] = useMemo(() => [
+    { key: 'hasFamilySupport', text: 'Bạn có nhận được hỗ trợ tài chính từ gia đình (bố mẹ, họ hàng,...) không?', type: 'options', options: [{ label: 'Có', value: true }, { label: 'Không', value: false }] },
+    {
+      key: 'familySupportType',
+      text: 'Đây là khoản cho TẶNG hay cho VAY?',
+      type: 'options',
+      options: [{ label: 'Cho tặng (không cần hoàn lại)', value: 'GIFT' }, {
+        label: 'Cho vay (cần hoàn lại)',
+        value: 'LOAN'
+      }], condition: (ans: any) => ans.hasFamilySupport === true
+    },
+    {
+      key: 'familySupportGiftAmount',
+      text: 'Số tiền được tặng (đơn vị: triệu VNĐ)',
+      type: 'number',
+      unit: 'triệu VNĐ',
+      condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT'
+    },
+    { key: 'familySupportGiftTiming', text: 'Khi nào bạn sẽ nhận được số tiền này?', type: 'options', options: [{ label: 'Ngay bây giờ (có thể mang đi đầu tư để tích luỹ)', value: 'NOW' }, { label: 'Khi thanh toán mua nhà', value: 'AT_PURCHASE' }], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'GIFT' },
+    { key: 'familySupportLoanAmount', text: 'Số tiền đi vay (đơn vị: triệu VNĐ)', type: 'number', unit: 'triệu VNĐ', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+    { key: 'familySupportLoanInterest', text: 'Lãi suất cho vay (đơn vị: %/năm) (Nếu vay không cần trả lãi, vui lòng nhập 0)', type: 'number', unit: '%', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+    { key: 'familySupportLoanRepayment', text: 'Bạn sẽ trả nợ theo hình thức nào?', type: 'options', options: [{ label: 'Trả góp đều hàng tháng', value: 'MONTHLY' }, { label: 'Trả một lần khi đủ tiền', value: 'LUMP_SUM' }], condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' },
+    { key: 'familySupportLoanTerm', text: 'Thời hạn của khoản vay này là bao lâu (năm)', type: 'number', unit: 'năm', condition: (ans: any) => ans.hasFamilySupport === true && ans.familySupportType === 'LOAN' && ans.familySupportLoanRepayment === 'MONTHLY' },
   ], []);
 
   const visibleQuestionsPart1 = useMemo(() => {
@@ -122,7 +119,7 @@ export default function FamilySupport({
   const totalSteps = useMemo(() => {
     return visibleQuestionsPart1.length + 1 + visibleQuestionsPart2.length;
   }, [visibleQuestionsPart1, visibleQuestionsPart2]);
-  
+
   const handleStep1Change = useCallback((current: number) => {
     setProgress({ current: current + 1, total: totalSteps });
   }, [totalSteps]);
@@ -133,7 +130,7 @@ export default function FamilySupport({
   }, [totalSteps, visibleQuestionsPart1.length]);
 
   const handleForm2DataChange = useCallback(({ formData: newData }: { formData: Partial<OnboardingPlanState> }) => {
-    setFormData(prev => ({...prev, ...newData}));
+    setFormData(prev => ({ ...prev, ...newData }));
   }, []);
 
   const handleSubmitPart1 = (data: Partial<OnboardingPlanState>) => {
@@ -170,7 +167,7 @@ export default function FamilySupport({
     };
 
     const result = await updateAndRecalculateFamilySupport(planId, familySupportPayload);
-    
+
     if (result.success) {
       // setResult(result as RecalculationResult);
       // setStep("result");
@@ -220,7 +217,7 @@ export default function FamilySupport({
         <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col px-6 pt-30 z-10">
           <div className="flex-grow flex flex-col items-center text-center">
             <div className="text-white/80 font-semibold text-lg mb-8">
-                Mục 1/3
+              Mục 1/3
             </div>
             <Image
               src="/icons/suitcase 2.png"
@@ -268,22 +265,22 @@ export default function FamilySupport({
   }
 
   if (step === "loading" && familySupport) {
-      return (
-        <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
-            <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100}/>
-        </div>
-      )
+    return (
+      <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
+        <LoadingStep title="Nguồn lực hỗ trợ" message="Tính toán các dòng tiền hỗ trợ" percentage={100} />
+      </div>
+    )
   }
 
   if (step === "result" && result && familySupport) {
-      return <ResultStep
-        plan={result.plan}
-        title="Nguồn lực hỗ trợ"
-        message={result.message}
-        earliestPurchaseYear={result.earliestPurchaseYear}
-        onContinue={handleContinue}
-        hasImproved={result.hasImproved}
-      />
+    return <ResultStep
+      plan={result.plan}
+      title="Nguồn lực hỗ trợ"
+      message={result.message}
+      earliestPurchaseYear={result.earliestPurchaseYear}
+      onContinue={handleContinue}
+      hasImproved={result.hasImproved}
+    />
   }
 
   return (
@@ -365,8 +362,8 @@ export default function FamilySupport({
           >
             <div className="max-w-5xl mx-auto p-4">
               <Button
-              onClick={handleContinueFromAnalysis}
-              className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
+                onClick={handleContinueFromAnalysis}
+                className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-sm shadow-lg transition-transform transform active:scale-95"
               >
                 Tiếp tục
               </Button>

@@ -43,7 +43,7 @@ export async function syncMilestoneTasks(
       currentData = {};
     }
     currentData.items = tasks;
-    
+
     // Cập nhật progress với dữ liệu savings
     await db.milestoneProgress.update({
       where: { planId },
@@ -62,7 +62,7 @@ export async function syncMilestoneTasks(
         currentMilestoneData: currentData,
       },
     });
-    
+
     console.log(`✅ Synced ${tasks.length} tasks. Savings updated to ${newCurrentSavings} for plan ${planId}`);
     return { success: true };
 
@@ -93,7 +93,7 @@ function findCurrentSubMilestone(milestoneGroups: MilestoneGroup[]) {
 export async function getOrCreateFullMilestoneData(planId: string, userId: string) {
   try {
     const { plan, projections } = await getProjectionsWithCache(planId, userId);
-    
+
     let progress = await db.milestoneProgress.findUnique({
       where: { planId },
     });
@@ -181,7 +181,7 @@ export async function updateMilestoneProgress(
   currentSavings: number,
   completedAmount: number,
   nextMilestoneIdentifier: string | null,
-  updatedMilestoneGroups: any[] 
+  updatedMilestoneGroups: any[]
 ) {
   try {
     const progress = await db.milestoneProgress.findUnique({ where: { planId } });
@@ -225,17 +225,17 @@ export async function updateMilestoneProgress(
     });
 
     const updatedRoadmap = await db.planRoadmap.update({
-        where: { planId },
-        data: {
-            milestoneGroups: updatedMilestoneGroups, 
-            completedMilestones: completedMilestones,
-            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
-        }
+      where: { planId },
+      data: {
+        milestoneGroups: updatedMilestoneGroups,
+        completedMilestones: completedMilestones,
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+      }
     });
 
     revalidatePath(`/plan/${planId}/plan`);
     return { updatedProgress, updatedRoadmap };
-    
+
   } catch (error) {
     console.error("Error in updateMilestoneProgress:", error);
     throw new Error("Could not update milestone progress");
@@ -269,10 +269,10 @@ export async function recalculateMilestoneProgress(planId: string, userId: strin
     };
 
     const roadmapData = {
-        milestoneGroups: serializedMilestoneGroups,
-        currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
-        completedMilestones: [],
-        planPageData: {},
+      milestoneGroups: serializedMilestoneGroups,
+      currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+      completedMilestones: [],
+      planPageData: {},
     };
 
     // Upsert cả hai bảng
@@ -283,12 +283,12 @@ export async function recalculateMilestoneProgress(planId: string, userId: strin
     });
 
     await db.planRoadmap.upsert({
-        where: { planId },
-        update: {
-            milestoneGroups: serializedMilestoneGroups,
-            currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
-        },
-        create: { planId, ...roadmapData },
+      where: { planId },
+      update: {
+        milestoneGroups: serializedMilestoneGroups,
+        currentMilestoneData: currentMilestoneData ? JSON.parse(JSON.stringify(currentMilestoneData)) : Prisma.JsonNull,
+      },
+      create: { planId, ...roadmapData },
     });
 
     return progress;
@@ -296,21 +296,21 @@ export async function recalculateMilestoneProgress(planId: string, userId: strin
     console.error("Error recalculating milestone progress:", error);
     throw error;
   }
-} 
+}
 
 export async function updateCurrentSavings(planId: string, amount: number, userId: string) {
   try {
     const { progress, roadmap } = await getOrCreateFullMilestoneData(planId, userId);
-    
+
     const newCurrentSavings = progress.currentSavings + amount;
     const finalCurrentSavings = Math.max(0, newCurrentSavings);
-    
-    const newSavingsPercentage = progress.housePriceProjected > 0 
+
+    const newSavingsPercentage = progress.housePriceProjected > 0
       ? Math.round((finalCurrentSavings / progress.housePriceProjected) * 100)
       : 0;
 
     let milestoneGroups = (roadmap.milestoneGroups as unknown as MilestoneGroup[]) || [];
-    
+
     let foundCurrent = false;
     const updatedMilestoneGroups = milestoneGroups.map(group => {
       const updatedMilestones = group.milestones.map(milestone => {
@@ -331,7 +331,7 @@ export async function updateCurrentSavings(planId: string, amount: number, userI
 
       const allDone = finalMilestones.every(m => m.status === "done");
       const hasCurrent = finalMilestones.some(m => m.status === "current");
-      
+
       const groupStatus: "done" | "current" | "upcoming" = allDone ? "done" : hasCurrent ? "current" : "upcoming";
 
       return {
@@ -355,15 +355,15 @@ export async function updateCurrentSavings(planId: string, amount: number, userI
 
     // Cập nhật roadmap
     await db.planRoadmap.update({
-        where: { planId },
-        data: {
-            milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
-            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
-        }
+      where: { planId },
+      data: {
+        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+      }
     });
 
     console.log(`Current savings updated: ${progress.currentSavings} -> ${finalCurrentSavings} (change: ${amount})`);
-    
+
     return updatedProgress;
   } catch (error) {
     console.error("Error updating current savings:", error);
@@ -385,35 +385,35 @@ export async function saveCustomTask(
 ) {
   try {
     const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
-    
+
     const planPageData = (roadmap.planPageData as any) || {};
-    
+
     if (!planPageData.customTasks) {
       planPageData.customTasks = {};
     }
-    
+
     if (!planPageData.customTasks[milestoneId]) {
       planPageData.customTasks[milestoneId] = [];
     }
-    
+
     const newTask = {
       ...task,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
     };
-    
+
     planPageData.customTasks[milestoneId].push(newTask);
-    
+
     await db.planRoadmap.update({
       where: { planId },
       data: {
         planPageData: planPageData,
       },
     });
-    
+
     console.log("✅ Custom task saved:", newTask);
     return { success: true, task: newTask };
-    
+
   } catch (error) {
     console.error("Error saving custom task:", error);
     throw error;
@@ -424,7 +424,7 @@ export async function getCustomTasks(planId: string, milestoneId: number, userId
   try {
     const { roadmap } = await getOrCreateFullMilestoneData(planId, userId);
     const planPageData = (roadmap.planPageData as any) || {};
-    
+
     return planPageData.customTasks?.[milestoneId] || [];
   } catch (error) {
     console.error("Error getting custom tasks:", error);
@@ -535,12 +535,12 @@ export async function updateCustomTaskStatus(
     });
 
     await db.planRoadmap.update({
-        where: { planId },
-        data: {
-            planPageData,
-            milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
-            currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
-        }
+      where: { planId },
+      data: {
+        planPageData,
+        milestoneGroups: JSON.parse(JSON.stringify(updatedMilestoneGroups)),
+        currentMilestoneData: newCurrentMilestoneData ? JSON.parse(JSON.stringify(newCurrentMilestoneData)) : Prisma.JsonNull,
+      }
     });
 
     // Trả về progress mới nhất sau khi cập nhật
@@ -552,7 +552,7 @@ export async function updateCustomTaskStatus(
     console.error("[FATAL ERROR] in updateCustomTaskStatus:", error);
     throw error;
   }
-} 
+}
 
 // Định nghĩa một kiểu dữ liệu cụ thể hơn cho đối tượng plan mà hàm này trả về
 type PlanWithCacheAndSupport = Plan & {
@@ -580,6 +580,10 @@ export async function getProjectionsWithCache(planId: string, userId: string): P
     },
   });
 
+  if (!plan) {
+    throw new Error("Plan not found");
+  }
+
   const planReport = await db.planReport.findUnique({
     where: { planId },
     select: {
@@ -587,9 +591,26 @@ export async function getProjectionsWithCache(planId: string, userId: string): P
     },
   });
 
-  if (!plan) {
-    throw new Error("Plan not found");
+  let projections = planReport?.projectionCache as unknown as ProjectionRow[];
+
+  // If cache is missing or empty, generate fresh projections
+  if (!projections || !Array.isArray(projections) || projections.length === 0) {
+    console.log(`[getProjectionsWithCache] Cache miss for plan ${planId}. Generating fresh projections.`);
+
+    // Calculate how many years we need to project to cover the confirmed purchase year
+    let maxYearsToProject = 10; // Default
+    if (plan.confirmedPurchaseYear) {
+      const currentYear = new Date().getFullYear();
+      const yearsUntilPurchase = plan.confirmedPurchaseYear - currentYear;
+      // Ensure we project at least 5 years past the purchase year, but within reasonable limits
+      maxYearsToProject = Math.max(10, yearsUntilPurchase + 5);
+    }
+
+    projections = generateProjections(plan as PlanWithDetails, maxYearsToProject);
+
+    // Optionally: We could save this back to cache here, but generateFinalReport handles saving report sections.
+    // For now, we just return the fresh data to ensure the app doesn't crash.
   }
 
-  return { plan: plan as PlanWithCacheAndSupport, projections: planReport?.projectionCache as unknown as ProjectionRow[] };
+  return { plan: plan as PlanWithCacheAndSupport, projections };
 } 
