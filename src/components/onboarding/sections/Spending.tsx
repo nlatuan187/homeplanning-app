@@ -268,7 +268,7 @@ export default function Spending({
 
   if (step === "loading" && !isEditMode) {
       return (
-        <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-slate-950">
+        <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
             <LoadingStep title="Dòng tiền đi ra" message="Tính toán các dòng tiền đi ra" percentage={100}/>
         </div>
       )
@@ -288,7 +288,7 @@ export default function Spending({
 
   // Common layout for form steps
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-[#121212] text-white">
       {step === "form1" && (
         <MultiStepQuestionForm
           key="spending1"
@@ -362,7 +362,7 @@ export default function Spending({
           </div>
           <motion.div // Thêm motion và variants cho cả phần footer
             variants={itemVariants}
-            className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950/80 backdrop-blur-sm"
+            className="fixed bottom-0 left-0 right-0 z-20 bg-[#121212]/80 backdrop-blur-sm"
           >
             <div className="max-w-5xl mx-auto p-4">
               <Button

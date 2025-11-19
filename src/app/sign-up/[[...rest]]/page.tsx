@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SignUp } from "@clerk/nextjs";
 export default function Page() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#121212]">
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <SignUp

@@ -17,7 +17,7 @@ export default function BottomNavbar({ planId }: BottomNavbarProps) {
   ];
 
   return (
-    <nav className="container mx-auto max-w-5xl fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 h-16 z-50">
+    <nav className="container mx-auto max-w-5xl fixed bottom-0 left-0 right-0 bg-[#121212] border-t border-slate-800 h-16 z-50">
       <div className="flex justify-around items-center h-full max-w-lg mx-auto">
         {links.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;

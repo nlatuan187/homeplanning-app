@@ -37,7 +37,7 @@ export default function ContactModal({ isOpen, onClose, onSubmit, currentPhone}:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-slate-950">
+      <DialogContent className="sm:max-w-[425px] bg-[#121212]">
         <DialogHeader className="items-center text-center">
           <Image src="/barrier.png" alt="Contact" width={80} height={80} className="mb-4" />
           <DialogTitle className="text-xl">Trò chuyện cùng chuyên gia</DialogTitle>

@@ -38,7 +38,7 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
   const [dataKey, setDataKey] = useState<DataKey>('pctSalaryGrowth');
 
   if (!plan) {
-    return <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-slate-950">
+    return <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212]">
       <LoadingStep title="Đang tải dữ liệu" message="Đang tải dữ liệu..." percentage={100} />
     </div>;
   }

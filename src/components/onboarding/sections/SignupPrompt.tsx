@@ -43,7 +43,7 @@ export default function SignupPrompt({ planData, onBack }: SignupPromptProps) {
   };
 
   return (
-    <div className="flex flex-col h-full flex-grow text-white">
+    <div className="flex flex-col h-full flex-grow text-white mt-4 p-2">
       <header className="relative flex justify-center items-center pt-2">
         <button onClick={onBack} className="absolute left-0 p-2">
           <ArrowLeftIcon className="w-6 h-6 text-white" />

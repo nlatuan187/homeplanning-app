@@ -195,7 +195,7 @@ export default function MultiStepQuestionForm({
             <Button
               key={option.label}
               onClick={() => handleOptionClick(option.value)}
-              className={`w-full py-6 text-base justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'text-white bg-slate-900 border hover:bg-slate-900 border-cyan-500' : 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white'}`}
+              className={`w-full py-6 font-light text-regular justify-start pl-4 transition-all duration-200 ${currentValue === option.value ? 'text-white bg-[#292929] border hover:bg-[#292929] border-cyan-500' : 'bg-[#292929] text-white border border-slate-600 hover:bg-slate-800 hover:text-white'}`}
             >
               {option.label}
             </Button>
@@ -300,8 +300,8 @@ export default function MultiStepQuestionForm({
       }
 
       {/* Question Content */}
-      <div className="flex-grow flex flex-col pt-5 items-center text-center px-4">
-        <h2 className="text-2xl font-semibold text-white mb-12 max-w-5xl">
+      <div className="flex-grow flex flex-col pt-10 items-start text-start px-4">
+        <h2 className="text-xl font-regular text-white mb-12 max-w-5xl">
           {typeof currentQuestion.text === 'function'
             ? currentQuestion.text(formData)
             : currentQuestion.text}
@@ -310,7 +310,7 @@ export default function MultiStepQuestionForm({
       </div>
 
       {/* Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto px-4 bg-slate-950 border-t border-slate-800 z-10">
+      <div className="fixed bottom-0 left-0 right-0 w-full max-w-5xl mx-auto px-4 bg-[#121212] border-t border-slate-800 z-10">
         {currentQuestion.type === 'number' && (
           <Button
             onClick={handleNext}
@@ -318,7 +318,7 @@ export default function MultiStepQuestionForm({
               'w-full py-3.5 text-base rounded-sm mb-4',
               isLastQuestion && isFinalForm
                 ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]'
-                : 'text-slate-900 bg-white hover:bg-slate-200',
+                : 'text-[#292929] bg-white hover:bg-slate-200',
             )}
             disabled={
               currentValue === undefined || currentValue === null || currentValue === ''
@@ -336,7 +336,7 @@ export default function MultiStepQuestionForm({
               "w-full mb-4 py-3.5 text-base rounded-sm",
               isFinalForm
                 ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                : "bg-white text-slate-900 hover:bg-slate-200",
+                : "bg-white text-[#292929] hover:bg-slate-200",
             )}
             disabled={currentValue === undefined}
           >

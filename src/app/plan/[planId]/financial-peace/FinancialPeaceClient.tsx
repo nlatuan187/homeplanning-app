@@ -52,7 +52,7 @@ export function FinancialPeaceClient({ plan, affordabilityResult }: FinancialPea
 
   if (!confirmedYearData || !loanSummary) {
     return (
-      <main className="min-h-screen bg-slate-950 p-4 text-white">
+      <main className="min-h-screen bg-[#121212] p-4 text-white">
         <div className="container mx-auto max-w-2xl md:max-w-3xl lg:max-w-4xl">
           <header className="flex justify-between items-center py-6">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-slate-300 hover:text-white">

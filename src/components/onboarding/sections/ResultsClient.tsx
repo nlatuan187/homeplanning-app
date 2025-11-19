@@ -23,7 +23,7 @@ export default function ResultsClient({
     firstYearProjection &&
     firstYearProjection.year <= (plan.confirmedPurchaseYear ?? 0);
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#121212] text-white">
       <div className="container mx-auto max-w-5xl">
         <header className="relative flex justify-center items-center py-4 px-2">
           <div className="absolute left-0">
@@ -100,7 +100,7 @@ export default function ResultsClient({
           )}
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 bg-slate-950 p-4">
+      <div className="fixed inset-x-0 bottom-0 bg-[#121212] p-4">
         <div className="container mx-auto max-w-5xl">
           <Button
             className="w-full bg-white text-black hover:bg-slate-200 text-base md:text-lg font-semibold py-3 rounded-sm"

@@ -58,7 +58,7 @@ const currentYear = new Date().getFullYear();
 const quickCheckQuestionsPart1: Question[] = [
   {
     key: "yearsToPurchase",
-    text: "Bạn dự định mua nhà vào thời điểm nào?",
+    text: "Thời gian bạn dự định mua căn nhà mơ ước?",
     type: "options",
     options: [
       { label: `Bây giờ (${currentYear})`, value: currentYear },
@@ -598,12 +598,12 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
             transition: width 0.3s ease; /* Thêm hiệu ứng chuyển động mượt mà */
           }
           .swiper-pagination-bullet-active {
-            background-color: #22d3ee !important; /* Màu xanh cyan cho thanh active */
+            background-color: #00ACB8 !important; /* Màu xanh cyan cho thanh active */
             width: 32px !important; /* Làm cho thanh active dài hơn một chút */
           }
         `}</style>
-        <div className="max-w-5xl mx-auto fixed inset-0 bg-[#121212] z-0" />
-        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col text-white z-10">
+        {/* <div className="max-w-5xl mx-auto fixed inset-0 bg-[#121212] z-0" /> */}
+        <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col text-white z-10 pb-35 max-md:pb-28">
           <Swiper
             modules={[Pagination]}
             pagination={{ clickable: true }}
@@ -613,42 +613,50 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
             {introSlides.map((slide, index) => (
               <SwiperSlide
                 key={index}
-                className="flex flex-col"
+                className="flex flex-col h-full" // Đảm bảo slide chiếm toàn bộ chiều cao
               >
-                 <div className="flex-1 flex flex-col justify-between">
-                   <div className="flex items-center justify-center pt-8">
-                     <Image
-                       src={slide.image}
-                       alt={slide.title}
-                       width={250}
-                       height={250}
-                     />
-                   </div>
-                   <div className="flex flex-col items-start justify-start p-4 pb-20">
-                     <h1 className="text-2xl font-bold mb-4">
-                       {slide.title}
-                     </h1>
-                     <p className="text-base text-white/80 max-w-sm">
-                       {slide.description}
-                     </p>
-                   </div>
+                <div className="flex flex-col h-full justify-between">
+                  {/* Phần trên: Hình ảnh, chiếm không gian trống và căn giữa */}
+                  <div className="flex-grow flex items-center justify-center">
+                    <Image
+                      src={slide.image}
+                      alt={slide.title}
+                      width={250}
+                      height={250}
+                      className="object-contain"
+                    />
                   </div>
+
+                  {/* Phần dưới: Nhóm văn bản và các nút bấm lại với nhau */}
+                  <div className="flex-shrink-0 px-2"> {/* Giảm padding bottom ở đây */}
+                    {/* Khối văn bản */}
+                    <div className="mb-8"> {/* Thêm margin bottom để tạo khoảng cách với nút */}
+                      <h1 className="text-2xl font-bold mb-4">
+                        {slide.title}
+                      </h1>
+                      <p className="text-sm text-white/80 pr-6">
+                        {slide.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </SwiperSlide>
             ))}
           </Swiper>
-          <div className="fixed bottom-0 left-0 right-0 z-20">
-            <div className="max-w-5xl mx-auto mb-13 max-md:mb-8 px-4">
+
+          <div className="fixed bottom-0 left-0 right-0">
+            <div className="max-w-5xl mx-auto mb-5 max-md:mb-3 px-2">
               <div className="space-y-3">
                 <Button
                   onClick={handleStart}
-                  className="w-full bg-[#22d3ee] text-slate-900 hover:bg-[#22d3ee]/80 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                  className="w-full bg-[#00ACB8] text-white hover:bg-[#22d3ee]/80 py-6 max-md:py-5 text-md font-semibold rounded-lg transition-transform transform active:scale-95"
                 >
                   Bắt đầu ngay
                 </Button>
                 {!isSignedIn && (
                   <Button
                     onClick={() => router.push("/sign-in")}
-                    className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                    className="w-full bg-white text-slate-900 hover:bg-slate-200 py-6 max-md:py-5 text-md font-semibold rounded-lg transition-transform transform active:scale-95"
                   >
                     Đăng nhập (Nếu đã có tài khoản)
                   </Button>
@@ -663,7 +671,7 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
 
   if (step === "loading" && !isEditMode) {
     return (
-      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+      <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-[#121212] text-white">
         <LoadingOverlay messages={["Đang kiểm tra khả năng mua nhà..."]} />
       </div>
     );
@@ -711,146 +719,157 @@ export default function QuickCheck({ onCompleted, initialData = {}, isEditMode =
   // 3. CẬP NHẬT GIAO DIỆN PHẦN ANALYSIS
   // Xóa bỏ hoàn toàn logic cũ của `analysis` và thay bằng logic dưới đây
   if (step === "analysis") {
-    // Bây giờ, analysisSteps đã được tính toán ở trên
-    if (!analysisSteps || analysisSteps.length === 0) {
-      // Nếu không có nội dung, chuyển thẳng tới form 2
-      setStep("form2");
-      return null;
-    }
+      const { targetLocation, targetHouseType } = formData;
+      const content = getAnalysisContent(
+        targetLocation as string,
+        targetHouseType as string,
+      );
+      if (!content) return null;
+      // Bây giờ, analysisSteps đã được tính toán ở trên
+      if (!analysisSteps || analysisSteps.length === 0) {
+        // Nếu không có nội dung, chuyển thẳng tới form 2
+        setStep("form2");
+        return null;
+      }
 
-    const currentStepContent = analysisSteps[analysisStepIndex];
-    const isLastStep = analysisStepIndex === analysisSteps.length - 1;
+      const currentStepContent = analysisSteps[analysisStepIndex];
+      const isLastStep = analysisStepIndex === analysisSteps.length - 1;
 
-    // 3. Định nghĩa các variants cho animation
-    const slideVariants = {
-      enter: (direction: number) => ({
-        x: direction > 0 ? "100%" : "-100%",
-        opacity: 0,
-      }),
-      center: {
-        zIndex: 1,
-        x: 0,
-        opacity: 1,
-      },
-      exit: (direction: number) => ({
-        zIndex: 0,
-        x: direction < 0 ? "100%" : "-100%",
-        opacity: 0,
-      }),
-    };
+      // 3. Định nghĩa các variants cho animation
+      const slideVariants = {
+        enter: (direction: number) => ({
+          x: direction > 0 ? "100%" : "-100%",
+          opacity: 0,
+        }),
+        center: {
+          zIndex: 1,
+          x: 0,
+          opacity: 1,
+        },
+        exit: (direction: number) => ({
+          zIndex: 0,
+          x: direction < 0 ? "100%" : "-100%",
+          opacity: 0,
+        }),
+      };
 
-    return (
-      // 4. Gắn ref vào container chính
-      <div
-        ref={analysisContainerRef}
-        className="flex flex-col h-full flex-grow overflow-hidden" // Thêm overflow-hidden
-      >
-        <div className="pb-3">
-          <div className="relative flex items-center h-10">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2">
-              <Button variant="ghost" size="icon" onClick={handleAnalysisBack}>
-                <ArrowLeftIcon className="h-12 w-12" />
-              </Button>
-            </div>
-            {/* Thêm whitespace-nowrap để ngăn tiêu đề xuống dòng */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg whitespace-nowrap">
-              Phân tích thị trường
-            </div>
-          </div>
-        </div>
-        <div className="relative flex-grow flex flex-col items-center text-center">
-          {/* 6. Bọc nội dung động bằng AnimatePresence và motion.div */}
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={analysisStepIndex} // Key rất quan trọng để AnimatePresence hoạt động
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
-              }}
-              className="absolute w-full h-full flex flex-col items-center" // Thêm padding top
-            >
-
-              {/* 2. Render có điều kiện dựa trên dữ liệu */}
-              {currentStepContent.animation ? (
-                // Giao diện cho các trang chi tiết (có animation)
-                // 1. Sửa typo và thêm flex-grow để cho phép cuộn
-                // 2. Dọn dẹp các class con để code sạch hơn
-                <div className="w-full max-w-5xl pl-3 flex-grow overflow-y-auto pb-12">
-                  <h2 className="text-xl max-md:text-base text-left font-bold text-cyan-400 mb-4">
-                    {currentStepContent.title}
-                  </h2>
-                  <p className="text-white/80 text-left mb-6 max-md:text-sm">
-                    {currentStepContent.description}
-                  </p>
-                  <LottieAnimation
-                    animationData={currentStepContent.animation}
-                    style={{ width: "80%", maxWidth: 350, height: "auto" }}
-                    className="mb-6 mx-auto" // Tự động căn giữa animation
-                    loop={false}
-                  />
-                </div>
-              ) : (
-                // Giao diện cho trang giới thiệu đầu tiên (có ảnh tĩnh)
-                <>
-                  <Image
-                    src={currentStepContent.image}
-                    alt="Phân tích lựa chọn"
-                    width={500}
-                    height={500}
-                    className="w-full max-w-lg object-contain mb-8"
-                  />
-                  {/* Render lại theo cấu trúc dữ liệu mới */}
-                  <p className="text-lg text-white/80 text-center">
-                    {currentStepContent.summaryParts[0].text}
-                    <br />
-                    {currentStepContent.summaryParts.slice(1).map((part: { text: string; highlight: boolean }, index: number) => (
-                      <span
-                        key={index}
-                        className={part.highlight ? "text-cyan-400" : ""}
-                      >
-                        {part.text}
-                      </span>
-                    ))}
-                  </p>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        {/* Nút điều hướng không đổi */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-950">
-          <div className="max-w-5xl mx-auto p-4">
-            {isLastStep ? (
-              <Button
-                onClick={handleAnalysisNext}
-                className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
-              >
-                Tiếp tục
-              </Button>
-            ) : (
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleAnalysisNext}
-                  size="icon"
-                  className="bg-cyan-500 text-white hover:bg-cyan-600 rounded-full h-14 w-14"
-                >
-                  <ArrowRightIcon className="h-9 w-9" />
+      return (
+        // 4. Gắn ref vào container chính
+        <div
+          ref={analysisContainerRef}
+          className="flex flex-col h-full flex-grow overflow-hidden mt-2" // Thêm overflow-hidden
+        >
+          <div className="pb-3">
+            <div className="relative flex items-center h-10">
+              <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                <Button variant="ghost" size="icon" onClick={handleAnalysisBack}>
+                  <ArrowLeftIcon className="h-12 w-12" />
                 </Button>
               </div>
-            )}
+              {/* Thêm whitespace-nowrap để ngăn tiêu đề xuống dòng */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-white text-lg whitespace-nowrap">
+                Phân tích thị trường
+              </div>
+            </div>
+          </div>
+          <div className="relative flex-grow flex flex-col items-center text-center">
+            {/* 6. Bọc nội dung động bằng AnimatePresence và motion.div */}
+            <AnimatePresence initial={false} custom={direction}>
+              <motion.div
+                key={analysisStepIndex} // Key rất quan trọng để AnimatePresence hoạt động
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 },
+                }}
+                className="absolute w-full h-full flex flex-col items-center" // Thêm padding top
+              >
+
+                {/* 2. Render có điều kiện dựa trên dữ liệu */}
+                {currentStepContent.animation ? (
+                  // Giao diện cho các trang chi tiết (có animation)
+                  // 1. Sửa typo và thêm flex-grow để cho phép cuộn
+                  // 2. Dọn dẹp các class con để code sạch hơn
+                  <div className="w-full max-w-5xl pl-3 flex-grow overflow-y-auto pb-12">
+                    <h2 className="text-xl max-md:text-base text-left font-bold text-cyan-400 mb-4">
+                      {currentStepContent.title}
+                    </h2>
+                    <p className="text-white/80 text-left mb-4 max-md:text-sm pr-2">
+                      {currentStepContent.description}
+                    </p>
+                    <LottieAnimation
+                      animationData={currentStepContent.animation}
+                      style={{ width: "80%", maxWidth: 350, height: "auto" }}
+                      className="mb-6 mx-auto" // Tự động căn giữa animation
+                      loop={false}
+                    />
+                  </div>
+                ) : (
+                  // Giao diện cho trang giới thiệu đầu tiên (có ảnh tĩnh)
+                  <>
+                      <p className="text-base font-bold px-12 pb-4">
+                        Bạn muốn mua 
+                        <br/>
+                        {targetHouseType} tại {targetLocation}
+                      </p>
+                    <Image
+                      src={currentStepContent.image}
+                      alt="Phân tích lựa chọn"
+                      width={500}
+                      height={500}
+                      className="w-full max-w-lg object-contain mb-8 px-2"
+                    />
+                    {/* Render lại theo cấu trúc dữ liệu mới */}
+                    <p className="text-lg text-white/80 text-center">
+                      {currentStepContent.summaryParts[0].text}
+                      <br />
+                      {currentStepContent.summaryParts.slice(1).map((part: { text: string; highlight: boolean }, index: number) => (
+                        <span
+                          key={index}
+                          className={part.highlight ? "text-cyan-400" : ""}
+                        >
+                          {part.text}
+                        </span>
+                      ))}
+                    </p>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {/* Nút điều hướng không đổi */}
+          <div className="fixed bottom-0 left-0 right-0 z-20 bg-[#121212]">
+            <div className="max-w-5xl mx-auto p-4">
+              {isLastStep ? (
+                <Button
+                  onClick={handleAnalysisNext}
+                  className="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 text-lg font-semibold rounded-lg transition-transform transform active:scale-95"
+                >
+                  Tiếp tục
+                </Button>
+              ) : (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleAnalysisNext}
+                    size="icon"
+                    className="bg-cyan-500 text-white hover:bg-cyan-600 rounded-full h-14 w-14"
+                  >
+                    <ArrowRightIcon className="h-9 w-9" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    );
+      );
   }
 
   return (
-    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-slate-950 text-white">
+    <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col py-4 z-10 bg-[#121212] text-white">
       {step === "form1" && (
         <MultiStepQuestionForm
           key="form1"
