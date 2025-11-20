@@ -8,7 +8,7 @@ import { planSchema } from "@/lib/validators/plan";
 
 /**
  * @swagger
- * /plans:
+ * /api/plans:
  *   post:
  *     summary: Create a new comprehensive plan
  *     description: |
@@ -60,16 +60,16 @@ export async function POST(req: NextRequest) {
     // Chuẩn hóa dữ liệu trước khi gọi service
     const yearsToPurchase = absoluteYear - new Date().getFullYear();
     if (yearsToPurchase < 0) {
-        return NextResponse.json({ error: "Năm mục tiêu phải là năm hiện tại hoặc trong tương lai" }, { status: 400 });
+      return NextResponse.json({ error: "Năm mục tiêu phải là năm hiện tại hoặc trong tương lai" }, { status: 400 });
     }
     const targetHousePriceN0 = priceInBillion * 1000;
 
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
     const normalizedData = {
-        ...restData,
-        yearsToPurchase,
-        targetHousePriceN0,
+      ...restData,
+      yearsToPurchase,
+      targetHousePriceN0,
     };
 
     // Gọi service để xử lý logic - service này sẽ cần được nâng cấp
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * @swagger
- * /plans:
+ * /api/plans:
  *   get:
  *     summary: Get all plans for the current user
  *     description: Retrieves a list of all financial plans associated with the currently authenticated user.

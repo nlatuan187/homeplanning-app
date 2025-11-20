@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
 /**
  * @swagger
- * /auth/mobile:
+ * /api/auth/mobile:
  *   get:
  *     summary: Get current user information
  *     description: |

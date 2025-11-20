@@ -3,7 +3,7 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 
 /**
  * @swagger
- * /auth/refresh:
+ * /api/auth/refresh:
  *   post:
  *     summary: Refresh JWT token for mobile app
  *     description: |
@@ -53,8 +53,8 @@ export async function POST(req: Request) {
     const user = await currentUser();
 
     if (!userId || !user) {
-      return NextResponse.json({ 
-        error: 'Token refresh failed' 
+      return NextResponse.json({
+        error: 'Token refresh failed'
       }, { status: 401 });
     }
 
@@ -71,8 +71,8 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('[TOKEN_REFRESH_ERROR]', error);
-    return NextResponse.json({ 
-      error: 'Token refresh failed' 
+    return NextResponse.json({
+      error: 'Token refresh failed'
     }, { status: 500 });
   }
 }

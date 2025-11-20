@@ -10,7 +10,7 @@ const registerSchema = z.object({
 
 /**
  * @swagger
- * /notifications/register-device:
+ * /api/notifications/register-device:
  *   post:
  *     summary: Register a device for push notifications
  *     tags: [Notifications]

@@ -95,8 +95,10 @@ export function generateProjections(planData: Partial<PlanWithDetails>, maxYears
 
   // --- PHẦN KHỞI TẠO ---
   const familySupport = plan.familySupport;
-  const currentYear = plan.createdAt.getFullYear();
-  const currentMonth = plan.createdAt.getMonth();
+  // FIX: Always use current year, not plan.createdAt
+  // This ensures projections are always calculated from NOW, regardless of when plan was created
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
   const maxYears = Math.min(maxYearsToProject || (plan.yearsToPurchase + 5), 10);
   const projectionData: ProjectionRow[] = [];
 

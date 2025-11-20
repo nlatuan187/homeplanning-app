@@ -45,7 +45,7 @@ export async function GET(
 }
 /**
  * @swagger
- * /plans/{planId}:
+ * /api/plans/{planId}:
  *   put:
  *     summary: Update a plan
  *     description: Updates one or more properties of a plan and its related sections like family support.
@@ -104,38 +104,38 @@ export async function PUT(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-     const body = await req.json();
-     const validation = planSchema.safeParse(body);
-     if (!validation.success) {
-         return NextResponse.json({ errors: validation.error.format() }, { status: 400 });
-     }
+    const body = await req.json();
+    const validation = planSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ errors: validation.error.format() }, { status: 400 });
+    }
     const { familySupport, ...planData } = validation.data;
 
-   const updatedPlan = await db.plan.update({
-     where: { id: planId, userId }, // Ensure user owns the plan
-     data: {
-       ...planData,
-       ...(familySupport && {
-         familySupport: {
-           update: familySupport,
-         },
-       }),
-     } as any,
-     include: {
-       familySupport: true, // Vẫn include để trả về dữ liệu đầy đủ
-     },
-   });
+    const updatedPlan = await db.plan.update({
+      where: { id: planId, userId }, // Ensure user owns the plan
+      data: {
+        ...planData,
+        ...(familySupport && {
+          familySupport: {
+            update: familySupport,
+          },
+        }),
+      } as any,
+      include: {
+        familySupport: true, // Vẫn include để trả về dữ liệu đầy đủ
+      },
+    });
 
-     return NextResponse.json(updatedPlan);
-    } catch (error) {
+    return NextResponse.json(updatedPlan);
+  } catch (error) {
     logger.error("[PLAN_PUT]", { error: String(error) });
-      return new NextResponse("Internal Error", { status: 500 });
-    }
+    return new NextResponse("Internal Error", { status: 500 });
   }
+}
 
 /**
  * @swagger
- * /plans/{planId}:
+ * /api/plans/{planId}:
  *   delete:
  *     summary: Delete a plan
  *     description: Permanently deletes a specific financial plan. This action cannot be undone.

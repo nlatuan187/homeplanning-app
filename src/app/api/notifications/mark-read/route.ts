@@ -9,7 +9,7 @@ const markReadSchema = z.object({
 
 /**
  * @swagger
- * /notifications/mark-read:
+ * /api/notifications/mark-read:
  *   post:
  *     summary: Mark notifications as read
  *     tags: [Notifications]

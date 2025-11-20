@@ -14,7 +14,7 @@ const signUpSchema = z.object({
 
 /**
  * @swagger
- * /auth/sign-up:
+ * /api/auth/sign-up:
  *   post:
  *     summary: Register a new user manually
  *     description: Creates a new user in the Clerk system using email and password. This endpoint is public.
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     if (error.errors && error.errors[0].code === 'form_identifier_exists') {
-        return NextResponse.json({ error: "Email này đã được sử dụng." }, { status: 400 });
+      return NextResponse.json({ error: "Email này đã được sử dụng." }, { status: 400 });
     }
 
     console.error('[API_SIGN_UP_ERROR]', JSON.stringify(error, null, 2));
