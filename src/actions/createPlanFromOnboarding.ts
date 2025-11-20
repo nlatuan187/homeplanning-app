@@ -4,10 +4,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { OnboardingPlanState, ProjectionResult } from "@/components/onboarding/types";
 import { calculateOnboardingProjection } from "./calculateOnboardingProjection";
-import { computeOnboardingOutcome } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { Prisma } from "@prisma/client";
-import { runProjectionWithEngine } from "./projectionHelpers";
 import { createOnboardingProgress, getNextOnboardingStep } from "./onboardingActions";
 
 export type QuickCheckResultPayload = ProjectionResult;
@@ -43,6 +41,31 @@ export async function createPlanFromOnboarding(
   const userId = clerkUser.id;
   const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
+  // --- SOLUTION for RACE CONDITION ---
+  // Check if the user exists in our database. If not, create them.
+  // This handles the case where this action runs before the Clerk webhook has synced the user.
+  try {
+      const dbUser = await db.user.findUnique({ where: { id: userId } });
+      if (!dbUser) {
+          logger.info(`[createPlanFromOnboarding] User ${userId} not found in DB. Creating now...`);
+          await db.user.create({
+              data: {
+                  id: userId,
+                  email: userEmail || "", // Ensure email is not undefined
+              },
+          });
+          logger.info(`[createPlanFromOnboarding] User ${userId} created successfully.`);
+      }
+  } catch (error) {
+      logger.error("[createPlanFromOnboarding] Failed to check or create user in DB", {
+          error: String(error),
+          stack: (error as Error)?.stack,
+          userId: userId,
+      });
+      return { success: false, error: "Failed to sync user account. Please try again." };
+  }
+  // --- END OF SOLUTION ---
+
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
     console.log("[createPlanFromOnboarding] Found existing plan:", existingPlan.id);
@@ -62,23 +85,10 @@ export async function createPlanFromOnboarding(
         monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
       } as const;
 
-      const updated = await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+      await db.plan.update({ where: { id: existingPlan.id }, data: updates });
 
+      // No need to run heavy projection here. It will be calculated when user visits the report page.
       await createOnboardingProgress(existingPlan.id);
-      try {
-        const outcome = await computeOnboardingOutcome({ ...(updated as any), createdAt: updated.createdAt } as any);
-        const isAffordable = outcome.purchaseProjection?.isAffordable;
-
-        await db.plan.update({
-          where: { id: updated.id },
-          data: {
-            firstViableYear: outcome.purchaseProjection.year,
-            affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
-          },
-        });
-      } catch (e) {
-        logger.warn("Projection engine failed while updating existing plan from onboarding", { error: String(e) });
-      }
 
       // Determine the next step based on onboarding progress
       const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
@@ -118,6 +128,8 @@ export async function createPlanFromOnboarding(
       initialSavings: onboardingData.initialSavings || 0,
       userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
       monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+      // Use the lightweight projection result for the initial state
+      firstViableYear: projectionResult.earliestAffordableYear,
       // Spending section defaults
       monthlyNonHousingDebt: 0,
       currentAnnualInsurancePremium: 0,
@@ -128,6 +140,7 @@ export async function createPlanFromOnboarding(
         ? "ScenarioA"
         : "ScenarioB",
       confirmedPurchaseYear: onboardingData.yearsToPurchase,
+      // Assumption defaults
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
       pctExpenseGrowth: 4.0,
@@ -137,56 +150,43 @@ export async function createPlanFromOnboarding(
       paymentMethod: "BankLoan",
     };
 
-    let newPlan = await db.plan.create({
-      data: {
-        ...planPayload,
-        user: { connect: { id: userId } },
-      },
-    });
-
-    await createOnboardingProgress(newPlan.id);
-
-    await db.planFamilySupport.create({
-      data: {
-        planId: newPlan.id,
-        hasFamilySupport: null,
-        familySupportType: null,
-        familySupportAmount: 0,
-        familyGiftTiming: null,
-        familyLoanRepaymentType: null,
-        familyLoanInterestRate: 0,
-        familyLoanTermYears: 0,
-        coApplicantMonthlyIncome: 0,
-        monthlyOtherIncome: 0,
-      },
-    });
-
-    const projectionCache = await runProjectionWithEngine(newPlan.id);
-    await db.planReport.create({
-      data: {
-        planId: newPlan.id,
-        projectionCache: projectionCache,
-      },
-    });
-
-    // Run the official projection engine and update plan with true earliest year
-    try {
-      const outcome = await computeOnboardingOutcome({
-        ...(newPlan as any),
-        createdAt: newPlan.createdAt,
-      } as any);
-
-      const isAffordable = outcome.purchaseProjection?.isAffordable ?? false;
-      newPlan = await db.plan.update({
-        where: { id: newPlan.id },
+    // --- OPTIMIZATION: Use a single transaction for all database writes ---
+    const newPlan = await db.$transaction(async (tx) => {
+      const plan = await tx.plan.create({
         data: {
-          firstViableYear: outcome.purchaseProjection.year,
-          affordabilityOutcome: isAffordable ? "ScenarioB" : "ScenarioA",
+          ...planPayload,
+          user: { connect: { id: userId } },
         },
       });
-    } catch (e) {
-      logger.warn("Projection engine failed during createPlanFromOnboarding; falling back to lightweight result", { error: String(e) });
-    }
+
+      // Re-use the transaction client `tx` for subsequent writes
+      await tx.onboardingProgress.create({
+        data: {
+          planId: plan.id,
+          quickCheckState: "COMPLETED",
+          familySupportState: "NOT_STARTED",
+          spendingState: "NOT_STARTED",
+          assumptionState: "NOT_STARTED",
+        }
+      });
+
+      await tx.planFamilySupport.create({
+        data: {
+          planId: plan.id,
+          hasFamilySupport: null,
+          familySupportType: null,
+          familySupportAmount: 0,
+          familyGiftTiming: null,
+          familyLoanRepaymentType: null,
+          familyLoanInterestRate: 0,
+          familyLoanTermYears: 0,
+          coApplicantMonthlyIncome: 0,
+          monthlyOtherIncome: 0,
+        },
+      });
+
+      return plan;
+    });
 
     return { success: true, planId: newPlan.id };
   } catch (error) {
