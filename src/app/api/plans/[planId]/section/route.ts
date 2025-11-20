@@ -2,25 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import logger from "@/lib/logger";
 import { z } from "zod";
-import { 
-    updateFamilySupport, updateFamilySupportSchema,
+import {
     updateSpending, updateSpendingSchema,
-    updateAssumptions, updateAssumptionsSchema, // Thêm Assumptions
+    updateAssumptions, updateAssumptionsSchema,
     invalidateReportCache
 } from "@/lib/services/planService";
+import { runProjectionWithEngine } from "@/actions/projectionHelpers";
 
 // Schema để validate phần thân của request
 const bodySchema = z.object({
-    section: z.enum(["familysupport", "spending", "assumptions"]), // Thêm các section khác vào đây
+    section: z.enum(["spending", "assumptions"]), // Removed familySupport - now merged into spending
     data: z.any(),
 });
 
 /**
  * @swagger
- * /plans/{planId}/section:
+ * /api/plans/{planId}/section:
  *   patch:
  *     summary: Update a specific section of a plan
- *     description: A unified endpoint to update different sections of a financial plan like family support, spending, etc.
+ *     description: A unified endpoint to update different sections of a financial plan. Family support fields are now included in the spending section.
  *     tags: [Plans]
  *     security:
  *       - BearerAuth: []
@@ -39,14 +39,18 @@ const bodySchema = z.object({
  *             properties:
  *               section:
  *                 type: string
- *                 enum: [familySupport, spending]
+ *                 enum: [spending, assumptions]
  *                 description: The name of the section to update.
  *               data:
  *                 type: object
  *                 description: "The payload containing the fields to update. The structure depends on the 'section' value."
  *             example:
- *               section: "familySupport"
- *               data: { "hasFamilySupport": true, "familySupportAmount": 1000 }
+ *               section: "spending"
+ *               data: { 
+ *                 "monthlyNonHousingDebt": 500,
+ *                 "hasFamilySupport": true, 
+ *                 "familySupportAmount": 1000 
+ *               }
  *     responses:
  *       '200': { description: "Section updated successfully." }
  *       '400': { description: "Bad Request - Invalid input data or unknown section." }
@@ -59,34 +63,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
 
         const { planId } = params;
         const body = await bodySchema.parse(await req.json());
-        
+
         let result;
 
         switch (body.section) {
-            case "familysupport": {
-                const validatedData = updateFamilySupportSchema.parse(body.data);
-                result = await updateFamilySupport(planId, userId, validatedData);
-                await invalidateReportCache(planId); // Dữ liệu này ảnh hưởng đến tính toán
-                break;
-            }
             case "spending": {
                 const validatedData = updateSpendingSchema.parse(body.data);
                 result = await updateSpending(planId, userId, validatedData);
-                await invalidateReportCache(planId); // Dữ liệu này cũng ảnh hưởng
+                await invalidateReportCache(planId);
                 break;
             }
             case "assumptions": {
                 const validatedData = updateAssumptionsSchema.parse(body.data);
                 result = await updateAssumptions(planId, userId, validatedData);
-                await invalidateReportCache(planId); // Dữ liệu này cũng ảnh hưởng
+                await invalidateReportCache(planId);
                 break;
             }
             default:
                 throw new Error(`Unknown section: ${body.section}`);
         }
 
+        // Run projection to get the latest results
+        const projection = await runProjectionWithEngine(planId);
+
         logger.info(`Updated section '${body.section}' for plan`, { planId, userId });
-        return NextResponse.json(result);
+
+        return NextResponse.json({
+            success: true,
+            data: result,
+            projection: projection
+        });
 
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -96,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
             if (error.message.includes("Plan not found")) {
                 return NextResponse.json({ error: error.message }, { status: 404 });
             }
-             if (error.message.includes("Unknown section")) {
+            if (error.message.includes("Unknown section")) {
                 return NextResponse.json({ error: error.message }, { status: 400 });
             }
         }
