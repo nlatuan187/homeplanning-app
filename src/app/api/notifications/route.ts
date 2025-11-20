@@ -5,7 +5,7 @@ import { createNotification } from '@/lib/services/notificationService';
 
 /**
  * @swagger
- * /notifications:
+ * /api/notifications:
  *   get:
  *     summary: Get user's notifications
  *     tags: [Notifications]

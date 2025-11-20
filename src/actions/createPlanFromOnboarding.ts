@@ -40,26 +40,63 @@ export async function createPlanFromOnboarding(
   const userId = clerkUser.id;
   const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
-  // --- SOLUTION for RACE CONDITION ---
+  // --- SOLUTION for RACE CONDITION & LEGACY USERS ---
   try {
-    const dbUser = await db.user.findUnique({ where: { id: userId } });
-    if (!dbUser) {
-        logger.info(`[createPlanFromOnboarding] User ${userId} not found in DB. Creating now...`);
-        await db.user.create({
-            data: {
-                id: userId,
-                email: userEmail || "", // Ensure email is not undefined
-            },
+    // 1. Try to find user by Clerk ID
+    let dbUser = await db.user.findUnique({ where: { id: userId } });
+
+    if (dbUser) {
+      // User exists with this ID, update email if changed
+      if (dbUser.email !== userEmail && userEmail) {
+        await db.user.update({
+          where: { id: userId },
+          data: { email: userEmail },
         });
-        logger.info(`[createPlanFromOnboarding] User ${userId} created successfully.`);
+        logger.info(`[createPlanFromOnboarding] Updated email for user ${userId}`);
+      }
+    } else {
+      // 2. User not found by ID, check if exists by email (legacy user case)
+      if (userEmail) {
+        const userByEmail = await db.user.findUnique({
+          where: { email: userEmail },
+        });
+
+        if (userByEmail) {
+          // Legacy user found! Update their ID to new Clerk ID
+          await db.user.update({
+            where: { email: userEmail },
+            data: { id: userId },
+          });
+          logger.info(`[createPlanFromOnboarding] Migrated legacy user ${userEmail} to Clerk ID ${userId}`);
+        } else {
+          // 3. No user found at all, create new
+          await db.user.create({
+            data: {
+              id: userId,
+              email: userEmail,
+            },
+          });
+          logger.info(`[createPlanFromOnboarding] Created new user ${userId}`);
+        }
+      } else {
+        // No email provided, just create with ID
+        await db.user.create({
+          data: {
+            id: userId,
+            email: "",
+          },
+        });
+        logger.info(`[createPlanFromOnboarding] Created new user ${userId} without email`);
+      }
     }
-  } catch (error) { 
-      logger.error("[createPlanFromOnboarding] Failed to check or create user in DB", {
-          error: String(error),
-          stack: (error as Error)?.stack,
-          userId: userId,
-      });
-      return { success: false, error: "Failed to sync user account. Please try again." };
+  } catch (error) {
+    logger.error("[createPlanFromOnboarding] Failed to check or create user in DB", {
+      error: String(error),
+      stack: (error as Error)?.stack,
+      userId: userId,
+      userEmail: userEmail,
+    });
+    return { success: false, error: "Failed to sync user account. Please try again." };
   }
   // --- END OF SOLUTION ---
 
@@ -70,7 +107,7 @@ export async function createPlanFromOnboarding(
       // If user already has a plan, update its core fields from onboarding
       const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
       console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
-      
+
       // --- OPTIMIZATION: Use lightweight projection for updates ---
       const dataForProjection = { ...onboardingData, yearsToPurchase };
       const projectionResult = await calculateOnboardingProjection(dataForProjection);
@@ -139,8 +176,8 @@ export async function createPlanFromOnboarding(
       yearToHaveChild: null,
       monthlyChildExpenses: 0,
       affordabilityOutcome: projectionResult.isAffordable
-        ? "ScenarioA"
-        : "ScenarioB",
+        ? "ScenarioB"
+        : "ScenarioA",
       confirmedPurchaseYear: onboardingData.yearsToPurchase,
       pctSalaryGrowth: 7.0,
       pctHouseGrowth: 10.0,
@@ -166,13 +203,13 @@ export async function createPlanFromOnboarding(
       });
 
       await tx.onboardingProgress.create({
-          data: {
-              planId: plan.id,
-              quickCheckState: "COMPLETED",
-              familySupportState: "NOT_STARTED",
-              spendingState: "NOT_STARTED",
-              assumptionState: "NOT_STARTED",
-          }
+        data: {
+          planId: plan.id,
+          quickCheckState: "COMPLETED",
+          familySupportState: "NOT_STARTED",
+          spendingState: "NOT_STARTED",
+          assumptionState: "NOT_STARTED",
+        }
       });
 
       await tx.planFamilySupport.create({

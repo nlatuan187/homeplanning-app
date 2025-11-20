@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 
 /**
  * @swagger
- * /auth/logout:
+ * /api/auth/logout:
  *   post:
  *     summary: Logout user and invalidate session
  *     description: |
@@ -42,8 +42,8 @@ export async function POST(req: Request) {
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json({ 
-        error: 'No active session' 
+      return NextResponse.json({
+        error: 'No active session'
       }, { status: 401 });
     }
 
@@ -56,8 +56,8 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('[LOGOUT_ERROR]', error);
-    return NextResponse.json({ 
-      error: 'Logout failed' 
+    return NextResponse.json({
+      error: 'Logout failed'
     }, { status: 500 });
   }
 }

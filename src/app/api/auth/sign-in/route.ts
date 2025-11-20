@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * @swagger
- * /auth/sign-in:
+ * /api/auth/sign-in:
  *   post:
  *     summary: Sign in a user manually
  *     description: Signs in a user in the Clerk system using email and password. This endpoint is public.
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
-    
+
     // 1. Tìm người dùng bằng email
     const userList = await (await clerkClient()).users.getUserList({ emailAddress: [email] });
 
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     // Log chi tiết phản hồi từ Clerk để tìm nguyên nhân
     console.log('Clerk verification response:', verification);
-    
+
     if (!verification.verified) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     // 3. Create a session and token for the user
     const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
     const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
-        
+
     return NextResponse.json({ sessionToken, userId: user.id });
 
   } catch (error) {

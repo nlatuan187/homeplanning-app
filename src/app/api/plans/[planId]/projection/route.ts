@@ -6,7 +6,7 @@ import { runProjectionWithEngine } from '@/actions/projectionHelpers';
 
 /**
  * @swagger
- * /plans/{planId}/projection:
+ * /api/plans/{planId}/projection:
  *   post:
  *     summary: Recalculate financial projection
  *     description: |
@@ -63,7 +63,7 @@ export async function POST(
     const projectionCache = await runProjectionWithEngine(planId);
 
     logger.info(`[PROJECTION_POST] Successfully generated projection for planId: ${planId}`, { userId });
-    
+
     // Trả về kết quả tính toán với status 200 OK (vì không tạo mới tài nguyên)
     return NextResponse.json(projectionCache, { status: 200 });
 

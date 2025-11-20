@@ -85,7 +85,7 @@ export async function updateSpendingAndRecalculate(
       });
     } else {
       result = existingResult;
-      if (!result.isAffordable) {
+      if (plan.confirmedPurchaseYear && plan.confirmedPurchaseYear < result.earliestPurchaseYear) {
         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
         caseNumber = 2;
       } else {

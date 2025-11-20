@@ -27,30 +27,48 @@ export async function updateAndRecalculateFamilySupport(
     if (!plan) return { success: false, error: "Plan not found." };
 
     const planReport = await db.planReport.findUnique({ where: { planId } });
-    const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
+    const existingResult = planReport?.projectionCache as unknown as {
+      earliestPurchaseYear: number;
+      message: string;
+      isAffordable: boolean;
+    };
 
     // Fetch familySupport, it might be null if it's the first time
     const familySupport = await db.planFamilySupport.findUnique({ where: { planId } });
 
     // TẠO DỮ LIỆU HIỆN TẠI ĐỂ SO SÁNH
+    // FIX: Map directly to DB fields to match formData keys
     const currentData = {
       coApplicantMonthlyIncome: familySupport?.coApplicantMonthlyIncome,
       monthlyOtherIncome: familySupport?.monthlyOtherIncome,
       hasFamilySupport: familySupport?.hasFamilySupport ?? false,
       familySupportType: familySupport?.familySupportType,
-      familySupportLoanAmount: familySupport?.familySupportType === 'LOAN' ? familySupport?.familySupportAmount : 0,
-      familySupportGiftTiming: familySupport?.familyGiftTiming,
-      familySupportLoanInterest: familySupport?.familyLoanInterestRate,
-      familySupportLoanRepayment: familySupport?.familyLoanRepaymentType,
-      familySupportLoanTerm: familySupport?.familyLoanTermYears,
+      familySupportAmount: familySupport?.familySupportAmount,
+      familyGiftTiming: familySupport?.familyGiftTiming,
+      familyLoanInterestRate: familySupport?.familyLoanInterestRate,
+      familyLoanRepaymentType: familySupport?.familyLoanRepaymentType,
+      familyLoanTermYears: familySupport?.familyLoanTermYears,
     };
 
     // SO SÁNH DỮ LIỆU MỚI VÀ CŨ
-    const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
+    const hasChanged = Object.keys(formData).some(key =>
+      !areValuesEqual(
+        formData[key as keyof typeof formData],
+        currentData[key as keyof typeof currentData]
+      )
+    );
 
     const previousFirstViableYear = plan.firstViableYear;
 
-    let result = { earliestPurchaseYear: 0, message: "" };
+    let result: {
+      earliestPurchaseYear: number;
+      message: string;
+      isAffordable: boolean;
+    } = {
+      earliestPurchaseYear: 0,
+      message: "",
+      isAffordable: false
+    };
     let customMessage = "";
 
     if (hasChanged) {
@@ -62,12 +80,16 @@ export async function updateAndRecalculateFamilySupport(
         })
       ]);
       result = await runProjectionWithEngine(planId);
+
       if (result.earliestPurchaseYear === 0) {
-        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪"
+        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn. Tuy nhiên, bạn vẫn còn cơ hội. Tiếp tục tìm hiểu nhé?💪";
       } else if (result.earliestPurchaseYear < existingResult.earliestPurchaseYear) {
-        customMessage = "Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳"
+        customMessage = "Sự hỗ trợ của gia đình và người thân đã rút ngắn hành trình đáng kể 🥳";
+      } else if (result.earliestPurchaseYear === existingResult.earliestPurchaseYear) {
+        customMessage = `Sự hỗ trợ của gia đình giúp bạn giữ vững kế hoạch mua nhà vào năm ${result.earliestPurchaseYear}`;
       } else {
-        customMessage = `Sự hỗ trợ của gia đình và người thân đã giúp bạn mua nhà sớm hơn trong năm ${result.earliestPurchaseYear}`;
+        // Trường hợp tệ hơn (earliestYear tăng lên)
+        customMessage = `Với các thay đổi này, thời gian mua nhà dự kiến là năm ${result.earliestPurchaseYear}`;
       }
 
       await db.$transaction([
@@ -80,13 +102,19 @@ export async function updateAndRecalculateFamilySupport(
 
       await db.plan.update({
         where: { id: planId },
-        data: { firstViableYear: result.earliestPurchaseYear }
+        data: {
+          firstViableYear: result.earliestPurchaseYear,
+          // FIX: Update affordabilityOutcome. User confirmed ScenarioB = Affordable
+          affordabilityOutcome: result.isAffordable ? "ScenarioB" : "ScenarioA"
+        }
       });
     } else {
       result = existingResult;
-      console.log("change: true");
+      console.log("change: false");
       if (result.earliestPurchaseYear === 0) {
-        customMessage = "Bạn vẫn sẽ chưa mua được căn nhà vào năm mong muốn.";
+        customMessage = "Bạn vẫn chưa thể mua được nhà vào năm mong muốn.";
+      } else if (result.isAffordable) {
+        customMessage = "Kế hoạch của bạn vẫn khả thi! Tiếp tục phát huy nhé! 💪";
       } else {
         customMessage = "Không sao, bàn tay ta làm nên tất cả, có sức người, sỏi đá cũng thành căn nhà đầu tiên 💪";
       }
