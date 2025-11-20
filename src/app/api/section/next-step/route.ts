@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { quickCheckStepOrder } from '@/lib/quickcheck-flow-definition';
 import { familySupportStepOrder } from '@/lib/family-support-flow-definition'; // New import
 import { spendingStepOrder } from '@/lib/spending-flow-definition'; // New import
+import { assumptionStepOrder } from '@/lib/assumption-flow-definition'; // New import
 import { z } from 'zod';
 
 // Define a map to hold all section flows
@@ -9,11 +10,12 @@ const sectionFlows = {
   quickCheck: quickCheckStepOrder,
   familySupport: familySupportStepOrder,
   spending: spendingStepOrder,
+  assumptions: assumptionStepOrder,
 };
 
 // Update schema to accept the new sections
 const requestBodySchema = z.object({
-  currentSection: z.enum(['quickCheck', 'familySupport', 'spending']),
+  currentSection: z.enum(['quickCheck', 'familySupport', 'spending', 'assumptions']),
   answers: z.record(z.any()), // Allow answers to be any object
 });
 
@@ -43,7 +45,7 @@ const requestBodySchema = z.object({
  *             properties:
  *               currentSection:
  *                 type: string
- *                 enum: [quickCheck, familySupport, spending]
+ *                 enum: [quickCheck, familySupport, spending, assumptions]
  *                 description: The section flow being processed.
  *               answers:
  *                 type: object
@@ -87,7 +89,7 @@ export async function POST(request: Request) {
     let requestedIndex = parseInt(searchParams.get('index') || '1', 10);
 
     const body = await request.json();
-    
+
     const validation = requestBodySchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json({ error: 'Invalid request body', details: validation.error.flatten() }, { status: 400 });
@@ -131,7 +133,7 @@ export async function POST(request: Request) {
     for (let i = 0; i < visibleStepsPath.length; i++) {
       // Find the first visible step whose masterIndex is at or after the requested index.
       if (visibleStepsPath[i].masterIndex >= requestedIndex) {
-        nextStepInPath = visibleStepsPath[i]; 
+        nextStepInPath = visibleStepsPath[i];
         currentVisibleStepIndex = i + 1; // The 1-based index within the VISIBLE path
         break;
       }
@@ -160,15 +162,15 @@ export async function POST(request: Request) {
   } catch (error) {
     let requestBodyForLogging = {};
     try {
-        requestBodyForLogging = await request.clone().json();
+      requestBodyForLogging = await request.clone().json();
     } catch {
-        requestBodyForLogging = { error: "Could not parse request body" };
+      requestBodyForLogging = { error: "Could not parse request body" };
     }
-    console.error('[API /section/next-step ERROR]', { 
-        errorMessage: error instanceof Error ? error.message : 'An unknown error occurred',
-        errorStack: error instanceof Error ? error.stack : null,
-        requestUrl: request.url,
-        requestBody: requestBodyForLogging,
+    console.error('[API /section/next-step ERROR]', {
+      errorMessage: error instanceof Error ? error.message : 'An unknown error occurred',
+      errorStack: error instanceof Error ? error.stack : null,
+      requestUrl: request.url,
+      requestBody: requestBodyForLogging,
     });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
