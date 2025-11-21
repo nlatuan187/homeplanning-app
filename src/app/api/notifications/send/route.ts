@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 
 /**
  * @swagger
- * /notifications/send:
+ * /api/notifications/send:
  *   post:
  *     summary: Sends a notification to a specific user
  *     description: This endpoint triggers a push notification to a user's devices and saves the notification to the database. It requires authentication and administrator privileges.
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     if (!targetUser) {
       return NextResponse.json({ error: 'Target user not found.' }, { status: 404 });
     }
-    
+
     // Step 4: Prepare and send the notification
     await sendNotification(targetUserId, {
       title,

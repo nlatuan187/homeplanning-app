@@ -52,9 +52,12 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
  *                 lastName:
  *                   type: string
  *                   description: User's last name
- *                 sessionToken:
+ *                 signInToken:
  *                   type: string
- *                   description: The JWT for the session.
+ *                   description: Sign-in token for Clerk SDK authentication
+ *                 tokenUrl:
+ *                   type: string
+ *                   description: URL for sign-in (optional)
  *       '400':
  *         description: Bad Request - Missing email or password.
  *       '401':
@@ -89,24 +92,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
     }
 
-    // 3. Tạo session và JWT token cho người dùng
-    const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
-    const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
+    // 3. Tạo Sign-In Token cho mobile app
+    // Sign-in token cho phép mobile app sign in thông qua Clerk SDK
+    const signInToken = await (await clerkClient()).signInTokens.createSignInToken({
+      userId: user.id,
+      expiresInSeconds: 3600, // Token hết hạn sau 1 giờ
+    });
 
-    // 4. Trả về thông tin người dùng và token
+    // 4. Trả về thông tin người dùng và sign-in token
     return NextResponse.json({
       success: true,
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      sessionToken: sessionToken,
+      sessionToken: signInToken.token, // Mobile app sẽ dùng token này để sign in
+      tokenUrl: signInToken.url, // URL để sign in (optional)
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[MOBILE_AUTH_ERROR]', error);
+    if (error.errors) {
+      console.error('[MOBILE_AUTH_CLERK_ERRORS]', JSON.stringify(error.errors, null, 2));
+    }
     return NextResponse.json({
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: error.message
     }, { status: 500 });
   }
 }

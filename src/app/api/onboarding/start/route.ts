@@ -18,7 +18,7 @@ const quickCheckSchema = z.object({
 
 /**
  * @swagger
- * /onboarding/start:
+ * /api/onboarding/start:
  *   post:
  *     summary: Start onboarding and create a new plan
  *     description: |
@@ -104,22 +104,22 @@ export async function POST(req: Request) {
     }
 
     const {
-        yearsToPurchase: absoluteYear,
-        targetHousePriceN0: priceInBillion,
-        ...restData
+      yearsToPurchase: absoluteYear,
+      targetHousePriceN0: priceInBillion,
+      ...restData
     } = validation.data;
 
     // 3. Chuẩn hóa dữ liệu
     const yearsToPurchase = absoluteYear - new Date().getFullYear();
     if (yearsToPurchase < 0) {
-        return NextResponse.json({ error: "Năm mục tiêu phải là năm hiện tại hoặc trong tương lai" }, { status: 400 });
+      return NextResponse.json({ error: "Năm mục tiêu phải là năm hiện tại hoặc trong tương lai" }, { status: 400 });
     }
     const targetHousePriceN0 = priceInBillion * 1000;
 
     const normalizedData = {
-        ...restData,
-        yearsToPurchase,
-        targetHousePriceN0,
+      ...restData,
+      yearsToPurchase,
+      targetHousePriceN0,
     };
 
     // 4. Gọi hàm service đã được tái sử dụng
@@ -130,8 +130,8 @@ export async function POST(req: Request) {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-        logger.warn("Invalid data for plan creation via /api/onboarding/start", { errors: error.format() });
-        return NextResponse.json({ errors: error.format() }, { status: 400 });
+      logger.warn("Invalid data for plan creation via /api/onboarding/start", { errors: error.format() });
+      return NextResponse.json({ errors: error.format() }, { status: 400 });
     }
     logger.error('[API_ONBOARDING_START_ERROR]', { error: String(error) });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

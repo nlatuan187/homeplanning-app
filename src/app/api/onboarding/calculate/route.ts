@@ -58,7 +58,7 @@ const quickCheckSchema = z.object({
 
 /**
  * @swagger
- * /onboarding/calculate:
+ * /api/onboarding/calculate:
  *   post:
  *     summary: Calculate a temporary quick check result
  *     description: |

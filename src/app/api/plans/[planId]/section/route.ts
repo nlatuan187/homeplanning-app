@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import logger from "@/lib/logger";
 import { z } from "zod";
+import { db } from "@/lib/db";
 import {
     updateSpending, updateSpendingSchema,
     updateAssumptions, updateAssumptionsSchema,
@@ -55,6 +56,7 @@ const bodySchema = z.object({
  *       '200': { description: "Section updated successfully." }
  *       '400': { description: "Bad Request - Invalid input data or unknown section." }
  *       # ... other responses
+ * 
  */
 export async function PATCH(req: NextRequest, { params }: { params: { planId: string } }) {
     try {
@@ -64,35 +66,106 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
         const { planId } = params;
         const body = await bodySchema.parse(await req.json());
 
-        let result;
+        // Fetch current plan and report for comparison
+        const plan = await db.plan.findUnique({ where: { id: planId, userId } });
+        if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+
+        const planReport = await db.planReport.findUnique({ where: { planId } });
+        const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; } | null;
+        const previousFirstViableYear = plan.firstViableYear;
 
         switch (body.section) {
             case "spending": {
                 const validatedData = updateSpendingSchema.parse(body.data);
-                result = await updateSpending(planId, userId, validatedData);
+
+                // 1. Update DB
+                await updateSpending(planId, userId, validatedData);
+
+                // 2. Recalculate
+                const result = await runProjectionWithEngine(planId);
+
+                // 3. Determine caseNumber and message
+                let customMessage = "";
+                let caseNumber = 0;
+
+                const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
+
+                if (result.earliestPurchaseYear === 0) {
+                    customMessage = "Chi tiêu rất ấn tượng đấy 😀";
+                    caseNumber = 4;
+                } else if (result.earliestPurchaseYear > existingEarliestYear) {
+                    customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵";
+                    caseNumber = 3;
+                } else {
+                    customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
+                    caseNumber = 5;
+                }
+
+                // 4. Update Cache and Plan
+                await db.$transaction([
+                    db.planReport.upsert({
+                        where: { planId },
+                        update: { projectionCache: result },
+                        create: { planId, projectionCache: result },
+                    }),
+                    db.plan.update({
+                        where: { id: planId },
+                        data: { firstViableYear: result.earliestPurchaseYear }
+                    })
+                ]);
+
                 await invalidateReportCache(planId);
-                break;
+
+                // Return only what the mobile app needs for the "Spending" feedback UI
+                return NextResponse.json({
+                    success: true,
+                    section: "spending",
+                    result: {
+                        caseNumber: caseNumber,
+                        message: customMessage,
+                        earliestPurchaseYear: result.earliestPurchaseYear,
+                        hasWorsened: previousFirstViableYear && result.earliestPurchaseYear > previousFirstViableYear
+                    }
+                });
             }
             case "assumptions": {
                 const validatedData = updateAssumptionsSchema.parse(body.data);
-                result = await updateAssumptions(planId, userId, validatedData);
+
+                // 1. Update DB
+                await updateAssumptions(planId, userId, validatedData);
+
+                // 2. Recalculate
+                const result = await runProjectionWithEngine(planId);
+
+                // 3. Update Cache and Plan
+                await db.$transaction([
+                    db.planReport.upsert({
+                        where: { planId },
+                        update: { projectionCache: result },
+                        create: { planId, projectionCache: result },
+                    }),
+                    db.plan.update({
+                        where: { id: planId },
+                        data: { firstViableYear: result.earliestPurchaseYear }
+                    })
+                ]);
+
                 await invalidateReportCache(planId);
-                break;
+
+                // Return only what the mobile app needs for the "Assumption" feedback UI
+                return NextResponse.json({
+                    success: true,
+                    section: "assumptions",
+                    result: {
+                        earliestPurchaseYear: result.earliestPurchaseYear,
+                        message: result.message,
+                        isAffordable: result.isAffordable
+                    }
+                });
             }
             default:
                 throw new Error(`Unknown section: ${body.section}`);
         }
-
-        // Run projection to get the latest results
-        const projection = await runProjectionWithEngine(planId);
-
-        logger.info(`Updated section '${body.section}' for plan`, { planId, userId });
-
-        return NextResponse.json({
-            success: true,
-            data: result,
-            projection: projection
-        });
 
     } catch (error) {
         if (error instanceof z.ZodError) {
