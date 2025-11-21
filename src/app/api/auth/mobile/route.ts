@@ -8,7 +8,7 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
  *     summary: Authenticate mobile user with Clerk
  *     description: |
  *       Authenticates mobile users using Clerk's headless authentication.
- *       Returns user information and JWT token for mobile app usage.
+ *       Returns user information and sign-in token for mobile app usage.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -52,9 +52,12 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
  *                 lastName:
  *                   type: string
  *                   description: User's last name
- *                 sessionToken:
+ *                 token:
  *                   type: string
- *                   description: The JWT for the session.
+ *                   description: Sign-in token for Clerk SDK authentication
+ *                 url:
+ *                   type: string
+ *                   description: URL for sign-in (optional)
  *       '400':
  *         description: Bad Request - Missing email or password.
  *       '401':
@@ -89,9 +92,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
     }
 
-    // 3. Tạo session và JWT token cho người dùng
-    const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
-    const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
+    // 3. Tạo Sign-In Token cho mobile app (hoạt động cả dev và production)
+    // Mobile app sẽ dùng token này để authenticate thông qua Clerk SDK
+    const signInToken = await (await clerkClient()).signInTokens.createSignInToken({
+      userId: user.id,
+      expiresInSeconds: 2592000, // Token hết hạn sau 30 ngày
+    });
 
     // 4. Trả về thông tin người dùng và token
     return NextResponse.json({
@@ -100,7 +106,8 @@ export async function POST(req: Request) {
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      sessionToken: sessionToken,
+      sessionToken: signInToken.token,
+      url: signInToken.url, // URL để sign in (optional)
     });
 
   } catch (error) {
