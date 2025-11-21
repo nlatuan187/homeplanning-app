@@ -25,9 +25,9 @@ import { NextResponse } from 'next/server';
  *             schema:
  *               type: object
  *               properties:
- *                 token:
+ *                 ticket:
  *                   type: string
- *                   description: Sign-in token for mobile app authentication
+ *                   description: Sign-in ticket (needs to be exchanged for session token)
  *                 userId:
  *                   type: string
  *                   description: User ID
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      token: signInToken.token,
+      ticket: signInToken.token, // Đổi tên thành ticket để tránh nhầm lẫn
       userId: user.id,
       url: signInToken.url // URL để sign in (optional, dùng cho web redirect)
     });

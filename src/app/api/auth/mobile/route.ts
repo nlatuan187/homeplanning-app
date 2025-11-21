@@ -52,9 +52,9 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
  *                 lastName:
  *                   type: string
  *                   description: User's last name
- *                 token:
+ *                 ticket:
  *                   type: string
- *                   description: Sign-in token for Clerk SDK authentication
+ *                   description: Sign-in ticket (needs to be exchanged for session token)
  *                 url:
  *                   type: string
  *                   description: URL for sign-in (optional)
@@ -99,14 +99,14 @@ export async function POST(req: Request) {
       expiresInSeconds: 2592000, // Token hết hạn sau 30 ngày
     });
 
-    // 4. Trả về thông tin người dùng và token
+    // 4. Trả về thông tin người dùng và ticket
     return NextResponse.json({
       success: true,
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      sessionToken: signInToken.token,
+      ticket: signInToken.token, // Đổi tên thành ticket
       url: signInToken.url, // URL để sign in (optional)
     });
 
