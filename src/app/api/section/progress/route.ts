@@ -54,7 +54,7 @@ function formatProgressResponse(progress: OnboardingProgress | null): FormattedP
 
 /**
  * @swagger
- * /api/mobile/onboarding/progress:
+ * /api/section/progress:
  *   get:
  *     summary: Get current onboarding progress
  *     description: Retrieves the onboarding progress for the authenticated user. Returns default progress if no plan exists.
@@ -156,7 +156,7 @@ export async function GET(req: Request) {
 
 /**
  * @swagger
- * /api/mobile/onboarding/progress:
+ * /api/section/progress:
  *   post:
  *     summary: Update onboarding section progress
  *     description: Updates the status of a specific onboarding section.
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
 
 /**
  * @swagger
- * /api/mobile/onboarding/progress:
+ * /api/section/progress:
  *   delete:
  *     summary: Delete onboarding progress
  *     description: Removes the onboarding progress record. Should be called when onboarding is fully completed.
