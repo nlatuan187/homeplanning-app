@@ -128,7 +128,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         message: customMessage,
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasWorsened: previousFirstViableYear && result.earliestPurchaseYear > previousFirstViableYear
-                    }
+                    },
+                    projection: result.projections
                 });
             }
             case "familySupport": {
@@ -181,7 +182,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         message: customMessage,
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasImproved: existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear
-                    }
+                    },
+                    projection: result.projections
                 });
             }
             case "assumptions": {
@@ -216,7 +218,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         message: result.message,
                         isAffordable: result.isAffordable
-                    }
+                    },
+                    projection: result.projections
                 });
             }
             default:
