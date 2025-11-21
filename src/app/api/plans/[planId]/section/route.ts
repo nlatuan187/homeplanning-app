@@ -6,13 +6,14 @@ import { db } from "@/lib/db";
 import {
     updateSpending, updateSpendingSchema,
     updateAssumptions, updateAssumptionsSchema,
+    updateFamilySupport, updateFamilySupportSchema,
     invalidateReportCache
 } from "@/lib/services/planService";
 import { runProjectionWithEngine } from "@/actions/projectionHelpers";
 
 // Schema để validate phần thân của request
 const bodySchema = z.object({
-    section: z.enum(["spending", "assumptions"]), // Removed familySupport - now merged into spending
+    section: z.enum(["spending", "assumptions", "familySupport"]),
     data: z.any(),
 });
 
@@ -21,7 +22,7 @@ const bodySchema = z.object({
  * /api/plans/{planId}/section:
  *   patch:
  *     summary: Update a specific section of a plan
- *     description: A unified endpoint to update different sections of a financial plan. Family support fields are now included in the spending section.
+ *     description: A unified endpoint to update different sections of a financial plan (spending, assumptions, or familySupport).
  *     tags: [Plans]
  *     security:
  *       - BearerAuth: []
@@ -40,18 +41,20 @@ const bodySchema = z.object({
  *             properties:
  *               section:
  *                 type: string
- *                 enum: [spending, assumptions]
+ *                 enum: [spending, assumptions, familySupport]
  *                 description: The name of the section to update.
  *               data:
  *                 type: object
  *                 description: "The payload containing the fields to update. The structure depends on the 'section' value."
- *             example:
- *               section: "spending"
- *               data: { 
- *                 "monthlyNonHousingDebt": 500,
- *                 "hasFamilySupport": true, 
- *                 "familySupportAmount": 1000 
- *               }
+ *             examples:
+ *               spending:
+ *                 value:
+ *                   section: "spending"
+ *                   data: { "monthlyNonHousingDebt": 500 }
+ *               familySupport:
+ *                 value:
+ *                   section: "familySupport"
+ *                   data: { "hasFamilySupport": true, "familySupportAmount": 1000 }
  *     responses:
  *       '200': { description: "Section updated successfully." }
  *       '400': { description: "Bad Request - Invalid input data or unknown section." }
@@ -125,6 +128,59 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         message: customMessage,
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasWorsened: previousFirstViableYear && result.earliestPurchaseYear > previousFirstViableYear
+                    }
+                });
+            }
+            case "familySupport": {
+                const validatedData = updateFamilySupportSchema.parse(body.data);
+
+                // 1. Update DB
+                await updateFamilySupport(planId, userId, validatedData);
+
+                // 2. Recalculate
+                const result = await runProjectionWithEngine(planId);
+
+                // 3. Determine caseNumber and message
+                let customMessage = "";
+                let caseNumber = 0;
+
+                const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
+
+                if (result.earliestPurchaseYear === 0) {
+                    customMessage = "Tuyệt vời! Với sự hỗ trợ này, bạn có thể mua nhà ngay bây giờ! 🎉";
+                    caseNumber = 1;
+                } else if (existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear) {
+                    customMessage = "Sự hỗ trợ từ gia đình giúp bạn mua nhà sớm hơn! 🏡";
+                    caseNumber = 2;
+                } else {
+                    customMessage = "Thông tin đã được cập nhật";
+                    caseNumber = 0;
+                }
+
+                // 4. Update Cache and Plan
+                await db.$transaction([
+                    db.planReport.upsert({
+                        where: { planId },
+                        update: { projectionCache: result },
+                        create: { planId, projectionCache: result },
+                    }),
+                    db.plan.update({
+                        where: { id: planId },
+                        data: { firstViableYear: result.earliestPurchaseYear }
+                    })
+                ]);
+
+                await invalidateReportCache(planId);
+
+                // Return only what the mobile app needs for the "Family Support" feedback UI
+                return NextResponse.json({
+                    success: true,
+                    section: "familySupport",
+                    result: {
+                        caseNumber: caseNumber,
+                        message: customMessage,
+                        earliestPurchaseYear: result.earliestPurchaseYear,
+                        hasImproved: existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear
                     }
                 });
             }
