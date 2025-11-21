@@ -129,7 +129,7 @@ export async function POST(req: Request) {
  *     summary: Get current user information
  *     description: |
  *       Returns current authenticated user information for mobile app.
- *       Requires valid Clerk JWT token.
+ *       Supports both session-based auth (web/Swagger) and JWT token auth (mobile/Postman).
  *     tags: [Authentication]
  *     security:
  *       - BearerAuth: []
@@ -161,22 +161,66 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth();
-    const user = await currentUser();
+    // Try to get user from session first (for web/Swagger docs)
+    const { userId: sessionUserId } = await auth();
+    const sessionUser = await currentUser();
 
-    if (!userId || !user) {
+    // If session exists, use it
+    if (sessionUserId && sessionUser) {
       return NextResponse.json({
-        error: 'Unauthorized'
-      }, { status: 401 });
+        success: true,
+        userId: sessionUser.id,
+        email: sessionUser.emailAddresses[0]?.emailAddress,
+        firstName: sessionUser.firstName,
+        lastName: sessionUser.lastName,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      userId: user.id,
-      email: user.emailAddresses[0]?.emailAddress,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    });
+    // Otherwise, try to verify JWT token from Authorization header (for mobile/Postman)
+    const client = await clerkClient();
+
+    // Use authenticateRequest() to verify the JWT token
+    try {
+      const { isSignedIn, toAuth } = await client.authenticateRequest(req, {
+        jwtKey: process.env.CLERK_JWT_KEY,
+      });
+
+      if (!isSignedIn) {
+        return NextResponse.json({
+          error: 'Unauthenticated',
+          message: 'Invalid or expired token. Please login again.'
+        }, { status: 401 });
+      }
+
+      // Get user ID from the authenticated request
+      const authObject = toAuth();
+      const userId = authObject.userId;
+
+      if (!userId) {
+        return NextResponse.json({
+          error: 'Unauthenticated',
+          message: 'Invalid token payload.'
+        }, { status: 401 });
+      }
+
+      // Fetch user details from Clerk
+      const user = await client.users.getUser(userId);
+
+      return NextResponse.json({
+        success: true,
+        userId: user.id,
+        email: user.emailAddresses[0]?.emailAddress,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      });
+
+    } catch (tokenError: any) {
+      console.error('[TOKEN_VERIFICATION_ERROR]', tokenError);
+      return NextResponse.json({
+        error: 'Unauthenticated',
+        message: tokenError.message || 'Token verification failed. Please login again.'
+      }, { status: 401 });
+    }
 
   } catch (error) {
     console.error('[MOBILE_AUTH_GET_ERROR]', error);
@@ -185,4 +229,3 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
-

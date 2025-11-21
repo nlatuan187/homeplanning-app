@@ -49,28 +49,55 @@ export async function updateAndRecalculateAssumption(
       ]);
       result = await runProjectionWithEngine(planId);
 
-      // Calculate targetYear and projectedYear
+      // Calculate years for case classification
       const currentYear = new Date().getFullYear();
-      const targetYear = plan.confirmedPurchaseYear || (currentYear + (plan.yearsToPurchase || 0));
+      const confirmedYear = plan.confirmedPurchaseYear;
       const projectedYear = result.earliestPurchaseYear;
+      const yearsFromNow = projectedYear - currentYear;
+      const yearsDifference = confirmedYear ? projectedYear - confirmedYear : null;
 
-      // Classify into 4 cases based on Assumption.tsx result display logic
-      if (projectedYear === 0) {
-        // Case 1: Cannot purchase
+      // Classify into 5 cases based on EditPlanFlow.tsx result display logic
+      // Case 1: Can purchase, but later than planned (within 3 years from now, more than 1 year later than planned)
+      if (
+        projectedYear > (confirmedYear ?? Infinity) &&
+        yearsFromNow <= 3 &&
+        yearsDifference !== null &&
+        yearsDifference > 1
+      ) {
         caseNumber = 1;
-        customMessage = "Bạn chưa thể mua được căn nhà như mong muốn";
-      } else if (projectedYear > targetYear) {
-        // Case 2: Later than planned
-        caseNumber = 2;
         customMessage = `Bạn có thể mua nhà sớm nhất vào năm ${projectedYear}`;
-      } else if (projectedYear < targetYear) {
-        // Case 3: Earlier than planned
+      }
+      // Case 2: Can purchase earlier or on time (within 3 years, but not matching Case 1)
+      else if (
+        projectedYear > 0 &&
+        yearsFromNow <= 3 &&
+        yearsDifference !== null &&
+        yearsDifference > 1 &&
+        projectedYear <= (confirmedYear ?? Infinity)
+      ) {
+        caseNumber = 2;
+        customMessage = `Bạn có thể mua nhà vào năm ${confirmedYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm ${projectedYear}!`;
+      }
+      // Case 3: Can purchase exactly on time
+      else if (
+        projectedYear === confirmedYear &&
+        yearsFromNow >= 1
+      ) {
         caseNumber = 3;
-        customMessage = `Bạn có thể mua sớm hơn vào năm ${projectedYear}`;
-      } else {
-        // Case 4: On time
+        customMessage = `Bạn hoàn toàn có thể mua nhà vào năm ${confirmedYear} như mong muốn của mình`;
+      }
+      // Case 4: Can purchase within 1 year
+      else if (
+        confirmedYear &&
+        confirmedYear - projectedYear <= 1
+      ) {
         caseNumber = 4;
-        customMessage = `Bạn có thể mua nhà vào năm ${targetYear} như mong muốn`;
+        customMessage = "Bạn có thể mua được nhà trong vòng 1 năm tới";
+      }
+      // Case 5: Cannot purchase as desired (default)
+      else {
+        caseNumber = 5;
+        customMessage = "Bạn chưa thể mua được căn nhà như mong muốn";
       }
 
       await db.$transaction([
