@@ -25,11 +25,9 @@ import { NextResponse } from 'next/server';
  *             schema:
  *               type: object
  *               properties:
- *                 token:
+ *                 sessionToken:
  *                   type: string
  *                 userId:
- *                   type: string
- *                 url:
  *                   type: string
  *       '401':
  *         description: Invalid credentials.
@@ -68,17 +66,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 3. Create a sign-in token for the user (recommended for production)
-    const signInToken = await (await clerkClient()).signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 3600, // Token expires in 1 hour
-    });
+    // 3. Create a session and token for the user
+    const session = await (await clerkClient()).sessions.createSession({ userId: user.id });
+    const sessionToken = await (await clerkClient()).sessions.getToken(session.id, 'session_token');
 
-    return NextResponse.json({
-      token: signInToken.token,
-      userId: user.id,
-      url: signInToken.url
-    });
+    return NextResponse.json({ sessionToken, userId: user.id });
 
   } catch (error) {
     console.error('Error signing in user:', error);
