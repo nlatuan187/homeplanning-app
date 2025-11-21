@@ -37,6 +37,9 @@ export async function updateAndRecalculateAssumption(
     const hasChanged = Object.keys(currentData).some(key => !areValuesEqual(currentData[key as keyof typeof currentData], formData[key as keyof typeof formData]));
 
     let result;
+    let customMessage = "";
+    let caseNumber: number = 0;
+
     if (hasChanged) {
       await db.$transaction([
         db.plan.update({
@@ -45,6 +48,31 @@ export async function updateAndRecalculateAssumption(
         }),
       ]);
       result = await runProjectionWithEngine(planId);
+
+      // Calculate targetYear and projectedYear
+      const currentYear = new Date().getFullYear();
+      const targetYear = plan.confirmedPurchaseYear || (currentYear + (plan.yearsToPurchase || 0));
+      const projectedYear = result.earliestPurchaseYear;
+
+      // Classify into 4 cases based on Assumption.tsx result display logic
+      if (projectedYear === 0) {
+        // Case 1: Cannot purchase
+        caseNumber = 1;
+        customMessage = "Bạn chưa thể mua được căn nhà như mong muốn";
+      } else if (projectedYear > targetYear) {
+        // Case 2: Later than planned
+        caseNumber = 2;
+        customMessage = `Bạn có thể mua nhà sớm nhất vào năm ${projectedYear}`;
+      } else if (projectedYear < targetYear) {
+        // Case 3: Earlier than planned
+        caseNumber = 3;
+        customMessage = `Bạn có thể mua sớm hơn vào năm ${projectedYear}`;
+      } else {
+        // Case 4: On time
+        caseNumber = 4;
+        customMessage = `Bạn có thể mua nhà vào năm ${targetYear} như mong muốn`;
+      }
+
       await db.$transaction([
         db.planReport.upsert({
           where: { planId: plan.id },
@@ -58,13 +86,27 @@ export async function updateAndRecalculateAssumption(
       });
     } else {
       result = existingResult;
+      customMessage = "Không có thay đổi";
+      caseNumber = 0;
     }
 
     revalidatePath(`/plan/${planId}`);
-    return { success: true, ...result };
+
+    // Fetch the updated plan to return
+    const updatedPlan = await db.plan.findUnique({ where: { id: planId } });
+
+    return {
+      success: true,
+      caseNumber: caseNumber,
+      planId: planId,
+      plan: updatedPlan!,
+      earliestPurchaseYear: result.earliestPurchaseYear,
+      message: customMessage,
+      isAffordable: result.isAffordable
+    };
 
   } catch (error) {
-    logger.error("[ACTION_ERROR] Failed to update and recalculate (FamilySupport)", { error: String(error) });
+    logger.error("[ACTION_ERROR] Failed to update and recalculate (Assumption)", { error: String(error) });
     return { success: false, error: "Đã có lỗi xảy ra phía máy chủ." };
   }
 }

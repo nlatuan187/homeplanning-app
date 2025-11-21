@@ -184,7 +184,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasImproved: existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear
                     },
-                    data: result,
+                    data: plan,
                     projection: result.projections
                 });
             }
@@ -221,7 +221,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                         message: result.message,
                         isAffordable: result.isAffordable
                     },
-                    data: result,
+                    data: plan,
                     projection: result.projections
                 });
             }
