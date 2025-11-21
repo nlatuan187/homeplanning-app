@@ -180,7 +180,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     section: "familySupport",
                     result: {
                         caseNumber: caseNumber,
-                        message: customMessage,
+                        customessage: customMessage,
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasImproved: existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear
                     },
@@ -197,7 +197,66 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                 // 2. Recalculate
                 const result = await runProjectionWithEngine(planId);
 
-                // 3. Update Cache and Plan
+                // 3. Determine caseNumber and message
+                let customMessage = "";
+                let caseNumber = 0;
+                let message = "";
+
+                // Calculate years for case classification
+                const currentYear = new Date().getFullYear();
+                const confirmedYear = plan.confirmedPurchaseYear;
+                const projectedYear = result.earliestPurchaseYear;
+                const yearsFromNow = projectedYear - currentYear;
+                const yearsDifference = confirmedYear ? projectedYear - confirmedYear : null;
+
+                // Classify into 5 cases based on updateAndRecalculateAssumption.ts logic
+                if (
+                    projectedYear > (confirmedYear ?? Infinity) &&
+                    yearsFromNow <= 3 &&
+                    yearsDifference !== null &&
+                    yearsDifference > 1
+                ) {
+                    caseNumber = 2;
+                    customMessage = `Bạn có thể mua nhà sớm nhất vào năm ${projectedYear}`;
+                }
+                else if (
+                    projectedYear > 0 &&
+                    yearsFromNow <= 3 &&
+                    yearsDifference !== null &&
+                    yearsDifference > 1 &&
+                    projectedYear <= (confirmedYear ?? Infinity)
+                ) {
+                    caseNumber = 1;
+                    customMessage = `Bạn có thể mua nhà vào năm ${confirmedYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm ${projectedYear}!`;
+                }
+                else if (
+                    projectedYear === confirmedYear &&
+                    yearsFromNow >= 1
+                ) {
+                    caseNumber = 3;
+                    customMessage = `Bạn hoàn toàn có thể mua nhà vào năm ${confirmedYear} như mong muốn của mình`;
+                }
+                else if (
+                    confirmedYear &&
+                    confirmedYear - projectedYear <= 1
+                ) {
+                    caseNumber = 5;
+                    customMessage = "Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết. ";
+                }
+                else {
+                    caseNumber = 4;
+                    customMessage = "Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?";
+                }
+
+                if (caseNumber === 5) {
+                    message = "Bạn chưa thể mua được căn nhà như mong muốn"
+                } else if (caseNumber === 4) {
+                    message = "Bạn có thể mua được nhà trong vòng 1 năm tới"
+                } else {
+                    message = "Kế hoạch chinh phục căn nhà đầu tiên của bạn đã sẵn sàng"
+                }
+
+                // 4. Update Cache and Plan
                 await db.$transaction([
                     db.planReport.upsert({
                         where: { planId },
@@ -217,8 +276,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     success: true,
                     section: "assumptions",
                     result: {
+                        caseNumber: caseNumber,
+                        customMessage: customMessage,
+                        message: message,
                         earliestPurchaseYear: result.earliestPurchaseYear,
-                        message: result.message,
                         isAffordable: result.isAffordable
                     },
                     data: plan,
