@@ -1,4 +1,3 @@
-// src/app/api/onboarding/calculate/route.ts
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { calculateOnboardingProjection } from '@/actions/calculateOnboardingProjection';
@@ -32,20 +31,23 @@ import { OnboardingPlanState } from '@/components/onboarding/types';
  *       properties:
  *         success:
  *           type: boolean
+ *         caseNumber:
+ *           type: integer
+ *           description: "1: Feasible, 2: Feasible Later, 3: Not Feasible"
+ *         message:
+ *           type: string
  *         isAffordable:
  *           type: boolean
  *         affordableYear:
  *           type: integer
  *           nullable: true
- *         message:
- *           type: string
  *         projectionData:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/ProjectionRow'
  */
 
-// Schema để validate dữ liệu đầu vào (có thể tái sử dụng từ nơi khác)
+// Schema để validate dữ liệu đầu vào
 const quickCheckSchema = z.object({
   yearsToPurchase: z.number().int().min(new Date().getFullYear()),
   targetHousePriceN0: z.number().positive(),
@@ -54,6 +56,7 @@ const quickCheckSchema = z.object({
   userMonthlyIncome: z.number().nonnegative().optional(),
   coApplicantMonthlyIncome: z.number().nonnegative().optional(),
   monthlyOtherIncome: z.number().nonnegative().optional(),
+  hasCoApplicant: z.boolean().optional(),
 });
 
 /**
@@ -63,8 +66,8 @@ const quickCheckSchema = z.object({
  *     summary: Calculate a temporary quick check result
  *     description: |
  *       Calculates a preliminary home buying projection based on initial user input.
- *       This endpoint is PUBLIC and does NOT require authentication.
- *       It does NOT save any data to the database.
+ *       Returns categorized results (Case 1, 2, 3) based on affordability.
+ *       This endpoint is PUBLIC.
  *     tags: [Onboarding]
  *     requestBody:
  *       required: true
@@ -79,34 +82,22 @@ const quickCheckSchema = z.object({
  *             properties:
  *               yearsToPurchase:
  *                 type: integer
- *                 description: "The absolute year the user plans to purchase the house (e.g., 2027)."
  *                 example: 2028
  *               targetHousePriceN0:
  *                 type: number
- *                 description: "The target house price in billions of VND (e.g., 3.5 for 3.5 tỷ)."
  *                 example: 3.5
  *               monthlyLivingExpenses:
  *                 type: number
- *                 description: "The user's monthly living expenses in millions of VND."
  *                 example: 20
  *               hasCoApplicant:
  *                 type: boolean
- *                 description: "Does the user have a co-applicant?"
  *                 example: false
  *               initialSavings:
  *                 type: number
- *                 description: "Initial savings in millions of VND."
  *                 example: 500
  *               userMonthlyIncome:
  *                 type: number
- *                 description: "User's monthly income in millions of VND."
  *                 example: 40
- *               targetHouseType:
- *                 type: string
- *                 example: "Chung cư"
- *               targetLocation:
- *                 type: string
- *                 example: "Hà Nội"
  *     responses:
  *       '200':
  *         description: Calculation successful.
@@ -115,7 +106,7 @@ const quickCheckSchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/QuickCheckResult'
  *       '400':
- *         description: Bad Request - Invalid input data.
+ *         description: Bad Request.
  *       '500':
  *         description: Internal Server Error.
  */
@@ -131,12 +122,49 @@ export async function POST(req: Request) {
 
     const onboardingData: Partial<OnboardingPlanState> = validation.data;
 
-    // 2. Gọi logic tính toán cốt lõi (từ Server Action của bạn)
+    // 2. Gọi logic tính toán cốt lõi
     const projectionResult = await calculateOnboardingProjection(onboardingData);
-    console.log("projectionResult", projectionResult);
+
+    if (!projectionResult.success) {
+      return NextResponse.json({ error: projectionResult.error }, { status: 400 });
+    }
+
+    const yearsToPurchase = onboardingData.yearsToPurchase!;
+    const affordableYear = projectionResult.earliestAffordableYear;
+
+    let caseNumber = 3;
+    let message = "Chưa khả thi";
+    let isAffordable = false;
+
+    // Logic phân loại Case (1-3)
+    if (affordableYear) {
+      if (affordableYear <= yearsToPurchase) {
+        // Case 1: Mua được sớm hơn hoặc đúng hạn
+        caseNumber = 1;
+        message = "Kế hoạch hoàn toàn khả thi";
+        isAffordable = true;
+      } else {
+        // Case 2: Mua được nhưng trễ hơn
+        caseNumber = 2;
+        message = `Chưa khả thi, nhưng bạn có thể mua vào năm ${affordableYear}`;
+        isAffordable = false; // Theo logic UI thì hiện tại chưa mua được vào năm mong muốn
+      }
+    } else {
+      // Case 3: Không tìm được năm mua được
+      caseNumber = 3;
+      message = "Chưa khả thi";
+      isAffordable = false;
+    }
 
     // 3. Trả về kết quả
-    return NextResponse.json(projectionResult, { status: 200 });
+    return NextResponse.json({
+      success: true,
+      caseNumber,
+      message,
+      isAffordable,
+      affordableYear,
+      projectionData: projectionResult.projectionData
+    }, { status: 200 });
 
   } catch (error) {
     console.error('[API_ONBOARDING_CALCULATE_ERROR]', error);
