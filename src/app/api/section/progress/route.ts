@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import {
@@ -118,15 +118,16 @@ function formatProgressResponse(progress: OnboardingProgress | null): FormattedP
  *       500:
  *         description: Internal server error
  */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
-        const user = await currentUser();
-        if (!user) {
+        const { verifyMobileToken } = await import('@/lib/mobileAuth');
+        const userId = await verifyMobileToken(req);
+        if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const plan = await db.plan.findFirst({
-            where: { userId: user.id },
+            where: { userId: userId },
             select: { id: true }
         });
 
