@@ -20,6 +20,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/section/next-step(.*)', // << THÊM DÒNG NÀY VÀO ĐÂY
   '/api/docs',                 // API tài liệu Swagger
 
+  // == API DÙNG HYBRID AUTH (Custom Token) ==
+  '/api/plans(.*)',            // Cho phép Custom Token xử lý
+  '/api/user/plan(.*)',        // Cho phép Custom Token xử lý
+
   // Có thể thêm các API công khai khác ở đây nếu cần
   // ví dụ: '/api/market-data'
 ]);
