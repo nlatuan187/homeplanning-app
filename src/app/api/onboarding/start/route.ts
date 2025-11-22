@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { startOnboardingPlan } from '@/lib/services/onboardingService';
 import logger from '@/lib/logger';
 import { verifyMobileToken } from '@/lib/mobileAuth';
+import { db } from '@/lib/db';
 
 // Schema này có thể được chia sẻ giữa các file nếu cần
 const quickCheckSchema = z.object({
@@ -99,9 +100,9 @@ export async function POST(req: NextRequest) {
     // Try to get user details from Clerk if possible (for email), but don't fail if not
     let userEmail: string | undefined;
     try {
-      const user = await currentUser();
+      const user = await db.user.findUnique({ where: { id: userId } });
       if (user) {
-        userEmail = user.emailAddresses[0]?.emailAddress;
+        userEmail = user.email;
       }
     } catch (e) {
       // Ignore error if currentUser fails (e.g. when using custom token)
