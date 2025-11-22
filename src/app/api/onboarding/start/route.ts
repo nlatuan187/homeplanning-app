@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { startOnboardingPlan } from '@/lib/services/onboardingService';
 import logger from '@/lib/logger';
+import { verifyMobileToken } from '@/lib/mobileAuth';
 
 // Schema này có thể được chia sẻ giữa các file nếu cần
 const quickCheckSchema = z.object({
@@ -86,15 +87,25 @@ const quickCheckSchema = z.object({
  *       '500':
  *         description: Internal Server Error.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // 1. Xác thực người dùng qua JWT token
-    const { userId } = await auth();
-    const user = await currentUser();
-    if (!userId || !user) {
+    // 1. Xác thực người dùng (Hybrid: Clerk + Custom Token)
+    const userId = await verifyMobileToken(req);
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const userEmail = user.emailAddresses[0]?.emailAddress;
+
+    // Try to get user details from Clerk if possible (for email), but don't fail if not
+    let userEmail: string | undefined;
+    try {
+      const user = await currentUser();
+      if (user) {
+        userEmail = user.emailAddresses[0]?.emailAddress;
+      }
+    } catch (e) {
+      // Ignore error if currentUser fails (e.g. when using custom token)
+    }
 
     // 2. Lấy và validate dữ liệu từ mobile app
     const body = await req.json();
