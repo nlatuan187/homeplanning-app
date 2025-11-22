@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
  * /api/auth/sign-in:
  *   post:
  *     summary: Sign in a user manually
- *     description: Signs in a user in the Clerk system using email and password. This endpoint is public.
+ *     description: Signs in a user in the Clerk system using email and password. Returns both ticket and sessionToken.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -27,13 +27,19 @@ import { NextResponse } from 'next/server';
  *               properties:
  *                 ticket:
  *                   type: string
- *                   description: Sign-in ticket (needs to be exchanged for session token)
+ *                   description: Sign-in ticket
  *                 userId:
  *                   type: string
  *                   description: User ID
  *                 url:
  *                   type: string
  *                   description: Optional URL for web redirect
+ *                 token:
+ *                   type: string
+ *                   description: Session token (JWT) for authentication
+ *                 sessionData:
+ *                   type: object
+ *                   description: Full session data from Clerk
  *       '401':
  *         description: Invalid credentials.
  *       '500':
@@ -78,10 +84,52 @@ export async function POST(request: Request) {
       expiresInSeconds: 2592000, // Token hết hạn sau 30 ngày
     });
 
+    // 4. Exchange ticket để lấy sessionToken ngay lập tức
+    const fapiUrl = 'https://clerk.muanha.finful.co/v1/client/sign_ins?';
+
+    console.log(`Exchanging ticket at ${fapiUrl}...`);
+
+    const exchangeResponse = await fetch(fapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        strategy: 'ticket',
+        ticket: signInToken.token,
+      }),
+    });
+
+    const exchangeData = await exchangeResponse.json();
+
+    if (!exchangeResponse.ok) {
+      console.error('Clerk FAPI Error:', exchangeData);
+      // Vẫn trả về ticket nếu exchange thất bại
+      return NextResponse.json({
+        ticket: signInToken.token,
+        userId: user.id,
+        url: signInToken.url,
+        exchangeError: 'Failed to exchange ticket for session token',
+        exchangeDetails: exchangeData
+      });
+    }
+
+    // Lấy session token từ response
+    const sessionId = exchangeData.client?.sessions?.[0]?.id;
+    const lastActiveSessionId = exchangeData.client?.last_active_session_id;
+
+    // Tìm session token từ các sessions
+    let sessionToken = null;
+    if (exchangeData.client?.sessions) {
+      const activeSession = exchangeData.client.sessions.find(
+        (s: any) => s.id === (lastActiveSessionId || sessionId)
+      );
+      sessionToken = activeSession?.last_active_token?.jwt;
+    }
+
     return NextResponse.json({
-      ticket: signInToken.token, // Đổi tên thành ticket để tránh nhầm lẫn
       userId: user.id,
-      url: signInToken.url // URL để sign in (optional, dùng cho web redirect)
+      token: sessionToken,
     });
 
   } catch (error) {
