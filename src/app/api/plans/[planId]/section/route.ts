@@ -319,6 +319,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
             }
         }
         logger.error(`[API_SECTION_PATCH]`, { error: String(error) });
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        // Temporary debug response
+        return NextResponse.json({
+            error: "Internal Server Error",
+            details: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+        }, { status: 500 });
     }
 }
