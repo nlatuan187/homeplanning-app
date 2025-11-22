@@ -52,6 +52,9 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
  *                 lastName:
  *                   type: string
  *                   description: User's last name
+ *                 token:
+ *                   type: string
+ *                   description: Session token (JWT) for authentication
  *                 ticket:
  *                   type: string
  *                   description: Sign-in ticket (needs to be exchanged for session token)
@@ -99,15 +102,59 @@ export async function POST(req: Request) {
       expiresInSeconds: 2592000, // Token hết hạn sau 30 ngày
     });
 
-    // 4. Trả về thông tin người dùng và ticket
+    // 4. Exchange ticket để lấy sessionToken ngay lập tức
+    // Mobile app cần session token (JWT) để gọi các API khác, không phải ticket (chỉ dùng 1 lần)
+    const fapiUrl = 'https://clerk.muanha.finful.co/v1/client/sign_ins?';
+
+    console.log(`[MOBILE_AUTH] Exchanging ticket at ${fapiUrl}...`);
+
+    const exchangeResponse = await fetch(fapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        strategy: 'ticket',
+        ticket: signInToken.token,
+      }),
+    });
+
+    const exchangeData = await exchangeResponse.json();
+
+    if (!exchangeResponse.ok) {
+      console.error('[MOBILE_AUTH] Clerk FAPI Error:', exchangeData);
+      // Fallback: Trả về ticket nếu exchange thất bại (để debug hoặc xử lý ở client)
+      return NextResponse.json({
+        success: true, // Vẫn coi là thành công bước 1
+        ticket: signInToken.token,
+        userId: user.id,
+        url: signInToken.url,
+        exchangeError: 'Failed to exchange ticket for session token',
+      });
+    }
+
+    // Lấy session token từ response
+    const sessionId = exchangeData.client?.sessions?.[0]?.id;
+    const lastActiveSessionId = exchangeData.client?.last_active_session_id;
+
+    // Tìm session token từ các sessions
+    let sessionToken = null;
+    if (exchangeData.client?.sessions) {
+      const activeSession = exchangeData.client.sessions.find(
+        (s: any) => s.id === (lastActiveSessionId || sessionId)
+      );
+      sessionToken = activeSession?.last_active_token?.jwt;
+    }
+
+    // 5. Trả về thông tin người dùng và token
     return NextResponse.json({
       success: true,
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      ticket: signInToken.token, // Đổi tên thành ticket
-      url: signInToken.url, // URL để sign in (optional)
+      token: sessionToken, // Token quan trọng nhất để gọi API
+      ticket: signInToken.token, // Vẫn trả về ticket nếu cần (dù đã bị consume)
     });
 
   } catch (error) {
