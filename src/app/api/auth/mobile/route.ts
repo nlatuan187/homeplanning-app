@@ -1,19 +1,14 @@
 import { NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
-import jwt from 'jsonwebtoken';
-
-// Use a specific secret for mobile auth to avoid any confusion
-// In production, this should be a strong environment variable
-const JWT_SECRET = process.env.CLERK_SECRET_KEY || 'mobile_auth_secret_fallback_12345';
+import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 
 /**
  * @swagger
  * /api/auth/mobile:
  *   post:
- *     summary: Authenticate mobile user with Clerk (Custom Long-Lived Token)
+ *     summary: Authenticate mobile user with Clerk
  *     description: |
  *       Authenticates mobile users using Clerk's headless authentication.
- *       Returns a custom long-lived JWT (30 days) for mobile app usage.
+ *       Returns user information and sign-in token for mobile app usage.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -59,7 +54,13 @@ const JWT_SECRET = process.env.CLERK_SECRET_KEY || 'mobile_auth_secret_fallback_
  *                   description: User's last name
  *                 token:
  *                   type: string
- *                   description: Custom Long-Lived JWT (30 days)
+ *                   description: Session token (JWT) for authentication
+ *                 ticket:
+ *                   type: string
+ *                   description: Sign-in ticket (needs to be exchanged for session token)
+ *                 url:
+ *                   type: string
+ *                   description: URL for sign-in (optional)
  *       '400':
  *         description: Bad Request - Missing email or password.
  *       '401':
@@ -94,30 +95,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
     }
 
-    // 3. Tạo Custom JWT (Long-lived)
-    const payload = {
+    // 3. Tạo Sign-In Token cho mobile app (hoạt động cả dev và production)
+    // Mobile app sẽ dùng token này để authenticate thông qua Clerk SDK
+    const signInToken = await (await clerkClient()).signInTokens.createSignInToken({
       userId: user.id,
-      email: user.emailAddresses[0]?.emailAddress,
-      firstName: user.firstName,
-      lastName: user.lastName,
-    };
-
-    // Explicitly use HS256
-    const token = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: '30d',
-      algorithm: 'HS256'
+      expiresInSeconds: 2592000, // Token hết hạn sau 30 ngày
     });
 
-    console.log(`[MOBILE_AUTH] Generated custom token for user ${user.id}`);
+    // 4. Exchange ticket để lấy sessionToken ngay lập tức
+    // Mobile app cần session token (JWT) để gọi các API khác, không phải ticket (chỉ dùng 1 lần)
+    const fapiUrl = 'https://clerk.muanha.finful.co/v1/client/sign_ins?';
 
-    // 4. Trả về thông tin người dùng và token
+    console.log(`[MOBILE_AUTH] Exchanging ticket at ${fapiUrl}...`);
+
+    const exchangeResponse = await fetch(fapiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        strategy: 'ticket',
+        ticket: signInToken.token,
+      }),
+    });
+
+    const exchangeData = await exchangeResponse.json();
+
+    if (!exchangeResponse.ok) {
+      console.error('[MOBILE_AUTH] Clerk FAPI Error:', exchangeData);
+      // Fallback: Trả về ticket nếu exchange thất bại (để debug hoặc xử lý ở client)
+      return NextResponse.json({
+        success: true, // Vẫn coi là thành công bước 1
+        ticket: signInToken.token,
+        userId: user.id,
+        url: signInToken.url,
+        exchangeError: 'Failed to exchange ticket for session token',
+      });
+    }
+
+    // Lấy session token từ response
+    const sessionId = exchangeData.client?.sessions?.[0]?.id;
+    const lastActiveSessionId = exchangeData.client?.last_active_session_id;
+
+    // Tìm session token từ các sessions
+    let sessionToken = null;
+    if (exchangeData.client?.sessions) {
+      const activeSession = exchangeData.client.sessions.find(
+        (s: any) => s.id === (lastActiveSessionId || sessionId)
+      );
+      sessionToken = activeSession?.last_active_token?.jwt;
+    }
+
+    // 5. Trả về thông tin người dùng và token
     return NextResponse.json({
       success: true,
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      token: token,
+      token: sessionToken, // Token quan trọng nhất để gọi API
+      ticket: signInToken.token, // Vẫn trả về ticket nếu cần (dù đã bị consume)
     });
 
   } catch (error) {
@@ -135,7 +172,7 @@ export async function POST(req: Request) {
  *     summary: Get current user information
  *     description: |
  *       Returns current authenticated user information for mobile app.
- *       Requires valid Custom JWT token in Bearer header.
+ *       Requires valid Clerk JWT token.
  *     tags: [Authentication]
  *     security:
  *       - BearerAuth: []
@@ -167,40 +204,33 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    // 1. Lấy token từ Header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
+    console.log('[MOBILE_AUTH_GET] Headers:', Object.fromEntries(req.headers));
 
-    if (!token) {
-      console.log('[MOBILE_AUTH_GET] No token provided');
-      return NextResponse.json({ error: 'Unauthorized: No token provided' }, { status: 401 });
-    }
+    const authResult = await auth();
+    console.log('[MOBILE_AUTH_GET] Auth Result:', JSON.stringify(authResult, null, 2));
 
-    // 2. Verify Token
-    try {
-      // Debug info
-      console.log('[MOBILE_AUTH_GET] Verifying token...');
+    const { userId } = authResult;
+    const user = await currentUser();
 
-      // Explicitly allow HS256
-      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as any;
-
-      console.log('[MOBILE_AUTH_GET] Token verified for user:', decoded.userId);
-
+    if (!userId || !user) {
+      console.log('[MOBILE_AUTH_GET] Unauthorized: userId or user is missing');
       return NextResponse.json({
-        success: true,
-        userId: decoded.userId,
-        email: decoded.email,
-        firstName: decoded.firstName,
-        lastName: decoded.lastName,
-      });
-
-    } catch (err) {
-      console.error('[MOBILE_AUTH_GET] Token verification failed:', err);
-      return NextResponse.json({
-        error: 'Unauthorized: Invalid or expired token',
-        details: (err as Error).message
+        error: 'Unauthorized',
+        debug: {
+          userId,
+          hasUser: !!user,
+          authMessage: 'Check server logs for details'
+        }
       }, { status: 401 });
     }
+
+    return NextResponse.json({
+      success: true,
+      userId: user.id,
+      email: user.emailAddresses[0]?.emailAddress,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
 
   } catch (error) {
     console.error('[MOBILE_AUTH_GET_ERROR]', error);
