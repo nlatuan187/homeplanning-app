@@ -32,26 +32,26 @@ const analysisContent = {
   },
   HCMC: {
     CHUNG_CU: {
-        title: "Phân tích Thị trường Chung cư tại TP.HCM",
-        summary: "Bạn đang chọn một giải pháp nhà ở hiện đại, linh hoạt và phù hợp với nhịp sống năng động.",
-        image: "/onboarding/hcmc-chungcu.png",
-        points: {
-            "Bức tranh toàn cảnh": "Thị trường chung cư TP.HCM cực kỳ sôi động với đa dạng phân khúc, đáp ứng mọi nhu cầu từ cơ bản đến cao cấp.",
-            "Động lực chính": "Dân số trẻ và tốc độ đô thị hóa nhanh chóng là động lực tăng trưởng chính, giữ cho thị trường luôn có nhu cầu cao.",
-            "Ý nghĩa với bạn (người mua nhà)": "Chung cư là lựa chọn thông minh để an cư tại một thành phố lớn, với nhiều tiện ích đi kèm và cộng đồng dân cư văn minh.",
-        },
-        ctaText: "Tôi đã hiểu, tiếp tục",
+      title: "Phân tích Thị trường Chung cư tại TP.HCM",
+      summary: "Bạn đang chọn một giải pháp nhà ở hiện đại, linh hoạt và phù hợp với nhịp sống năng động.",
+      image: "/onboarding/hcmc-chungcu.png",
+      points: {
+        "Bức tranh toàn cảnh": "Thị trường chung cư TP.HCM cực kỳ sôi động với đa dạng phân khúc, đáp ứng mọi nhu cầu từ cơ bản đến cao cấp.",
+        "Động lực chính": "Dân số trẻ và tốc độ đô thị hóa nhanh chóng là động lực tăng trưởng chính, giữ cho thị trường luôn có nhu cầu cao.",
+        "Ý nghĩa với bạn (người mua nhà)": "Chung cư là lựa chọn thông minh để an cư tại một thành phố lớn, với nhiều tiện ích đi kèm và cộng đồng dân cư văn minh.",
+      },
+      ctaText: "Tôi đã hiểu, tiếp tục",
     },
     NHA_DAT: {
-        title: "Phân tích Thị trường Nhà đất tại TP.HCM",
-        summary: "Lựa chọn của bạn thể hiện tầm nhìn đầu tư dài hạn vào một trong những thị trường bất động sản giá trị nhất cả nước.",
-        image: "/onboarding/hcmc-nhadat.png",
-        points: {
-            "Bức tranh toàn cảnh": "Giá trị nhà đất tại TP.HCM liên tục tăng trưởng nhờ vị thế trung tâm kinh tế và sự khan hiếm của quỹ đất.",
-            "Động lực chính": "Dòng vốn đầu tư mạnh mẽ và nhu cầu tích lũy tài sản của người dân là những yếu tố cốt lõi thúc đẩy thị trường.",
-            "Ý nghĩa với bạn (người mua nhà)": "Đây là một tài sản lớn có khả năng chống lại lạm phát và gia tăng giá trị vượt trội theo thời gian, nhưng cần sự chuẩn bị tài chính vững vàng.",
-        },
-        ctaText: "Tôi đã hiểu, tiếp tục",
+      title: "Phân tích Thị trường Nhà đất tại TP.HCM",
+      summary: "Lựa chọn của bạn thể hiện tầm nhìn đầu tư dài hạn vào một trong những thị trường bất động sản giá trị nhất cả nước.",
+      image: "/onboarding/hcmc-nhadat.png",
+      points: {
+        "Bức tranh toàn cảnh": "Giá trị nhà đất tại TP.HCM liên tục tăng trưởng nhờ vị thế trung tâm kinh tế và sự khan hiếm của quỹ đất.",
+        "Động lực chính": "Dòng vốn đầu tư mạnh mẽ và nhu cầu tích lũy tài sản của người dân là những yếu tố cốt lõi thúc đẩy thị trường.",
+        "Ý nghĩa với bạn (người mua nhà)": "Đây là một tài sản lớn có khả năng chống lại lạm phát và gia tăng giá trị vượt trội theo thời gian, nhưng cần sự chuẩn bị tài chính vững vàng.",
+      },
+      ctaText: "Tôi đã hiểu, tiếp tục",
     }
   }
 };
@@ -74,9 +74,9 @@ const stepPayloads = {
   },
   targetHousePriceN0: {
     key: "targetHousePriceN0",
-    text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu? (đơn vị: triệu VNĐ)",
+    text: "Ngôi nhà mơ ước của bạn hiện tại đang có giá bao nhiêu? (đơn vị: tỷ VNĐ)",
     type: "number",
-    unit: "triệu VNĐ",
+    unit: "Tỷ VNĐ",
   },
   targetHouseType: {
     key: "targetHouseType",
@@ -110,8 +110,8 @@ const stepPayloads = {
     text: "Bạn có người đồng hành tài chính (vợ/chồng/anh chị em) khi mua nhà không?",
     type: "options",
     options: [
-      { value: "CO", label: "Có" },
-      { value: "KHONG", label: "Không" },
+      { value: true, label: "Có" },
+      { value: false, label: "Không" },
     ],
   },
   initialSavings: (answers: Record<string, any>) => ({
