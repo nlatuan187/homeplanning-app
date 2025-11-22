@@ -41,10 +41,30 @@ import { planSchema } from "@/lib/validators/plan";
  */
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    const clerkUser = await currentUser();
-    if (!userId || !clerkUser) {
+    // Use hybrid auth verification
+    const { verifyMobileToken } = await import('@/lib/mobileAuth');
+    const userId = await verifyMobileToken(req);
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get user details (email) - try currentUser() first, then fallback to clerkClient
+    let userEmail = "";
+    const clerkUser = await currentUser();
+
+    if (clerkUser) {
+      userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    } else {
+      // Fallback for Custom Token
+      try {
+        const { clerkClient } = await import('@clerk/nextjs/server');
+        const user = await (await clerkClient()).users.getUser(userId);
+        userEmail = user.emailAddresses[0]?.emailAddress;
+      } catch (err) {
+        console.error("Failed to fetch user details from Clerk:", err);
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
     }
 
     const body = await req.json();
@@ -63,8 +83,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Năm mục tiêu phải là năm hiện tại hoặc trong tương lai" }, { status: 400 });
     }
     const targetHousePriceN0 = priceInBillion * 1000;
-
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
     const normalizedData = {
       ...restData,
@@ -107,10 +125,13 @@ export async function POST(req: NextRequest) {
  *                 $ref: '#/components/schemas/Plan'
  *       '401': { description: "Unauthorized." }
  *       '500': { description: "Internal Server Error." }
+ *       '404': { description: "User not found." }
  */
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    // Use hybrid auth verification
+    const { verifyMobileToken } = await import('@/lib/mobileAuth');
+    const userId = await verifyMobileToken(req);
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });

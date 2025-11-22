@@ -64,7 +64,10 @@ const bodySchema = z.object({
  */
 export async function PATCH(req: NextRequest, { params }: { params: { planId: string } }) {
     try {
-        const { userId } = await auth();
+        // Use hybrid auth verification
+        const { verifyMobileToken } = await import('@/lib/mobileAuth');
+        const userId = await verifyMobileToken(req);
+
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const { planId } = params;
