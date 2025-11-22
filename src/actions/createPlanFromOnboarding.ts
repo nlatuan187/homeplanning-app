@@ -15,7 +15,7 @@ export async function createPlanFromOnboarding(
 ) {
   console.log("[createPlanFromOnboarding] Called with data:", {
     yearsToPurchase: onboardingData.yearsToPurchase,
-    targetHousePriceN0: onboardingData.targetHousePriceN0,
+    targetHousePriceN0: onboardingData.targetHousePriceN0 ?? 0 * 1000,
     monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
   });
 

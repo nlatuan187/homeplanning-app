@@ -127,12 +127,7 @@ export async function updateAssumptions(planId: string, userId: string, data: Up
             data,
         });
 
-        // 3. Delete the onboarding progress as this is the final step
-        await tx.onboardingProgress.deleteMany({
-            where: { planId },
-        });
-
-        logger.info(`Deleted onboarding progress for plan after assumptions update`, { planId });
+        // 3. (Removed) Do not delete onboarding progress here. It will be updated to COMPLETED in the API.
 
         return updatedPlan;
     });

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import logger from "@/lib/logger";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { OnboardingSectionState } from "@prisma/client";
 import {
     updateSpending, updateSpendingSchema,
     updateAssumptions, updateAssumptionsSchema,
@@ -114,6 +115,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     db.plan.update({
                         where: { id: planId },
                         data: { firstViableYear: result.earliestPurchaseYear }
+                    }),
+                    db.onboardingProgress.updateMany({
+                        where: { planId },
+                        data: { spendingState: OnboardingSectionState.COMPLETED }
                     })
                 ]);
 
@@ -169,6 +174,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     db.plan.update({
                         where: { id: planId },
                         data: { firstViableYear: result.earliestPurchaseYear }
+                    }),
+                    db.onboardingProgress.updateMany({
+                        where: { planId },
+                        data: { familySupportState: OnboardingSectionState.COMPLETED }
                     })
                 ]);
 
@@ -266,6 +275,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     db.plan.update({
                         where: { id: planId },
                         data: { firstViableYear: result.earliestPurchaseYear }
+                    }),
+                    db.onboardingProgress.updateMany({
+                        where: { planId },
+                        data: { assumptionState: OnboardingSectionState.COMPLETED }
                     })
                 ]);
 
