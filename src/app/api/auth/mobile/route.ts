@@ -204,12 +204,23 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth();
+    console.log('[MOBILE_AUTH_GET] Headers:', Object.fromEntries(req.headers));
+
+    const authResult = await auth();
+    console.log('[MOBILE_AUTH_GET] Auth Result:', JSON.stringify(authResult, null, 2));
+
+    const { userId } = authResult;
     const user = await currentUser();
 
     if (!userId || !user) {
+      console.log('[MOBILE_AUTH_GET] Unauthorized: userId or user is missing');
       return NextResponse.json({
-        error: 'Unauthorized'
+        error: 'Unauthorized',
+        debug: {
+          userId,
+          hasUser: !!user,
+          authMessage: 'Check server logs for details'
+        }
       }, { status: 401 });
     }
 
