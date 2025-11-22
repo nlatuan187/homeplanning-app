@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { z } from 'zod';
+import { db } from '@/lib/db';
 
 // Schema để validate dữ liệu từ client
 const signUpSchema = z.object({
@@ -63,7 +64,16 @@ export async function POST(req: Request) {
       password,
     });
 
-    // 3. Trả về thành công
+    // 3. Tạo user trong database local để đồng bộ
+    await db.user.create({
+      data: {
+        id: newUser.id,
+        email: emailAddress,
+        // Các trường khác có thể để default hoặc null
+      }
+    });
+
+    // 4. Trả về thành công
     return NextResponse.json({ success: true, userId: newUser.id }, { status: 201 });
 
   } catch (error: any) {
