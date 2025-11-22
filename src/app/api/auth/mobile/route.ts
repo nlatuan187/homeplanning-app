@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.CLERK_SECRET_KEY || 'default_secret_fallback_do_not_use_in_prod';
+// Use a specific secret for mobile auth to avoid any confusion
+// In production, this should be a strong environment variable
+const JWT_SECRET = process.env.CLERK_SECRET_KEY || 'mobile_auth_secret_fallback_12345';
 
 /**
  * @swagger
@@ -93,8 +95,6 @@ export async function POST(req: Request) {
     }
 
     // 3. Tạo Custom JWT (Long-lived)
-    // Thay vì dùng Clerk Session Token (ngắn hạn), ta tự tạo JWT riêng
-    // Token này sẽ có hạn 30 ngày
     const payload = {
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
@@ -102,8 +102,10 @@ export async function POST(req: Request) {
       lastName: user.lastName,
     };
 
+    // Explicitly use HS256
     const token = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: '30d', // Token sống 30 ngày
+      expiresIn: '30d',
+      algorithm: 'HS256'
     });
 
     console.log(`[MOBILE_AUTH] Generated custom token for user ${user.id}`);
@@ -115,7 +117,7 @@ export async function POST(req: Request) {
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
-      token: token, // Token này dùng được 30 ngày
+      token: token,
     });
 
   } catch (error) {
@@ -176,10 +178,14 @@ export async function GET(req: Request) {
 
     // 2. Verify Token
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      // Debug info
+      console.log('[MOBILE_AUTH_GET] Verifying token...');
+
+      // Explicitly allow HS256
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as any;
+
       console.log('[MOBILE_AUTH_GET] Token verified for user:', decoded.userId);
 
-      // 3. Trả về luôn từ token (nhanh nhất)
       return NextResponse.json({
         success: true,
         userId: decoded.userId,

@@ -189,7 +189,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     section: "familySupport",
                     result: {
                         caseNumber: caseNumber,
-                        customessage: customMessage,
+                        customMessage: customMessage,
                         earliestPurchaseYear: result.earliestPurchaseYear,
                         hasImproved: existingEarliestYear > 0 && result.earliestPurchaseYear < existingEarliestYear
                     },
