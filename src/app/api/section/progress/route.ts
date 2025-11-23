@@ -35,19 +35,25 @@ function formatProgressResponse(progress: OnboardingProgress | null): FormattedP
     return {
         quickCheck: {
             state: quickCheckState,
-            status: "ACTIVATE" // Always active (first section)
+            status: quickCheckState === OnboardingSectionState.COMPLETED ? "INACTIVATE" : "ACTIVATE"
         },
         familySupport: {
             state: familySupportState,
-            status: quickCheckState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE"
+            status: familySupportState === OnboardingSectionState.COMPLETED
+                ? "INACTIVATE"
+                : (quickCheckState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
         },
         spending: {
             state: spendingState,
-            status: familySupportState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE"
+            status: spendingState === OnboardingSectionState.COMPLETED
+                ? "INACTIVATE"
+                : (familySupportState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
         },
         assumption: {
             state: assumptionState,
-            status: spendingState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE"
+            status: assumptionState === OnboardingSectionState.COMPLETED
+                ? "INACTIVATE"
+                : (spendingState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
         }
     };
 }
