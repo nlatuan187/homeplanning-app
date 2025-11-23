@@ -26,34 +26,43 @@ interface FormattedProgress {
  * Helper function to format progress response with status field
  * Status is determined by sequential completion logic
  */
+/**
+ * Helper function to format progress response with status field
+ * Status is determined by sequential completion logic
+ */
 function formatProgressResponse(progress: OnboardingProgress | null): FormattedProgress {
     const quickCheckState = progress?.quickCheckState || OnboardingSectionState.NOT_STARTED;
     const familySupportState = progress?.familySupportState || OnboardingSectionState.NOT_STARTED;
     const spendingState = progress?.spendingState || OnboardingSectionState.NOT_STARTED;
     const assumptionState = progress?.assumptionState || OnboardingSectionState.NOT_STARTED;
 
+    const isQuickCheckDone = quickCheckState === OnboardingSectionState.COMPLETED;
+    const isFamilySupportDone = familySupportState === OnboardingSectionState.COMPLETED;
+    const isSpendingDone = spendingState === OnboardingSectionState.COMPLETED;
+    const isAssumptionDone = assumptionState === OnboardingSectionState.COMPLETED;
+
     return {
         quickCheck: {
             state: quickCheckState,
-            status: quickCheckState === OnboardingSectionState.COMPLETED ? "INACTIVATE" : "ACTIVATE"
+            status: isQuickCheckDone ? "INACTIVATE" : "ACTIVATE"
         },
         familySupport: {
             state: familySupportState,
-            status: familySupportState === OnboardingSectionState.COMPLETED
+            status: isFamilySupportDone
                 ? "INACTIVATE"
-                : (quickCheckState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
+                : (isQuickCheckDone ? "ACTIVATE" : "INACTIVATE")
         },
         spending: {
             state: spendingState,
-            status: spendingState === OnboardingSectionState.COMPLETED
+            status: isSpendingDone
                 ? "INACTIVATE"
-                : (familySupportState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
+                : (isQuickCheckDone && isFamilySupportDone ? "ACTIVATE" : "INACTIVATE")
         },
         assumption: {
             state: assumptionState,
-            status: assumptionState === OnboardingSectionState.COMPLETED
+            status: isAssumptionDone
                 ? "INACTIVATE"
-                : (spendingState === OnboardingSectionState.COMPLETED ? "ACTIVATE" : "INACTIVATE")
+                : (isQuickCheckDone && isFamilySupportDone && isSpendingDone ? "ACTIVATE" : "INACTIVATE")
         }
     };
 }
