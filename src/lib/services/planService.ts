@@ -5,7 +5,6 @@ import logger from "@/lib/logger";
 
 // --- Section: Family Support ---
 export const updateFamilySupportSchema = z.object({
-    coApplicantMonthlyIncome: z.number().nonnegative().nullable().optional(),
     monthlyOtherIncome: z.number().nonnegative().optional(), // FIX: Removed .nullable() to match Prisma schema
     hasFamilySupport: z.boolean().nullable().optional(),
     familySupportType: z.nativeEnum(FamilySupportType).nullable().optional(),
