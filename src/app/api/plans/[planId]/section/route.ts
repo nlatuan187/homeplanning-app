@@ -265,14 +265,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
                     // Case 4: Mong muốn là x nhưng không có được năm sớm nhất (earliestYear =0)
                     caseNumber = 4;
                     customMessage = "Mọi kế hoạch lớn đều cần sự tinh chỉnh. Bạn có muốn trò chuyện 15 phút miễn phí với chuyên gia của Finful để cùng tìm ra giải pháp không?";
-                } else if (projectedYear - currentYear <= 1) {
-                    // Case 5: Năm sớm nhất - hiện tại <= 1
-                    caseNumber = 5;
-                    customMessage = "Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết.";
                 } else if (projectedYear < confirmedYear) {
                     // Case 1: mong muốn là x nhưng có thể mua sớm hơn x
+                    // Prioritize Case 1 over Case 5 to ensure "Better" status is reported even if within 1 year.
                     caseNumber = 1;
                     customMessage = `Bạn có thể mua nhà vào năm ${confirmedYear} như mong muốn, thậm chí có thể mua sớm hơn vào năm ${projectedYear}!`;
+                } else if (projectedYear - currentYear <= 1) {
+                    // Case 5: Năm sớm nhất - hiện tại <= 1
+                    // Applies if not Case 1 (Better). Covers Case 2 (Worse) and Case 3 (Same) if they are within 1 year.
+                    caseNumber = 5;
+                    customMessage = "Câu hỏi bây giờ là: “Đâu là chiến lược hành động tốt nhất?”. Để trả lời câu hỏi này, một buổi hoạch định chiến lược 1-1 với chuyên gia của Finful là bước đi cần thiết.";
                 } else if (projectedYear > confirmedYear) {
                     // Case 2: Mong muốn là x nhưng thực tế là năm sớm nhất lại lớn hơn x
                     caseNumber = 2;
