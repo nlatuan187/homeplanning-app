@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -69,10 +69,10 @@ const SupportSheetContent = () => {
             <li><strong className="font-medium text-slate-100">Trải nghiệm sản phẩm:</strong> Có điểm nào trong Finful khiến bạn thấy dễ dùng, hay còn bối rối, cần cải thiện?</li>
             <li><strong className="font-medium text-slate-100">Mong muốn tương lai:</strong> Nếu Finful có thể làm thêm một điều gì đó cho kế hoạch tài chính của bạn, đó sẽ là gì?</li>
           </ul>
-            <p>
+          <p>
             Để cảm ơn thời gian và những đóng góp giá trị của bạn, Finful xin gửi tặng <strong>100.000 VNĐ</strong> sau cuộc trò chuyện.
             Vui lòng đặt lịch hẹn với Tuấn qua Cal.com bên dưới.
-            </p>
+          </p>
           <p>
             Nếu bạn chưa tiện trò chuyện, cũng có thể để lại những suy nghĩ ban đầu của mình vào khung bên dưới.
           </p>
@@ -133,8 +133,8 @@ const SupportSheetContent = () => {
 };
 
 interface DashboardClientProps {
-    initialPlan: PlanForDashboard | null;
-    initialProgress: OnboardingProgress | null;
+  initialPlan: PlanForDashboard | null;
+  initialProgress: OnboardingProgress | null;
 }
 
 export default function DashboardClient({ initialPlan, initialProgress }: DashboardClientProps) {
@@ -148,12 +148,12 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
   }, []);
 
   const [isSupportSheetOpen, setIsSupportSheetOpen] = useState(false);
-  const targetHousePrice = ((plan?.targetHousePriceN0 || 0) * Math.pow(1 + (plan?.pctHouseGrowth || 0) / 100, (plan?.confirmedPurchaseYear || 0) - new Date().getFullYear()))/ 1000;
+  const targetHousePrice = ((plan?.targetHousePriceN0 || 0) * Math.pow(1 + (plan?.pctHouseGrowth || 0) / 100, (plan?.confirmedPurchaseYear || 0) - new Date().getFullYear())) / 1000;
   console.log("plan?.pctHouseGrowth", plan);
   console.log("targetHousePrice", targetHousePrice);
 
   const SupportCard = () => (
-    <Card 
+    <Card
       className="bg-slate-800 border-slate-700 hover:bg-slate-700/50 transition-colors cursor-pointer"
       onClick={() => setIsSupportSheetOpen(true)}
     >
@@ -207,7 +207,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
       </header>
 
       <div className="container mx-auto max-w-5xl p-4 pt-6 space-y-8">
-        <div 
+        <div
           className="bg-cover bg-center rounded-xl p-px"
           style={{ backgroundImage: 'url(/gradient_dashboard.png)' }}
         >
@@ -227,16 +227,12 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
         )}
 
         {plan && (
-          <div className="space-y-8">            
+          <div className="space-y-8">
             <h2 className="text-2xl font-bold text-slate-100">Kế hoạch của bạn</h2>
             <div className="space-y-4">
               {(() => {
                 const targetYear = plan.confirmedPurchaseYear;
-                const isViable = (plan.affordabilityOutcome === "ScenarioB" && plan.confirmedPurchaseYear);
-                const detailLink = isViable
-                  ? `/plan/${plan.id}/report`
-                  : `/plan/${plan.id}/results`;
-
+                const detailLink = `/plan/${plan.id}/report`
                 return (
                   <Card key={plan.id} className="bg-slate-900 border-slate-800">
                     <CardHeader>
@@ -249,22 +245,16 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
                             Tạo ngày: {new Date(plan.createdAt).toLocaleDateString("vi-VN")}
                           </CardDescription>
                         </div>
-                        {isViable ? (
-                          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-medium">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            <span>Có khả thi</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-red-500/20 text-red-300 text-xs font-medium">
-                            <XCircle className="h-3.5 w-3.5" />
-                            <span>Chưa khả thi</span>
-                          </div>
-                        )}
+
+                        <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-medium">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Có khả thi</span>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="text-sm text-slate-300 space-y-1.5 pt-2 pb-4">
                       <div className="flex items-center">
-                        <Home className="h-4 w-4 mr-2 text-slate-400" /> 
+                        <Home className="h-4 w-4 mr-2 text-slate-400" />
                         <span>{plan.targetHouseType} tại {plan.targetLocation}</span>
                       </div>
                       <div className="flex items-center">
@@ -286,7 +276,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
             </div>
           </div>
         )}
-        
+
         {plan && <SupportCard />}
       </div>
       <Sheet open={isSupportSheetOpen} onOpenChange={setIsSupportSheetOpen}>
@@ -294,7 +284,7 @@ export default function DashboardClient({ initialPlan, initialProgress }: Dashbo
           <SupportSheetContent />
         </SheetContent>
       </Sheet>
-      {plan && <BottomNavbar planId={plan.id}/>}
+      {plan && <BottomNavbar planId={plan.id} />}
     </main>
   );
 }

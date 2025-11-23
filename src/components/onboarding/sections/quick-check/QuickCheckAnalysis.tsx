@@ -38,7 +38,7 @@ const analysisContent: any = {
             {
                 image: "/onboarding/hanoi-chungcu.png",
                 summaryParts: [
-                    { text: "Lựa chọn của bạn đang tập trung vào" },
+                    { text: "Lựa chọn của bạn đang tập trung vào " },
                     { text: "sự an toàn", highlight: true },
                     { text: " và " },
                     { text: "tăng trưởng ổn định.", highlight: true },
@@ -77,7 +77,7 @@ const analysisContent: any = {
             {
                 image: "/onboarding/hanoi-nhadat.png",
                 summaryParts: [
-                    { text: "Lựa chọn của bạn đòi hỏi" },
+                    { text: "Lựa chọn của bạn đòi hỏi " },
                     { text: "sự kiên nhẫn", highlight: true },
                     { text: " và " },
                     { text: "am hiểu sâu sắc về chu kỳ.", highlight: true },
@@ -118,7 +118,7 @@ const analysisContent: any = {
             {
                 image: "/onboarding/hcmc-chungcu.png",
                 summaryParts: [
-                    { text: "Bạn đang lựa chọn một thị trường của" },
+                    { text: "Bạn đang lựa chọn một thị trường của " },
                     { text: "giá trị thực", highlight: true },
                     { text: " và " },
                     { text: "sự bền vững.", highlight: true },
@@ -157,7 +157,7 @@ const analysisContent: any = {
             {
                 image: "/onboarding/hcmc-nhadat.png",
                 summaryParts: [
-                    { text: "Đây là một thị trường có" },
+                    { text: "Đây là một thị trường có " },
                     { text: "sự biến động mạnh.", highlight: true },
                 ],
             },
@@ -344,12 +344,12 @@ export default function QuickCheckAnalysis({ formData, onBack, onNext }: QuickCh
                             </div>
                         ) : (
                             <div className="w-full max-w-5xl px-4 flex-grow overflow-y-auto pb-12">
-                                <div className="relative w-full aspect-video mb-8 rounded-lg overflow-hidden">
+                                <div className="relative w-full h-64 md:h-96 mb-8 rounded-lg overflow-hidden">
                                     <Image
                                         src={currentStepContent.image}
                                         alt="Analysis"
                                         fill
-                                        className="object-cover"
+                                        className="object-contain"
                                     />
                                 </div>
                                 <div className="text-xl md:text-2xl text-white/90 leading-relaxed">

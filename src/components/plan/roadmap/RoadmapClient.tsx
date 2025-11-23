@@ -29,7 +29,7 @@ export default function RoadmapClient({
   currentSavings,
 }: RoadmapClientProps) {
   const router = useRouter();
-  
+
   const [progressPercentage, setProgressPercentage] = useState(savingsPercentage);
   const purchaseYear = plan.confirmedPurchaseYear ?? new Date(plan.createdAt).getFullYear() + plan.yearsToPurchase;
 
@@ -38,12 +38,12 @@ export default function RoadmapClient({
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto fixed inset-0 pt-2 flex flex-col z-10 bg-[#121212]">
-        <LoadingStep 
-          title="Vui lòng chờ" 
-          message="Đang chuyển hướng" 
+        <LoadingStep
+          title="Vui lòng chờ"
+          message="Đang chuyển hướng"
           percentage={100}
         />
-      </div>    
+      </div>
     );
   }
 
@@ -58,7 +58,7 @@ export default function RoadmapClient({
                   variant="ghost"
                   size="icon"
                   className="text-white absolute left-4"
-                  onClick={() => router.push(`/plan/${plan.id}/playground`)}
+                  onClick={() => router.push(`/dashboard`)}
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
@@ -119,10 +119,10 @@ export default function RoadmapClient({
             </div>
 
             <div className="bottom-0 inset-x-0 z-50 px-4 mb-2">
-              <MilestoneTimeline 
-                plan={plan} 
-                milestoneGroups={milestoneGroups} 
-                currentSavings={currentSavings} 
+              <MilestoneTimeline
+                plan={plan}
+                milestoneGroups={milestoneGroups}
+                currentSavings={currentSavings}
                 setIsLoading={setIsLoading}
               />
             </div>
@@ -130,7 +130,7 @@ export default function RoadmapClient({
             <div className="bottom-0 inset-x-0 z-50 px-4 mb-10 pb-5">
               <Button
                 className="w-full bg-white text-black font-semibold cursor-pointer rounded-xl shadow-lg"
-                onClick={() => router.push(`/plan/${plan.id}/report`)} 
+                onClick={() => router.push(`/plan/${plan.id}/report`)}
               >
                 Đọc kế hoạch tài chính chuyên sâu
               </Button>
