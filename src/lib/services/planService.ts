@@ -36,17 +36,6 @@ export const updateSpendingSchema = z.object({
     hasNewChild: z.boolean().optional(),
     yearToHaveChild: z.number().int().optional(),
     monthlyChildExpenses: z.number().nonnegative().optional(),
-
-    // Family Support fields (merged from updateFamilySupportSchema)
-    coApplicantMonthlyIncome: z.number().nonnegative().nullable().optional(),
-    monthlyOtherIncome: z.number().nonnegative().optional(),
-    hasFamilySupport: z.boolean().nullable().optional(),
-    familySupportType: z.nativeEnum(FamilySupportType).nullable().optional(),
-    familySupportAmount: z.number().nonnegative().nullable().optional(),
-    familyGiftTiming: z.nativeEnum(FamilyGiftTiming).nullable().optional(),
-    familyLoanRepaymentType: z.nativeEnum(FamilyLoanRepaymentType).nullable().optional(),
-    familyLoanInterestRate: z.number().nonnegative().nullable().optional(),
-    familyLoanTermYears: z.number().int().nullable().optional(),
 });
 export type UpdateSpendingData = z.infer<typeof updateSpendingSchema>;
 
@@ -58,16 +47,6 @@ export async function updateSpending(planId: string, userId: string, data: Updat
 
         // 2. Separate data into spending and family support fields
         const {
-            // Family Support fields
-            coApplicantMonthlyIncome,
-            monthlyOtherIncome,
-            hasFamilySupport,
-            familySupportType,
-            familySupportAmount,
-            familyGiftTiming,
-            familyLoanRepaymentType,
-            familyLoanInterestRate,
-            familyLoanTermYears,
             // Spending fields (rest)
             ...spendingData
         } = data;
@@ -77,28 +56,6 @@ export async function updateSpending(planId: string, userId: string, data: Updat
             where: { id: planId },
             data: spendingData,
         });
-
-        // 4. Update PlanFamilySupport table (if any family support data provided)
-        const familySupportData = {
-            coApplicantMonthlyIncome,
-            monthlyOtherIncome,
-            hasFamilySupport,
-            familySupportType,
-            familySupportAmount,
-            familyGiftTiming,
-            familyLoanRepaymentType,
-            familyLoanInterestRate,
-            familyLoanTermYears,
-        };
-
-        // Only update if at least one field is provided
-        if (Object.values(familySupportData).some(v => v !== undefined)) {
-            await tx.planFamilySupport.upsert({
-                where: { planId },
-                update: familySupportData,
-                create: { planId, ...familySupportData },
-            });
-        }
 
         return updatedPlan;
     });

@@ -169,11 +169,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
 
                 // 4. Update Cache and Plan
                 await db.$transaction([
-                    db.planReport.upsert({
-                        where: { planId },
-                        update: { projectionCache: result },
-                        create: { planId, projectionCache: result },
-                    }),
                     db.plan.update({
                         where: { id: planId },
                         data: { firstViableYear: result.earliestPurchaseYear }

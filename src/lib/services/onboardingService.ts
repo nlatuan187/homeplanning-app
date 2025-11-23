@@ -29,7 +29,7 @@ export async function startOnboardingPlan(
   const existingPlan = await db.plan.findFirst({ where: { userId } });
   if (existingPlan) {
     // Xóa plan cũ và tất cả dữ liệu liên quan
-    await db.plan.delete({ where: { id: existingPlan.id }});
+    await db.plan.delete({ where: { id: existingPlan.id } });
     logger.info("Service: Replaced existing plan for user", { userId, oldPlanId: existingPlan.id });
   }
 
@@ -48,7 +48,7 @@ export async function startOnboardingPlan(
       pctInvestmentReturn: 11.0,
       loanInterestRate: 11.0,
       loanTermYears: 25,
-      paymentMethod: "BankLoan",
+      paymentMethod: "fixed",
       // Sử dụng nested create để tạo familySupport nếu có dữ liệu
       familySupport: {
         create: familySupport ? (familySupport as any) : {},
@@ -66,12 +66,12 @@ export async function startOnboardingPlan(
       projectionCache: projectionCache as any,
     },
   });
-  
+
   const finalPlan = await db.plan.update({
-      where: { id: newPlan.id },
-      data: {
-          firstViableYear: projectionCache.earliestPurchaseYear
-      }
+    where: { id: newPlan.id },
+    data: {
+      firstViableYear: projectionCache.earliestPurchaseYear
+    }
   });
 
 

@@ -73,7 +73,7 @@ export async function computeOnboardingOutcome(plan: PlanWithDetails): Promise<{
   const targetYear = plan.confirmedPurchaseYear || (currentYear + (plan.yearsToPurchase || 0));
 
   // Find the earliest year where plan becomes affordable per engine output
-  const earliest = projections.find((row) => row.isAffordable) || undefined;
+  const earliest = projections.find((row) => row.buffer >= 0) || undefined;
   const earliestYear = earliest?.year || 0;
 
   const purchaseProjection = projections.find((r) => r.year === targetYear) || earliest || projections[0];
