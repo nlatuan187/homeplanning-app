@@ -161,6 +161,7 @@ export async function POST(req: Request) {
       success: true,
       caseNumber,
       message,
+      yearSelected: validation.data.yearsToPurchase,
       isAffordable,
       affordableYear,
       projectionData: projectionResult.projectionData

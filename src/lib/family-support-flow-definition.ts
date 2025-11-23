@@ -32,6 +32,13 @@ const stepPayloads = {
     ],
   },
 
+  coApplicantMonthlyIncome: {
+    key: "coApplicantMonthlyIncome",
+    text: "Bạn có nhận được hỗ trợ tài chính từ gia đình (bố mẹ, họ hàng,...) không?",
+    type: "number",
+    unit: "triệu VNĐ",
+  },
+
   familySupportType: {
     key: "familySupportType",
     text: "Đây là khoản cho TẶNG hay cho VAY?",
@@ -96,6 +103,7 @@ export const familySupportStepOrder = [
   { id: 'monthlyOtherIncome', type: 'QUESTION', payload: stepPayloads.monthlyOtherIncome },
   { id: 'familyAnalysis', type: 'EDUCATION', payload: stepPayloads.familyAnalysis },
   { id: 'hasFamilySupport', type: 'QUESTION', payload: stepPayloads.hasFamilySupport },
+  { id: 'coApplicantMonthlyIncome', type: 'QUESTION', payload: stepPayloads.coApplicantMonthlyIncome },
   {
     id: 'familySupportType',
     type: 'QUESTION',
