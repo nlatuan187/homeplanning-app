@@ -97,7 +97,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
 
                 const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
 
-                if (result.earliestPurchaseYear === existingEarliestYear) {
+                if (result.earliestPurchaseYear !== 0 && existingEarliestYear !== 0 && result.earliestPurchaseYear === existingEarliestYear) {
                     customMessage = "Chi tiêu rất ấn tượng đấy 😀";
                     caseNumber = 4;
                 } else if (result.earliestPurchaseYear > existingEarliestYear) {
