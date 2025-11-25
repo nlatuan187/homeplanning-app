@@ -331,15 +331,13 @@ export default function MultiStepQuestionForm({
             onClick={handleNext}
             className={cn(
               'w-full py-3.5 text-base rounded-sm mb-4',
-              isLastQuestion && isFinalForm
-                ? 'text-[#FFFFFF] bg-cyan-500 hover:bg-[#008C96]'
-                : 'text-[#292929] bg-white hover:bg-slate-200',
+              'text-[#292929] bg-white hover:bg-slate-200'
             )}
             disabled={
               currentValue === undefined || currentValue === null || currentValue === ''
             }
           >
-            {isLastQuestion ? subtitle : 'Tiếp tục'}
+            Tiếp tục
           </Button>
         )}
         {currentQuestion.type === "options" &&
@@ -349,13 +347,11 @@ export default function MultiStepQuestionForm({
               onClick={() => onSubmit?.(formData)}
               className={cn(
                 "w-full mb-4 py-3.5 text-base rounded-sm",
-                isFinalForm
-                  ? "bg-cyan-500 text-white hover:bg-[#008C96]"
-                  : "bg-white text-[#292929] hover:bg-slate-200",
+                "bg-white text-[#292929] hover:bg-slate-200",
               )}
               disabled={currentValue === undefined}
             >
-              {isFinalForm ? subtitle : "Tiếp tục"}
+              Tiếp tục
             </Button>
           )}
       </div>
