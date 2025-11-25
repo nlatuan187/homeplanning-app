@@ -379,7 +379,7 @@ export default function FamilySupport({
           questions={familySupportQuestionsPart2}
           onSubmit={handleSubmit}
           title="Nguồn lực hỗ trợ"
-          subtitle="Tôi có thể mua được nhà sớm hơn không?"
+          subtitle="Tiếp tục"
           defaultValues={formData}
           onBackFromFirst={() => {
             setStep("analysis");
