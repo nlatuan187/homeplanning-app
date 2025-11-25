@@ -189,7 +189,7 @@ export default function FamilySupport({
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2, // Delay 0.2s giữa mỗi phần tử con
+        staggerChildren: 0.7, // Delay 0.2s giữa mỗi phần tử con
       },
     },
   };
@@ -201,6 +201,7 @@ export default function FamilySupport({
       opacity: 1, // Di chuyển đến y = 0 và hiện ra
       transition: {
         duration: 0.5,
+        staggerChildren: 0.7,
       },
     },
   };

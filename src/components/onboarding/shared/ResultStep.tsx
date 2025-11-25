@@ -25,6 +25,7 @@ interface ResultStepProps {
   onContinue: () => void;
   hasImproved?: boolean;
   hasWorsened?: boolean; // 🔥 Thêm prop cho spending case
+  onBack?: () => void; // Thêm prop onBack
 }
 
 export default function ResultStep({
@@ -35,19 +36,18 @@ export default function ResultStep({
   caseNumber,
   onContinue,
   hasImproved,
-  hasWorsened
+  hasWorsened,
+  onBack, // Thêm onBack vào đây
 }: ResultStepProps) {
   const router = useRouter();
-  console.log("caseNumber", caseNumber);
 
-  console.log("earliestPurchaseYear", earliestPurchaseYear);
   return (
     <div className="max-w-5xl mx-auto fixed inset-0 flex flex-col z-10 bg-[#121212]">
       <div className="relative flex items-center h-10 mx-2">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/dashboard`)}
+          onClick={onBack} // Sửa lại dòng này
         >
           <ArrowLeftIcon className="w-6 h-6 text-white" />
         </Button>
