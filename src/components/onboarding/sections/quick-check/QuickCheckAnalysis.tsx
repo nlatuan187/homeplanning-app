@@ -336,6 +336,7 @@ export default function QuickCheckAnalysis({ formData, onBack, onNext }: QuickCh
                                     <LottieAnimation
                                         animationData={currentStepContent.animation}
                                         className="w-full h-full"
+                                        loop={false}
                                     />
                                 </div>
                                 <p className="text-white/90 text-left text-lg max-md:text-base leading-relaxed">

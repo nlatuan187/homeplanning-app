@@ -1,6 +1,6 @@
 "use client";
 
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, Area } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, Area, Cell } from 'recharts';
 import { ChartMilestone } from "@/lib/calculations/projections/generateChartData";
 
 interface AccumulationChartProps {
@@ -62,10 +62,11 @@ export default function AccumulationChart({ data, name, name2, name3, hasCompari
         {hasComparisonData ? (
           <>
             <Bar dataKey="value" name={name} fill="#06909A" stackId="a" maxBarSize={80}>
-              <LabelList dataKey="value" position="insideTop" formatter={formatNumber} fill="#000" fontSize={12} />
             </Bar>
             <Bar dataKey="value2" name={name2 || 'Đi vay'} fill="#D2A23D" stackId="a" maxBarSize={80}>
-              <LabelList dataKey="value2" position="insideTop" formatter={formatNumber} fill="#000" fontSize={12} />
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.value2 < 0 ? 'transparent' : '#D2A23D'} />
+              ))}
             </Bar>
             <Line type="monotone" dataKey="value3" name={name3 || 'Giá nhà'} stroke="#CDCDCE" strokeWidth={2}>
               <LabelList dataKey="value3" position="top" formatter={formatNumber} fill="#CDCDCE" fontSize={12} />

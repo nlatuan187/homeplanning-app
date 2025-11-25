@@ -52,25 +52,17 @@ export async function updateSpendingAndRecalculate(
         })
       ]);
       result = await runProjectionWithEngine(plan.id);
+      const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
 
-      console.log("DEBUG:", {
-        hasChanged,
-        earliestPurchaseYear: result.earliestPurchaseYear,
-        existingEarliestYear: existingResult.earliestPurchaseYear,
-        isAffordable: result.isAffordable,
-        formData,
-        currentData
-      });
-
-      if (result.earliestPurchaseYear === 0) {
-        customMessage = "Chi tiêu rất ấn tượng đấy 😀"
-        caseNumber = 4;
-      } else if (result.earliestPurchaseYear > existingResult.earliestPurchaseYear) {
-        customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵"
-        caseNumber = 3;
+      if (result.earliestPurchaseYear !== 0 && existingEarliestYear !== 0 && result.earliestPurchaseYear === existingEarliestYear) {
+          customMessage = "Chi tiêu rất ấn tượng đấy 😀";
+          caseNumber = 4;
+      } else if (result.earliestPurchaseYear > existingEarliestYear) {
+          customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵";
+          caseNumber = 3;
       } else {
-        customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
-        caseNumber = 5;
+          customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
+          caseNumber = 5;
       }
       await db.$transaction([
         db.planReport.upsert({
@@ -85,12 +77,12 @@ export async function updateSpendingAndRecalculate(
       });
     } else {
       result = existingResult;
-      if (plan.confirmedPurchaseYear && plan.confirmedPurchaseYear < result.earliestPurchaseYear) {
-        customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn.";
-        caseNumber = 2;
-      } else {
-        customMessage = "Ấn tượng đấy 😀";
+      if (result.earliestPurchaseYear !== 0) {
+        customMessage = "Ấn tượng đấy 😀"; // Case 1: Good & Unchanged
         caseNumber = 1;
+      } else {
+          customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn."; // Case 2: Bad & Unchanged
+          caseNumber = 2;
       }
     }
 
