@@ -125,10 +125,42 @@ export async function createPlanFromOnboarding(
         // Add the result from the lightweight calculation
         firstViableYear: projectionResult.earliestAffordableYear,
         affordabilityOutcome: projectionResult.isAffordable ? "ScenarioB" : "ScenarioA",
+        // Reset other fields to default
+        monthlyNonHousingDebt: 0,
+        currentAnnualInsurancePremium: 0,
+        hasNewChild: null,
+        yearToHaveChild: null,
+        monthlyChildExpenses: 0,
+        confirmedPurchaseYear: yearsToPurchase,
+        pctSalaryGrowth: 7.0,
+        pctHouseGrowth: 10.0,
+        pctExpenseGrowth: 4.0,
+        pctInvestmentReturn: 11.0,
+        loanInterestRate: 11.0,
+        loanTermYears: 25,
+        paymentMethod: "BankLoan",
       } as const;
 
       // Perform a single update
       await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+
+      // Reset or create onboarding progress
+      await db.onboardingProgress.upsert({
+        where: { planId: existingPlan.id },
+        create: {
+          planId: existingPlan.id,
+          quickCheckState: "COMPLETED",
+          familySupportState: "NOT_STARTED",
+          spendingState: "NOT_STARTED",
+          assumptionState: "NOT_STARTED",
+        },
+        update: {
+          quickCheckState: "COMPLETED",
+          familySupportState: "NOT_STARTED",
+          spendingState: "NOT_STARTED",
+          assumptionState: "NOT_STARTED",
+        },
+      });
 
       // The heavy 'computeOnboardingOutcome' is removed.
 
