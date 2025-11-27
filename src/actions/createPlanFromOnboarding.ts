@@ -109,12 +109,14 @@ export async function createPlanFromOnboarding(
       console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
 
       // --- OPTIMIZATION: Use lightweight projection for updates ---
-      const dataForProjection = { ...onboardingData, yearsToPurchase };
+      // SỬA LỖI: Không ghi đè yearsToPurchase bằng khoảng thời gian (duration).
+      // Hàm calculateOnboardingProjection cần nhận vào NĂM (Year, ví dụ: 2028).
+      const dataForProjection = { ...onboardingData }; 
       const projectionResult = await calculateOnboardingProjection(dataForProjection);
 
       const updates = {
         planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
-        yearsToPurchase: yearsToPurchase,
+        yearsToPurchase: yearsToPurchase, // Ở đây dùng duration là đúng cho DB
         hasCoApplicant: onboardingData.hasCoApplicant || false,
         targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
         targetHouseType: onboardingData.targetHouseType,
@@ -123,7 +125,7 @@ export async function createPlanFromOnboarding(
         userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
         monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
         // Add the result from the lightweight calculation
-        firstViableYear: projectionResult.earliestAffordableYear,
+        firstViableYear: projectionResult.earliestAffordableYear ?? null, 
         affordabilityOutcome: projectionResult.isAffordable ? "ScenarioB" : "ScenarioA",
         // Reset other fields to default
         monthlyNonHousingDebt: 0,
@@ -131,7 +133,9 @@ export async function createPlanFromOnboarding(
         hasNewChild: null,
         yearToHaveChild: null,
         monthlyChildExpenses: 0,
-        confirmedPurchaseYear: yearsToPurchase,
+        // SỬA LẠI: Gán đúng năm mua nhà (VD: 2025) từ dữ liệu đầu vào
+        confirmedPurchaseYear: onboardingData.yearsToPurchase, 
+        
         pctSalaryGrowth: 7.0,
         pctHouseGrowth: 10.0,
         pctExpenseGrowth: 4.0,

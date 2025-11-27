@@ -23,8 +23,7 @@ export function generateAccumulationMilestones(
 
   // 1. Xác định năm trung tâm của biểu đồ.
   // Nếu chưa có năm xác nhận, dùng năm mục tiêu ban đầu.
-  const centerYear = plan.confirmedPurchaseYear || 0;
-  console.log(centerYear)
+  const centerYear = plan.confirmedPurchaseYear ? plan.confirmedPurchaseYear : (new Date().getFullYear() + plan.yearsToPurchase);
 
   // 2. Xác định khoảng thời gian hiển thị (ví dụ: 5 năm trước và 5 năm sau)
   const range = 2;
@@ -138,6 +137,7 @@ export function generateAccumulationMilestones(
       milestones.push({ name: `${year}`, value: currentValue });
     }
   }
+  console.log("milestones", milestones);
 
   return milestones;
 }
