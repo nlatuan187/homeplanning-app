@@ -5,6 +5,7 @@ export interface ChartMilestone {
   name: string; // Trục X, thường là năm
   value: number; // Trục Y, giá trị của dữ liệu cần vẽ
   value2?: number; // Giá trị thứ 2 để vẽ đường so sánh (ví dụ: giá nhà)
+  value3?: number; // Giá trị thứ 3 (ví dụ: số tiền cần vay)
 }
 
 // Kiểu dữ liệu cho các key có thể vẽ biểu đồ, khớp với chartDataKey trong Assumption.tsx
@@ -104,7 +105,7 @@ export function generateAccumulationMilestones(
         currentValue = (plan.initialSavings || 0) + (annualSavings_t / 12);
       } else {
         // Các năm tiếp theo (n > 0): Tính tích lũy gộp đầy đủ vào cuối năm.
-        
+
         // Số dư đầu năm t (lấy từ giá trị cuối năm trước)
         const startOfYearSavings = (milestones.length > 0)
           ? milestones[milestones.length - 1].value
@@ -119,7 +120,7 @@ export function generateAccumulationMilestones(
 
         currentValue = baseGrowth + newGrowth;
       }
-      
+
       currentValue = Math.round(currentValue);
 
       // Tính toán giá trị so sánh (giá nhà dự kiến)
@@ -127,8 +128,8 @@ export function generateAccumulationMilestones(
       const houseGrowthRate = plan.pctHouseGrowth || 0;
       const comparisonValue = initialHousePrice * Math.pow(1 + houseGrowthRate / 100, n) - currentValue;
 
-      milestones.push({ 
-        name: `${year}`, 
+      milestones.push({
+        name: `${year}`,
         value: currentValue,
         value2: Math.round(comparisonValue),
       });
