@@ -40,6 +40,11 @@ This PR addresses critical Tier 1 bugs in the backend logic (`createPlanFromOnbo
 - **Fix**: Wrapped updates in a Prisma `$transaction` for atomicity.
 - **File**: `src/actions/createPlanFromOnboarding.ts`
 
+### 5. Missing `planName` in Schema
+- **Issue**: `planSchema` was missing `planName`, preventing users from renaming their plans via API.
+- **Fix**: Added `planName` to Zod schema.
+- **File**: `src/lib/validators/plan.ts`
+
 ---
 
 ## 🧪 Test Infrastructure
@@ -57,23 +62,25 @@ We have set up a comprehensive testing environment:
 | `__tests__/unit/createPlanFromOnboarding.advanced.test.ts` | Edge cases & concurrency | ✅ PASS |
 | `__tests__/unit/calculateOnboardingProjection.test.ts` | Math logic verification | ✅ PASS |
 | `__tests__/critical/dataFlowConsistency.test.ts` | Data integrity checks | ✅ PASS |
-| `__tests__/api/plans/crud.test.ts` | **NEW**: API CRUD & IDOR Security | ✅ PASS |
+| `__tests__/api/plans/crud.test.ts` | API CRUD & IDOR Security | ✅ PASS |
+| `__tests__/api/security/input-validation.test.ts` | **NEW**: Injection & Payload Security | ✅ PASS |
 
 ---
 
-## 🔒 Security Verification (Round 1)
+## 🔒 Security Verification
 
-We focused on **IDOR (Insecure Direct Object Reference)** protection for the Plans API.
-
+### Round 1: IDOR Protection
 **Verified Scenarios:**
-1.  **GET /api/plans/[id]**:
-    - User accessing own plan -> 200 OK ✅
-    - User accessing OTHER user's plan -> 404 Not Found (Protected) ✅
-2.  **PUT /api/plans/[id]**:
-    - User updating own plan -> 200 OK ✅
-    - User updating OTHER user's plan -> 500/404 (Protected) ✅
-3.  **DELETE /api/plans/[id]**:
-    - User deleting OTHER user's plan -> 404 Not Found (Protected) ✅
+1.  **GET /api/plans/[id]**: Protected ✅
+2.  **PUT /api/plans/[id]**: Protected ✅
+3.  **DELETE /api/plans/[id]**: Protected ✅
+
+### Round 2: Input Hardening
+**Verified Scenarios:**
+1.  **SQL Injection**: Payloads like `'; DROP TABLE users; --` are treated as literal strings. ✅
+2.  **NoSQL Injection**: Object payloads `{ "$gt": "" }` are rejected by Zod. ✅
+3.  **Malformed JSON**: API handles invalid JSON gracefully (500 Internal Error without crash). ✅
+4.  **Error Leakage**: Stack traces are NOT exposed in 500 error responses. ✅
 
 ---
 

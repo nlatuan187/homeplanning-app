@@ -4,6 +4,7 @@ import { z } from 'zod';
 // Used for creation, and for updates.
 export const planSchema = z.object({
     // Quick Check Fields
+    planName: z.string().min(1, "Tên kế hoạch không được để trống").optional(),
     yearsToPurchase: z.number().int().min(new Date().getFullYear(), "Năm mục tiêu không hợp lệ"),
     targetHousePriceN0: z.number().positive("Giá nhà mục tiêu phải là số dương"),
     monthlyLivingExpenses: z.number().nonnegative("Chi phí sinh hoạt không được âm"),
