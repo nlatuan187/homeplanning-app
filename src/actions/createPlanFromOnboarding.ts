@@ -106,13 +106,34 @@ export async function createPlanFromOnboarding(
     try {
       // If user already has a plan, update its core fields from onboarding
       const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
+
+      // BUG FIX #2: Validate yearsToPurchase (must be > 0)
+      if (yearsToPurchase <= 0) {
+        return { success: false, error: "Invalid yearsToPurchase: must purchase in future years" };
+      }
+
       console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
 
       // --- OPTIMIZATION: Use lightweight projection for updates ---
       const dataForProjection = { ...onboardingData, yearsToPurchase };
       const projectionResult = await calculateOnboardingProjection(dataForProjection);
 
-      const updates = {
+      // BUG FIX #3: Handle undefined earliestAffordableYear
+      const earliestAffordableYear = projectionResult.earliestAffordableYear ?? null;
+
+      // BUG FIX #1: Only update Quick Check fields, preserve advanced fields
+      // Check if user has completed later steps (Family Support, Spending, Assumptions)
+      const progress = await db.onboardingProgress.findUnique({
+        where: { planId: existingPlan.id }
+      });
+
+      const hasCompletedLaterSteps = progress && (
+        progress.familySupportState === "COMPLETED" ||
+        progress.spendingState === "COMPLETED" ||
+        progress.assumptionState === "COMPLETED"
+      );
+
+      const updates: any = {
         planName: existingPlan.planName || "Kế hoạch mua nhà đầu tiên",
         yearsToPurchase: yearsToPurchase,
         hasCoApplicant: onboardingData.hasCoApplicant || false,
@@ -122,27 +143,52 @@ export async function createPlanFromOnboarding(
         initialSavings: onboardingData.initialSavings || 0,
         userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
         monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
-        // Add the result from the lightweight calculation
-        firstViableYear: projectionResult.earliestAffordableYear,
+        firstViableYear: earliestAffordableYear,
         affordabilityOutcome: projectionResult.isAffordable ? "ScenarioB" : "ScenarioA",
-        // Reset other fields to default
-        monthlyNonHousingDebt: 0,
-        currentAnnualInsurancePremium: 0,
-        hasNewChild: null,
-        yearToHaveChild: null,
-        monthlyChildExpenses: 0,
-        confirmedPurchaseYear: yearsToPurchase,
-        pctSalaryGrowth: 7.0,
-        pctHouseGrowth: 10.0,
-        pctExpenseGrowth: 4.0,
-        pctInvestmentReturn: 11.0,
-        loanInterestRate: 11.0,
-        loanTermYears: 25,
-        paymentMethod: "BankLoan",
-      } as const;
+      };
 
-      // Perform a single update
-      await db.plan.update({ where: { id: existingPlan.id }, data: updates });
+      // Only reset advanced fields if user hasn't completed later steps
+      if (!hasCompletedLaterSteps) {
+        Object.assign(updates, {
+          monthlyNonHousingDebt: 0,
+          currentAnnualInsurancePremium: 0,
+          hasNewChild: null,
+          yearToHaveChild: null,
+          monthlyChildExpenses: 0,
+          confirmedPurchaseYear: yearsToPurchase,
+          pctSalaryGrowth: 7.0,
+          pctHouseGrowth: 10.0,
+          pctExpenseGrowth: 4.0,
+          pctInvestmentReturn: 11.0,
+          loanInterestRate: 11.0,
+          loanTermYears: 25,
+          paymentMethod: "BankLoan",
+        });
+      }
+
+      // BUG FIX #4: Update projectionCache as well for consistency
+      await db.$transaction(async (tx) => {
+        // Perform plan update
+        await tx.plan.update({ where: { id: existingPlan.id }, data: updates });
+
+        // Update or create projectionCache
+        const lightweightProjectionCache = {
+          earliestPurchaseYear: earliestAffordableYear,
+          message: projectionResult.error || "Updated from Quick Check.",
+          isAffordable: projectionResult.isAffordable,
+        };
+
+        await tx.planReport.upsert({
+          where: { planId: existingPlan.id },
+          create: {
+            planId: existingPlan.id,
+            projectionCache: lightweightProjectionCache as any,
+          },
+          update: {
+            projectionCache: lightweightProjectionCache as any,
+          },
+        });
+      });
 
       // Reset or create onboarding progress
       await db.onboardingProgress.upsert({
@@ -161,8 +207,6 @@ export async function createPlanFromOnboarding(
           assumptionState: "NOT_STARTED",
         },
       });
-
-      // The heavy 'computeOnboardingOutcome' is removed.
 
       // Determine the next step based on onboarding progress
       const nextStepUrl = await getNextOnboardingStep(existingPlan.id);
@@ -187,9 +231,15 @@ export async function createPlanFromOnboarding(
     const projectionResult = await calculateOnboardingProjection(onboardingData);
     const yearsToPurchase =
       onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
-    if (yearsToPurchase === undefined || yearsToPurchase < 0) {
-      return { success: false, error: "Invalid yearsToPurchase" };
+
+    // BUG FIX #2: Validate yearsToPurchase (must be > 0, not just >= 0)
+    if (yearsToPurchase === undefined || yearsToPurchase <= 0) {
+      return { success: false, error: "Invalid yearsToPurchase: must purchase in future years" };
     }
+
+    // BUG FIX #3: Handle undefined earliestAffordableYear
+    const earliestAffordableYear = projectionResult.earliestAffordableYear ?? null;
+
     const planPayload: Omit<Prisma.PlanCreateInput, "user"> = {
       userEmail: userEmail,
       planName: "Kế hoạch mua nhà đầu tiên",
@@ -201,7 +251,7 @@ export async function createPlanFromOnboarding(
       initialSavings: onboardingData.initialSavings || 0,
       userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
       monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
-      firstViableYear: projectionResult.earliestAffordableYear,
+      firstViableYear: earliestAffordableYear,
       monthlyNonHousingDebt: 0,
       currentAnnualInsurancePremium: 0,
       hasNewChild: null,
@@ -221,7 +271,7 @@ export async function createPlanFromOnboarding(
     };
 
     const lightweightProjectionCache = {
-      earliestPurchaseYear: projectionResult.earliestAffordableYear,
+      earliestPurchaseYear: earliestAffordableYear,
       message: projectionResult.error || "Initial calculation.",
       isAffordable: projectionResult.isAffordable,
     };
@@ -273,8 +323,9 @@ export async function createPlanFromOnboarding(
     return { success: true, planId: newPlan.id };
   } catch (error) {
     console.error("!!! Critical error in createPlanFromOnboarding:", error);
-    const projectionResult = await calculateOnboardingProjection(onboardingData);
-    return { success: false, error: "Database error", projectionResult: projectionResult };
+    // Don't try to use projectionResult here - might be undefined and cause crash!
+    // BUG FIX #3: Remove unsafe access to projectionResult
+    return { success: false, error: "Database error" };
   }
 }
 
