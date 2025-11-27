@@ -40,10 +40,10 @@ This PR addresses critical Tier 1 bugs in the backend logic (`createPlanFromOnbo
 - **Fix**: Wrapped updates in a Prisma `$transaction` for atomicity.
 - **File**: `src/actions/createPlanFromOnboarding.ts`
 
-### 5. Missing `planName` in Schema
-- **Issue**: `planSchema` was missing `planName`, preventing users from renaming their plans via API.
-- **Fix**: Added `planName` to Zod schema.
-- **File**: `src/lib/validators/plan.ts`
+### 6. Next.js 15 Async Params Compatibility
+- **Issue**: `PATCH /api/plans/[planId]/section` was accessing `params.planId` synchronously, which fails in Next.js 15 (params is a Promise).
+- **Fix**: Updated route handler to `await params`.
+- **File**: `src/app/api/plans/[planId]/section/route.ts`
 
 ---
 
@@ -63,7 +63,8 @@ We have set up a comprehensive testing environment:
 | `__tests__/unit/calculateOnboardingProjection.test.ts` | Math logic verification | ✅ PASS |
 | `__tests__/critical/dataFlowConsistency.test.ts` | Data integrity checks | ✅ PASS |
 | `__tests__/api/plans/crud.test.ts` | API CRUD & IDOR Security | ✅ PASS |
-| `__tests__/api/security/input-validation.test.ts` | **NEW**: Injection & Payload Security | ✅ PASS |
+| `__tests__/api/security/input-validation.test.ts` | Injection & Payload Security | ✅ PASS |
+| `__tests__/api/onboarding/flow.test.ts` | **NEW**: Onboarding Flow Integration | ✅ PASS |
 
 ---
 
@@ -81,6 +82,11 @@ We have set up a comprehensive testing environment:
 2.  **NoSQL Injection**: Object payloads `{ "$gt": "" }` are rejected by Zod. ✅
 3.  **Malformed JSON**: API handles invalid JSON gracefully (500 Internal Error without crash). ✅
 4.  **Error Leakage**: Stack traces are NOT exposed in 500 error responses. ✅
+
+### Round 3: Advanced Flows
+**Verified Scenarios:**
+1.  **Onboarding Updates**: Verified correct data flow and recalculation for Spending, Family Support, and Assumptions. ✅
+2.  **Async Params**: Verified API handles Next.js 15 async params correctly. ✅
 
 ---
 
