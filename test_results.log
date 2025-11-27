@@ -1,0 +1,1037 @@
+
+> app@0.1.0 test
+> jest
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/tuannguyen/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/tuannguyen/homeplanning-ap/package-lock.json
+
+FAIL __tests__/components/AccumulationChart.test.tsx
+  ● AccumulationChart - UI Component Tests › P0 - CRITICAL: Chart Rendering › should render ComposedChart with valid data
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      45 |             // Recharts renders SVG
+      46 |             const svg = container.querySelector('svg.recharts-surface')
+    > 47 |             expect(svg).toBeInTheDocument()
+         |                         ^
+      48 |         })
+      49 |
+      50 |         it('should render legend with correct name', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:47:25)
+
+  ● AccumulationChart - UI Component Tests › P0 - CRITICAL: Chart Rendering › should render legend with correct name
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      59 |             // Legend should contain the name
+      60 |             const legend = container.querySelector('.recharts-legend-wrapper')
+    > 61 |             expect(legend).toBeInTheDocument()
+         |                            ^
+      62 |             expect(legend?.textContent).toContain('Số tiền tích lũy')
+      63 |         })
+      64 |     })
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:61:28)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Conditional Rendering (hasComparisonData) › should render Bar charts when hasComparisonData=true
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+      77 |             // Should have Bar elements for stacked chart
+      78 |             const bars = container.querySelectorAll('.recharts-bar-rectangle')
+    > 79 |             expect(bars.length).toBeGreaterThan(0)
+         |                                 ^
+      80 |         })
+      81 |
+      82 |         it('should render Area chart when hasComparisonData=false', () => {
+
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:79:33)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Conditional Rendering (hasComparisonData) › should render Area chart when hasComparisonData=false
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      91 |             // Should have Area path
+      92 |             const area = container.querySelector('.recharts-area-curve')
+    > 93 |             expect(area).toBeInTheDocument()
+         |                          ^
+      94 |         })
+      95 |
+      96 |         it('should render Line for value3 when hasComparisonData=true', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:93:26)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Conditional Rendering (hasComparisonData) › should render Line for value3 when hasComparisonData=true
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      106 |             // Should have Line for house price
+      107 |             const line = container.querySelector('.recharts-line-curve')
+    > 108 |             expect(line).toBeInTheDocument()
+          |                          ^
+      109 |         })
+      110 |     })
+      111 |
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:108:26)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Data Transformation › [BUG RISK] should calculate value3 = value + value2
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: undefined
+
+      129 |                 label.textContent === '150'
+      130 |             )
+    > 131 |             expect(value3Label).toBeInTheDocument()
+          |                                 ^
+      132 |         })
+      133 |
+      134 |         it('[BUG] should handle missing value2 gracefully', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:131:33)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Data Transformation › [BUG] should handle missing value2 gracefully
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      146 |
+      147 |             // Should not crash, value3 should be 100 + 0 = 100
+    > 148 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      149 |         })
+      150 |     })
+      151 |
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:148:52)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Negative Value Handling › [BUG] should render transparent Cell for negative value2
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+      169 |             // Second bar (value2) should be transparent or hidden
+      170 |             // This is tricky to test directly, but we can verify it renders
+    > 171 |             expect(bars.length).toBeGreaterThan(0)
+          |                                 ^
+      172 |         })
+      173 |
+      174 |         it('should handle all-negative values', () => {
+
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:171:33)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Negative Value Handling › should handle all-negative values
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      186 |
+      187 |             // Should still render chart
+    > 188 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      189 |         })
+      190 |     })
+      191 |
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:188:52)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Edge Cases › should handle single data point
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      204 |             )
+      205 |
+    > 206 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      207 |         })
+      208 |
+      209 |         it('should handle very large numbers', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:206:52)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Edge Cases › should handle very large numbers
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      222 |             // formatNumber should handle this
+      223 |             // Check if chart renders without crashing
+    > 224 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      225 |         })
+      226 |
+      227 |         it('[BUG RISK] should handle floating point precision', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:224:52)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Edge Cases › [BUG RISK] should handle floating point precision
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      239 |
+      240 |             // Should format as "0.3" not "0.30000000000000004"
+    > 241 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      242 |         })
+      243 |
+      244 |         it('should handle zero values', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:241:52)
+
+  ● AccumulationChart - UI Component Tests › P1 - HIGH: Edge Cases › should handle zero values
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      256 |
+      257 |             // Should render but might show empty chart
+    > 258 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      259 |         })
+      260 |     })
+      261 |
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:258:52)
+
+  ● AccumulationChart - UI Component Tests › P2 - MEDIUM: Number Formatting › [BUG RISK] should format numbers with formatNumber function
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: undefined
+
+      280 |                 l.textContent?.includes('1,234,567')
+      281 |             )
+    > 282 |             expect(label).toBeInTheDocument()
+          |                           ^
+      283 |         })
+      284 |
+      285 |         it('should handle null/undefined values in formatNumber', () => {
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:282:27)
+
+  ● AccumulationChart - UI Component Tests › P2 - MEDIUM: Number Formatting › should handle null/undefined values in formatNumber
+
+    expect(received).toBeInTheDocument()
+
+    received value must be an HTMLElement or an SVGElement.
+    Received has value: null
+
+      298 |
+      299 |             // Should not crash
+    > 300 |             expect(container.querySelector('svg')).toBeInTheDocument()
+          |                                                    ^
+      301 |         })
+      302 |     })
+      303 |
+
+      at __EXTERNAL_MATCHER_TRAP__ (node_modules/expect/build/index.js:2240:22)
+      at Object.toBeInTheDocument (node_modules/expect/build/index.js:2241:6)
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:300:52)
+
+  ● AccumulationChart - UI Component Tests › P2 - MEDIUM: Props Validation › should use default name2 for comparison data
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      314 |
+      315 |             const legend = container.querySelector('.recharts-legend-wrapper')
+    > 316 |             expect(legend?.textContent).toContain('Đi vay')
+          |                                         ^
+      317 |         })
+      318 |
+      319 |         it('should use custom name2 when provided', () => {
+
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:316:41)
+
+  ● AccumulationChart - UI Component Tests › P2 - MEDIUM: Props Validation › should use custom name2 when provided
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      328 |
+      329 |             const legend = container.querySelector('.recharts-legend-wrapper')
+    > 330 |             expect(legend?.textContent).toContain('Số tiền vay')
+          |                                         ^
+      331 |         })
+      332 |
+      333 |         it('should use default name3 for house price', () => {
+
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:330:41)
+
+  ● AccumulationChart - UI Component Tests › P2 - MEDIUM: Props Validation › should use default name3 for house price
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      342 |
+      343 |             const legend = container.querySelector('.recharts-legend-wrapper')
+    > 344 |             expect(legend?.textContent).toContain('Giá nhà')
+          |                                         ^
+      345 |         })
+      346 |     })
+      347 | })
+
+      at Object.<anonymous> (__tests__/components/AccumulationChart.test.tsx:344:41)
+
+FAIL __tests__/critical/dataFlowConsistency.test.ts
+  ● Console
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2032,
+        targetHousePriceN0: 6,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_1
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 7
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /family-support
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2025,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2020,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2100,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_1
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 5
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /next-step
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at /Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:289:24
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:214:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 0,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at createPlanFromOnboarding (/Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:323:45)
+          at async Object.<anonymous> (/Users/tuannguyen/homeplanning-ap/__tests__/critical/dataFlowConsistency.test.ts:256:28)
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:229:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: -5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at createPlanFromOnboarding (/Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:323:45)
+          at async Object.<anonymous> (/Users/tuannguyen/homeplanning-ap/__tests__/critical/dataFlowConsistency.test.ts:268:28)
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:239:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 999999,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 0
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at createPlanFromOnboarding (/Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:323:45)
+          at async Object.<anonymous> (/Users/tuannguyen/homeplanning-ap/__tests__/critical/dataFlowConsistency.test.ts:300:28)
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:268:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at /Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:289:24
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:288:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: TypeError: Cannot read properties of undefined (reading 'id')
+          at createPlanFromOnboarding (/Users/tuannguyen/homeplanning-ap/src/actions/createPlanFromOnboarding.ts:323:45)
+          at async Object.<anonymous> (/Users/tuannguyen/homeplanning-ap/__tests__/critical/dataFlowConsistency.test.ts:342:28)
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:302:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5.5555,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+  ● Data Flow Consistency - Critical P0 & P1 Tests › P0 - CRITICAL: Data Preservation Across Steps › [BUG CONFIRMED] should preserve Family Support data when updating Quick Check
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+      82 |
+      83 |             const updateCall = dbMock.plan.update.mock.calls[0]
+    > 84 |             const updateData = updateCall[0].data
+         |                                          ^
+      85 |
+      86 |             // ❌ CURRENT BUG: These SHOULD be preserved but are RESET!
+      87 |             expect(updateData.hasNewChild).toBe(true) // Currently null
+
+      at Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:84:42)
+
+  ● Data Flow Consistency - Critical P0 & P1 Tests › P0 - CRITICAL: firstViableYear Synchronization › [P0] should update firstViableYear when updating existing plan
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+      213 |
+      214 |             const updateCall = dbMock.plan.update.mock.calls[0]
+    > 215 |             const updateData = updateCall[0].data
+          |                                          ^
+      216 |
+      217 |             expect(updateData.firstViableYear).toBe(2029)
+      218 |         })
+
+      at Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:215:42)
+
+  ● Data Flow Consistency - Critical P0 & P1 Tests › P0 - CRITICAL: firstViableYear Synchronization › [P0] should sync firstViableYear with projectionCache
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+      246 |
+      247 |             expect(planCreateCall[0].data.firstViableYear).toBe(2028)
+    > 248 |             expect(reportCreateCall[0].data.projectionCache).toMatchObject({
+          |                                    ^
+      249 |                 earliestPurchaseYear: 2028
+      250 |             })
+      251 |         })
+
+      at Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:248:36)
+
+  ● Data Flow Consistency - Critical P0 & P1 Tests › P1 - HIGH: Edge Cases in Calculations › [P1] should handle calculation returning earliestAffordableYear as undefined
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      329 |
+      330 |             // Should handle gracefully
+    > 331 |             expect(result.success).toBe(true)
+          |                                    ^
+      332 |         })
+      333 |
+      334 |         it('[P1] should handle projection calculation failure', async () => {
+
+      at Object.<anonymous> (__tests__/critical/dataFlowConsistency.test.ts:331:36)
+
+FAIL __tests__/unit/createPlanFromOnboarding.advanced.test.ts
+  ● Console
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_legacy
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 5
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /next-step
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2032,
+        targetHousePriceN0: 6,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_existing
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 7
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /next-step
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_1
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 5
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /family-support
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+          at async Promise.all (index 0)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+          at async Promise.all (index 1)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.error
+      !!! Critical error in createPlanFromOnboarding: Error: Failed to create plan report
+          at Object.<anonymous> (/Users/tuannguyen/homeplanning-ap/__tests__/unit/createPlanFromOnboarding.advanced.test.ts:340:17)
+          at Promise.finally.completed (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+          at _callCircusTest (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+          at async _runTest (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+          at async /Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+          at async _runTestsForDescribeBlock (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+          at async _runTestsForDescribeBlock (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at async _runTestsForDescribeBlock (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+          at async run (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+          at async runAndTransformResultsToJestFormat (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+          at async jestAdapter (/Users/tuannguyen/homeplanning-ap/node_modules/jest-circus/build/runner.js:101:19)
+          at async runTestInternal (/Users/tuannguyen/homeplanning-ap/node_modules/jest-runner/build/index.js:275:16)
+          at async runTest (/Users/tuannguyen/homeplanning-ap/node_modules/jest-runner/build/index.js:343:7)
+
+
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:357:17)
+      at async Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.advanced.test.ts:325:28)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2020,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 0,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.error
+      Invalid onboarding data: Required fields are missing. { yearsToPurchase: 2030, monthlyLivingExpenses: 10 }
+
+      45 |     // 1. Try to find user by Clerk ID
+      46 |     let dbUser = await db.user.findUnique({ where: { id: userId } });
+    > 47 |
+         | ^
+      48 |     if (dbUser) {
+      49 |       // User exists with this ID, update email if changed
+      50 |       if (dbUser.email !== userEmail && userEmail) {
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:47:17)
+      at async Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.advanced.test.ts:361:28)
+
+  ● createPlanFromOnboarding - Advanced Edge Cases › Data Preservation (Critical Bug) › should NOT reset advanced fields when updating Quick Check data
+
+    TypeError: Cannot read properties of undefined (reading '0')
+
+      191 |             // Get the update call
+      192 |             const updateCall = dbMock.plan.update.mock.calls[0]
+    > 193 |             const updateData = updateCall[0].data
+          |                                          ^
+      194 |
+      195 |             // ❌ CURRENT BUG: These fields get RESET!
+      196 |             // The code should PRESERVE these:
+
+      at Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.advanced.test.ts:193:42)
+
+FAIL __tests__/unit/createPlanFromOnboarding.test.ts
+  ● Console
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: undefined,
+        targetHousePriceN0: 0,
+        monthlyLivingExpenses: undefined
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.error
+      [createPlanFromOnboarding] Unauthorized - no clerk user
+
+      36 |     console.error(errorMessage, onboardingData);
+      37 |     return { success: false, error: errorMessage };
+    > 38 |   }
+         |    ^
+      39 |
+      40 |   const userId = clerkUser.id;
+      41 |   const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:38:17)
+      at async Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.test.ts:50:24)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: undefined,
+        targetHousePriceN0: 0,
+        monthlyLivingExpenses: undefined
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.error
+      Invalid onboarding data: Required fields are missing. {}
+
+      45 |     // 1. Try to find user by Clerk ID
+      46 |     let dbUser = await db.user.findUnique({ where: { id: userId } });
+    > 47 |
+         | ^
+      48 |     if (dbUser) {
+      49 |       // User exists with this ID, update email if changed
+      50 |       if (dbUser.email !== userEmail && userEmail) {
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:47:17)
+      at async Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.test.ts:59:24)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] No existing plan, creating new one
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:263:13)
+
+    console.log
+      [createPlanFromOnboarding] Called with data: {
+        yearsToPurchase: 2030,
+        targetHousePriceN0: 5,
+        monthlyLivingExpenses: 10
+      }
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:31:13)
+
+    console.log
+      [createPlanFromOnboarding] Found existing plan: plan_existing
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:135:17)
+
+    console.log
+      [createPlanFromOnboarding] Updating existing plan with yearsToPurchase: 5
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:146:21)
+
+    console.log
+      [createPlanFromOnboarding] Next step for existing plan: /next-step
+
+      at createPlanFromOnboarding (src/actions/createPlanFromOnboarding.ts:243:21)
+
+  ● createPlanFromOnboarding › should update existing plan
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"data": ObjectContaining {"targetHousePriceN0": 5000}, "where": {"id": "plan_existing"}}
+
+    Number of calls: 0
+
+      153 |
+      154 |         // Verify update
+    > 155 |         expect(dbMock.plan.update).toHaveBeenCalledWith(expect.objectContaining({
+          |                                    ^
+      156 |             where: { id: 'plan_existing' },
+      157 |             data: expect.objectContaining({
+      158 |                 targetHousePriceN0: 5000,
+
+      at Object.<anonymous> (__tests__/unit/createPlanFromOnboarding.test.ts:155:36)
+
+PASS __tests__/smoke.test.tsx
+PASS __tests__/unit/calculateOnboardingProjection.test.ts
+
+Test Suites: 4 failed, 2 passed, 6 total
+Tests:       24 failed, 35 passed, 59 total
+Snapshots:   0 total
+Time:        2.017 s
+Ran all test suites.
