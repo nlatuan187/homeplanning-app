@@ -90,6 +90,8 @@ export default function AssumptionClient({ plan }: AssumptionClientProps) {
     }
   };
 
+  console.log("assumptions", assumptions);
+
   const chartData = useMemo(() => {
     const tempPlan = {
       ...plan,

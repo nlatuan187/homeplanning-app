@@ -200,8 +200,6 @@ export default function Assumption({
   chartData,
   loadingTitle,
 }: AssumptionProps) {
-  console.log("result", result);
-  console.log("plan yearsToPurchase", plan.yearsToPurchase);
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
