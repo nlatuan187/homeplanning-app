@@ -25,12 +25,12 @@ This PR addresses critical Tier 1 bugs in the backend logic (`createPlanFromOnbo
 - **Fix**: Added conditional logic to preserve existing data based on `onboardingProgress`.
 - **File**: `src/actions/createPlanFromOnboarding.ts`
 
-### 2. Year Boundary Validation
-- **Issue**: `yearsToPurchase = 0` was accepted, causing calculation errors.
-- **Fix**: Enforced `yearsToPurchase > 0` validation.
+### 3. Year Boundary Logic Update
+- **Issue**: `yearsToPurchase` validation was inconsistent.
+- **Update**: Updated validation to **ALLOW** `yearsToPurchase = 0` (immediate purchase in current year) but **REJECT** negative values (past years).
 - **File**: `src/actions/createPlanFromOnboarding.ts`
 
-### 3. Undefined `earliestAffordableYear` Crash
+### 4. Undefined `earliestAffordableYear` Crash
 - **Issue**: `undefined` values from projection engine caused Prisma crashes.
 - **Fix**: Added nullish coalescing (`?? null`) to ensure database compatibility.
 - **File**: `src/actions/createPlanFromOnboarding.ts`

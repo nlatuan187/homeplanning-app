@@ -107,9 +107,9 @@ export async function createPlanFromOnboarding(
       // If user already has a plan, update its core fields from onboarding
       const yearsToPurchase = onboardingData.yearsToPurchase - new Date().getFullYear();
 
-      // BUG FIX #2: Validate yearsToPurchase (must be > 0)
-      if (yearsToPurchase <= 0) {
-        return { success: false, error: "Invalid yearsToPurchase: must purchase in future years" };
+      // BUG FIX #2: Validate yearsToPurchase (must be >= 0)
+      if (yearsToPurchase < 0) {
+        return { success: false, error: "Invalid yearsToPurchase: cannot be in the past" };
       }
 
       console.log("[createPlanFromOnboarding] Updating existing plan with yearsToPurchase:", yearsToPurchase);
@@ -232,9 +232,9 @@ export async function createPlanFromOnboarding(
     const yearsToPurchase =
       onboardingData?.yearsToPurchase ? onboardingData.yearsToPurchase - new Date().getFullYear() : undefined;
 
-    // BUG FIX #2: Validate yearsToPurchase (must be > 0, not just >= 0)
-    if (yearsToPurchase === undefined || yearsToPurchase <= 0) {
-      return { success: false, error: "Invalid yearsToPurchase: must purchase in future years" };
+    // BUG FIX #2: Validate yearsToPurchase (must be >= 0)
+    if (yearsToPurchase === undefined || yearsToPurchase < 0) {
+      return { success: false, error: "Invalid yearsToPurchase: cannot be in the past" };
     }
 
     // BUG FIX #3: Handle undefined earliestAffordableYear
