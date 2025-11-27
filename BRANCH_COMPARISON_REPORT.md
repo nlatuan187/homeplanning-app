@@ -19,7 +19,7 @@ This report provides a comprehensive comparison between the `master` branch and 
 
 ## Common Ancestor
 
-Both branches share a common base from commit `e06760803b410b87a4a17e3f01cf734d6c7281fb` ("update onboarding flow" - 2025-11-26T08:29:54Z).
+Both branches share a common base from commit `e067608` ("update onboarding flow" - 2025-11-26T08:29:54Z).
 
 ---
 
@@ -224,7 +224,7 @@ Both branches modified these files independently:
 | dataFlowConsistency.test.ts | ✅ PASS | 18/18 |
 | smoke.test.tsx | ✅ PASS | 1/1 |
 | **Logic Tests Total** | ✅ PASS | **37/37 (100%)** |
-| AccumulationChart.test.tsx | ⚠️ P2 | 4/22 (Visual tests - jsdom limitation) |
+| AccumulationChart.test.tsx | ⚠️ PARTIAL | 4/22 (Visual rendering tests limited by jsdom - requires Playwright for full coverage) |
 
 ---
 
@@ -250,7 +250,9 @@ git merge test/tier1-bug-fixes
 git checkout test/tier1-bug-fixes
 git rebase master
 # Resolve conflicts during rebase
-# Force push after rebase (if branch is yours only)
+# WARNING: Only force push if you are the sole contributor to this branch
+# and have coordinated with other team members. Force pushing rewrites history.
+# git push --force origin test/tier1-bug-fixes
 ```
 
 ### Post-Merge Validation
