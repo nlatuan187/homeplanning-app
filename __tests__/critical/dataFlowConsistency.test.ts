@@ -49,7 +49,7 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
     })
 
     describe('P0 - CRITICAL: Data Preservation Across Steps', () => {
-        it('[BUG CONFIRMED] should preserve Family Support data when updating Quick Check', async () => {
+        it('[BUG FIXED] should preserve Family Support data when user completed later steps', async () => {
             const existingPlan = {
                 id: 'plan_1',
                 userId: 'user_123',
@@ -69,6 +69,21 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
             }
 
             dbMock.plan.findFirst.mockResolvedValue(existingPlan as any)
+
+            // Mock: User HAS completed Family Support step
+            dbMock.onboardingProgress.findUnique.mockResolvedValue({
+                planId: 'plan_1',
+                quickCheckState: 'COMPLETED',
+                familySupportState: 'COMPLETED', // ← Completed!
+                spendingState: 'COMPLETED',
+                assumptionState: 'COMPLETED',
+            } as any)
+
+            // Mock transaction
+            dbMock.$transaction.mockImplementation(async (callback: any) => {
+                return await callback(dbMock)
+            })
+
             mockGetNextStep.mockResolvedValue('/family-support')
 
             // User just wants to change target price
@@ -83,11 +98,14 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
             const updateCall = dbMock.plan.update.mock.calls[0]
             const updateData = updateCall[0].data
 
-            // ❌ CURRENT BUG: These SHOULD be preserved but are RESET!
-            expect(updateData.hasNewChild).toBe(true) // Currently null
-            expect(updateData.monthlyChildExpenses).toBe(15) // Currently 0
-            expect(updateData.pctSalaryGrowth).toBe(9.0) // Currently 7.0
-            expect(updateData.hasCoApplicant).toBe(true) // May be preserved
+            // ৹ WITH FIX: These fields should be PRESERVED (not in update object)
+            expect(updateData.hasNewChild).toBeUndefined() // Not updated = preserved!
+            expect(updateData.monthlyChildExpenses).toBeUndefined() // Not updated = preserved!
+            expect(updateData.pctSalaryGrowth).toBeUndefined() // Not updated = preserved!
+
+            // Quick Check fields SHOULD be updated
+            expect(updateData.yearsToPurchase).toBe(7) // 2032 - 2025
+            expect(updateData.targetHousePriceN0).toBe(6000) // 6 * 1000
         })
 
         it('[P0] should preserve Spending data when updating Assumptions', async () => {
@@ -198,6 +216,20 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
                 firstViableYear: 2026, // Old value
             } as any)
 
+            // Mock onboardingProgress (no later steps completed)
+            dbMock.onboardingProgress.findUnique.mockResolvedValue({
+                planId: 'plan_1',
+                quickCheckState: 'COMPLETED',
+                familySupportState: 'NOT_STARTED',
+                spendingState: 'NOT_STARTED',
+                assumptionState: 'NOT_STARTED',
+            } as any)
+
+            // Mock transaction
+            dbMock.$transaction.mockImplementation(async (callback: any) => {
+                return await callback(dbMock)
+            })
+
             mockGetNextStep.mockResolvedValue('/next-step')
             mockCalculateProjection.mockResolvedValue({
                 success: true,
@@ -226,6 +258,8 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
             dbMock.$transaction.mockImplementation(async (callback: any) => {
                 return callback(dbMock)
             })
+
+            dbMock.plan.create.mockResolvedValue({ id: 'plan_1' } as any)
 
             const projectionResult = {
                 success: true,
@@ -315,6 +349,8 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
                 return callback(dbMock)
             })
 
+            dbMock.plan.create.mockResolvedValue({ id: 'plan_1' } as any)
+
             mockCalculateProjection.mockResolvedValue({
                 success: true,
                 isAffordable: false,
@@ -327,8 +363,11 @@ describe('Data Flow Consistency - Critical P0 & P1 Tests', () => {
                 monthlyLivingExpenses: 10,
             } as any)
 
-            // Should handle gracefully
+            // Should handle gracefully (nullish coalescing → null)
             expect(result.success).toBe(true)
+
+            const planCreateCall = dbMock.plan.create.mock.calls[0]
+            expect(planCreateCall[0].data.firstViableYear).toBe(null) // undefined → null
         })
 
         it('[P1] should handle projection calculation failure', async () => {
