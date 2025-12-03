@@ -104,7 +104,17 @@ export async function GET(req: NextRequest) {
   try {
     if (fs.existsSync(filePath)) {
       const fileBuffer = fs.readFileSync(filePath);
-      const mimeType = mime.lookup(filePath) || "application/octet-stream";
+      
+      // Tự động phát hiện mime type
+      let mimeType = mime.lookup(filePath);
+      
+      // Xử lý riêng cho file .lottie nếu mime-types chưa hỗ trợ
+      if (!mimeType && filePath.endsWith(".lottie")) {
+         mimeType = "application/json"; // Hoặc "application/zip" tùy vào cách client của bạn parse
+      }
+      
+      // Fallback
+      mimeType = mimeType || "application/octet-stream";
 
       return new NextResponse(fileBuffer, {
         status: 200,

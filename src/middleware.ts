@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
 
   // == API CÔNG KHAI CỦA BẠN ==
   '/api/image(.*)',            // API lấy ảnh và media
+  '/api/lottie(.*)',            // API lấy lottie
   '/api/onboarding/calculate', // API tính toán nhanh
   '/api/onboarding/start',     // TẠM THỜI MỞ PUBLIC ĐỂ TEST
   '/api/section/next-step(.*)', // << THÊM DÒNG NÀY VÀO ĐÂY
