@@ -3,140 +3,62 @@ import path from "path";
 import fs from "fs";
 import mime from "mime-types";
 
-/**
- * @swagger
- * /api/image:
- *   get:
- *     summary: Lấy file tĩnh từ thư mục public
- *     description: >
- *       API này dùng để lấy một tài nguyên tĩnh (như ảnh hoặc file Lottie JSON) từ thư mục `public` của server.
- *       Điều này rất hữu ích cho các client mobile cần một URL trực tiếp để truy cập tài sản media.
- *       Đường dẫn file được cung cấp trong tham số 'url' phải là đường dẫn tương đối so với thư mục 'public'.
- *     tags:
- *       - Media
- *     parameters:
- *       - in: query
- *         name: url
- *         required: true
- *         schema:
- *           type: string
- *         description: >
- *           Đường dẫn đến file, tính từ thư mục `/public`.
- *           Ví dụ: `onboarding/hanoi-chungcu.png` hoặc `lottie/animation.json`.
- *     responses:
- *       '200':
- *         description: Trả về file được yêu cầu. Content-Type sẽ được tự động xác định.
- *         content:
- *           image/*:
- *             schema:
- *               type: string
- *               format: binary
- *           application/json:
- *             schema:
- *               type: object
- *       '400':
- *         description: Bad Request. Thiếu tham số 'url'.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Image URL is required
- *       '403':
- *         description: Forbidden. Yêu cầu truy cập một đường dẫn nằm ngoài thư mục public.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Forbidden
- *       '404':
- *         description: Not Found. Không tìm thấy file được yêu cầu.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Image not found
- *       '500':
- *         description: Internal Server Error. Lỗi server khi đọc file.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Internal Server Error
- */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const fileUrl = searchParams.get("url");
 
   if (!fileUrl) {
-    return new NextResponse(JSON.stringify({ error: "Image URL is required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
   }
 
-  // --- Biện pháp bảo mật: Chống lại Directory Traversal Attack ---
-  // Chuẩn hóa đường dẫn và loại bỏ các ký tự "../" ở đầu
   const sanitizedUrl = path.normalize(fileUrl).replace(/^(\.\.(\/|\\|$))+/, "");
-
   const publicDir = path.join(process.cwd(), "public");
   const filePath = path.join(publicDir, sanitizedUrl);
 
-  // Kiểm tra cuối cùng để đảm bảo đường dẫn vẫn nằm trong thư mục public
   if (!filePath.startsWith(publicDir)) {
-    return new NextResponse(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
     if (fs.existsSync(filePath)) {
-      const fileBuffer = fs.readFileSync(filePath);
-      
-      // Tự động phát hiện mime type
-      let mimeType = mime.lookup(filePath);
-      
-      // Xử lý riêng cho file .lottie nếu mime-types chưa hỗ trợ
-      if (!mimeType && filePath.endsWith(".lottie")) {
-         mimeType = "application/json"; // Hoặc "application/zip" tùy vào cách client của bạn parse
-      }
-      
-      // Fallback
-      mimeType = mimeType || "application/octet-stream";
+      const fileName = path.basename(sanitizedUrl);
 
-      return new NextResponse(fileBuffer, {
+      // --- XỬ LÝ ĐẶC BIỆT CHO FILE .LOTTIE ---
+      if (filePath.endsWith(".lottie")) {
+        // 1. Đọc file dưới dạng văn bản (utf-8)
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        
+        try {
+          // 2. Parse nó như một file JSON
+          const jsonData = JSON.parse(fileContent);
+          // 3. Trả về như một response JSON. Trình duyệt sẽ tự động hiển thị dạng text.
+          return NextResponse.json(jsonData);
+        } catch (jsonError) {
+          // Nếu parse lỗi (vì file .lottie là file zip thật) thì báo lỗi
+          console.error("Lỗi: File .lottie không phải là định dạng JSON hợp lệ:", fileName, jsonError);
+          return NextResponse.json({ error: "File lottie không thể đọc được dưới dạng JSON." }, { status: 500 });
+        }
+      }
+
+      // --- XỬ LÝ MẶC ĐỊNH CHO CÁC FILE KHÁC (ảnh, v.v.) ---
+      const fileBuffer = fs.readFileSync(filePath);
+      const mimeType = mime.lookup(filePath) || "application/octet-stream";
+      const blob = new Blob([fileBuffer]);
+
+      return new Response(blob, {
         status: 200,
         headers: {
           "Content-Type": mimeType,
-          "Content-Length": fileBuffer.length.toString(),
+          "Content-Length": blob.size.toString(),
+          "Content-Disposition": `inline; filename="${fileName}"`,
         },
       });
+
     } else {
-      return new NextResponse(JSON.stringify({ error: "Image not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
   } catch (error) {
     console.error("Failed to read image file:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal Server Error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
