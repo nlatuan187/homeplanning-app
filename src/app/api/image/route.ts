@@ -75,37 +75,59 @@ import mime from "mime-types";
  *                   type: string
  *                   example: Internal Server Error
  */
+// 1. Định nghĩa Metadata
+const LOTTIE_METADATA: Record<string, { title: string; description: string }> = {
+  "Market chung cư HCM_Scene 2.lottie": {
+    title: "Thị trường Chung cư TP.HCM - Scene 2",
+    description: "Biểu đồ tăng trưởng giá chung cư tại khu vực Hồ Chí Minh."
+  },
+  // Thêm các file khác...
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const fileUrl = searchParams.get("url");
 
   if (!fileUrl) {
-    return new NextResponse(JSON.stringify({ error: "Image URL is required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
   }
 
-  // --- Biện pháp bảo mật: Chống lại Directory Traversal Attack ---
-  // Chuẩn hóa đường dẫn và loại bỏ các ký tự "../" ở đầu
   const sanitizedUrl = path.normalize(fileUrl).replace(/^(\.\.(\/|\\|$))+/, "");
-
   const publicDir = path.join(process.cwd(), "public");
   const filePath = path.join(publicDir, sanitizedUrl);
 
-  // Kiểm tra cuối cùng để đảm bảo đường dẫn vẫn nằm trong thư mục public
   if (!filePath.startsWith(publicDir)) {
-    return new NextResponse(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
     if (fs.existsSync(filePath)) {
+      const fileName = path.basename(filePath);
       const fileBuffer = fs.readFileSync(filePath);
-      const mimeType = mime.lookup(filePath) || "application/octet-stream";
+      
+      // --- TRƯỜNG HỢP ĐẶC BIỆT CHO FILE .LOTTIE ---
+      if (filePath.endsWith(".lottie")) {
+        const metadata = LOTTIE_METADATA[fileName] || { 
+          title: fileName, 
+          description: "No description available" 
+        };
 
+        // Chuyển buffer thành Base64 string để an toàn khi nhúng vào JSON
+        const base64Content = fileBuffer.toString('base64');
+
+        // Trả về JSON chứa cả metadata và nội dung file
+        return NextResponse.json({
+          title: metadata.title,
+          description: metadata.description,
+          fileName: fileName,
+          contentType: "application/json", 
+          content: base64Content // Sử dụng Base64
+        });
+      }
+
+      // --- CÁC FILE KHÁC (ẢNH, JSON THƯỜNG) ---
+      // Giữ nguyên logic cũ: trả về file trực tiếp
+      const mimeType = mime.lookup(filePath) || "application/octet-stream";
       return new NextResponse(fileBuffer, {
         status: 200,
         headers: {
@@ -113,20 +135,12 @@ export async function GET(req: NextRequest) {
           "Content-Length": fileBuffer.length.toString(),
         },
       });
+
     } else {
-      return new NextResponse(JSON.stringify({ error: "Image not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
   } catch (error) {
-    console.error("Failed to read image file:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Internal Server Error" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    console.error("Failed to read file:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
