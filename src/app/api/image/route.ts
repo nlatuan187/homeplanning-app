@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
+import { Readable } from "stream";
 import mime from "mime-types";
 import AdmZip from "adm-zip";
 
@@ -47,24 +48,20 @@ export async function GET(req: NextRequest) {
       const fileName = path.basename(sanitizedUrl);
 
       // --- XỬ LÝ ĐẶC BIỆT CHO FILE .LOTTIE ---
-      // --- XỬ LÝ ĐẶC BIỆT CHO FILE .LOTTIE ---
       if (filePath.endsWith(".lottie")) {
         try {
-          // 1. Đọc file dưới dạng buffer (không dùng utf-8 vì là file zip)
-          const fileBuffer = fs.readFileSync(filePath);
+          // 1. Đọc file dưới dạng buffer (bất đồng bộ)
+          const fileBuffer = await fs.promises.readFile(filePath);
 
           // 2. Dùng AdmZip để giải nén buffer
           const zip = new AdmZip(fileBuffer);
           const zipEntries = zip.getEntries();
 
           // 3. Tìm file JSON chứa dữ liệu animation
-          // File .lottie thường chứa manifest.json và file animation (vd: data.json)
-          // Ta ưu tiên tìm file .json không phải là manifest.json
           let animationEntry = zipEntries.find(entry =>
             entry.entryName.endsWith(".json") && !entry.entryName.toLowerCase().includes("manifest")
           );
 
-          // Nếu không tìm thấy, lấy bất kỳ file json nào (fallback)
           if (!animationEntry) {
             animationEntry = zipEntries.find(entry => entry.entryName.endsWith(".json"));
           }
@@ -72,7 +69,11 @@ export async function GET(req: NextRequest) {
           if (animationEntry) {
             const fileContent = animationEntry.getData().toString("utf8");
             const jsonData = JSON.parse(fileContent);
-            return NextResponse.json(jsonData);
+            return NextResponse.json(jsonData, {
+              headers: {
+                "Cache-Control": "public, max-age=31536000, immutable",
+              },
+            });
           } else {
             throw new Error("Không tìm thấy file JSON trong gói .lottie");
           }
@@ -83,16 +84,21 @@ export async function GET(req: NextRequest) {
       }
 
       // --- XỬ LÝ MẶC ĐỊNH CHO CÁC FILE KHÁC (ảnh, v.v.) ---
-      const fileBuffer = fs.readFileSync(filePath);
+      // Sử dụng stream để giảm tải bộ nhớ
+      const stats = await fs.promises.stat(filePath);
       const mimeType = mime.lookup(filePath) || "application/octet-stream";
-      const blob = new Blob([fileBuffer]);
 
-      return new Response(blob, {
+      const stream = fs.createReadStream(filePath);
+      // @ts-ignore: Readable.toWeb is available in Node environment for Next.js
+      const webStream = Readable.toWeb(stream);
+
+      return new Response(webStream as any, {
         status: 200,
         headers: {
           "Content-Type": mimeType,
-          "Content-Length": blob.size.toString(),
+          "Content-Length": stats.size.toString(),
           "Content-Disposition": `inline; filename="${fileName}"`,
+          "Cache-Control": "public, max-age=31536000, immutable",
         },
       });
 

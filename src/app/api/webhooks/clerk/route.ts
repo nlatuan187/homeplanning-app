@@ -56,8 +56,23 @@ export async function POST(req: Request) {
   console.log(`Webhook with and ID of ${id} and type of ${eventType}`)
   console.log('Webhook body:', body)
 
-  if (eventType === 'user.created' || eventType === 'user.updated') {
-    const { id, email_addresses, primary_email_address_id } = evt.data;
+  if (eventType === 'user.created' || eventType === 'user.updated' || eventType === 'user.deleted') {
+    const { id } = evt.data;
+    if (!id) {
+      return new NextResponse('Error: No user ID found', { status: 400 });
+    }
+
+    if (eventType === 'user.deleted') {
+      try {
+        await db.user.delete({ where: { id } });
+        return new NextResponse('User deleted successfully', { status: 200 });
+      } catch (error) {
+        console.error('Error deleting user from database:', error);
+        return new NextResponse('Error deleting user', { status: 500 });
+      }
+    }
+
+    const { email_addresses, primary_email_address_id } = evt.data;
 
     // Tìm email chính
     const primaryEmail = email_addresses.find(email => email.id === primary_email_address_id);
