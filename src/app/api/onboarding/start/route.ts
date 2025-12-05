@@ -97,16 +97,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Try to get user details from Clerk if possible (for email), but don't fail if not
+    // Ensure user exists in database before creating plan
     let userEmail: string | undefined;
     try {
-      const user = await db.user.findUnique({ where: { id: userId } });
-      if (user) {
-        userEmail = user.email;
-      }
+      // Try to get email from Clerk
+      const { clerkClient } = await import('@clerk/nextjs/server');
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(userId);
+      userEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
     } catch (e) {
-      // Ignore error if currentUser fails (e.g. when using custom token)
+      logger.warn('Could not fetch user from Clerk', { userId, error: String(e) });
     }
+
+    // Upsert user to ensure they exist in database
+    await db.user.upsert({
+      where: { id: userId },
+      update: {
+        email: userEmail || `user-${userId}@placeholder.com`,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: userId,
+        email: userEmail || `user-${userId}@placeholder.com`,
+      },
+    });
 
     // 2. Lấy và validate dữ liệu từ mobile app
     const body = await req.json();

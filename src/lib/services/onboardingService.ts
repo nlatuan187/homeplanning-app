@@ -56,14 +56,15 @@ export async function startOnboardingPlan(
     },
   });
 
-
   await createOnboardingProgress(newPlan.id);
 
   const projectionCache = await runProjectionWithEngine(newPlan.id);
   await db.planReport.create({
     data: {
       planId: newPlan.id,
-      projectionCache: projectionCache as any,
+      projectionCache: {
+        projectionCache,
+      },
     },
   });
 
