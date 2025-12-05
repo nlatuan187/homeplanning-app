@@ -26,6 +26,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/plans(.*)',            // Cho phép Custom Token xử lý
   '/api/user/plan(.*)',        // Cho phép Custom Token xử lý
   '/api/section/progress(.*)', // Cho phép Custom Token xử lý
+  '/api/user(.*)',             // Cho phép Custom Token xử lý
+  '/api/user/delete(.*)',      // Cho phép Custom Token xử lý
 
   // Có thể thêm các API công khai khác ở đây nếu cần
   // ví dụ: '/api/market-data'
