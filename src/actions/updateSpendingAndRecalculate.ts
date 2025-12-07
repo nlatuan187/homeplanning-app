@@ -7,14 +7,6 @@ import { runProjectionWithEngine } from "./projectionHelpers";
 import logger from "@/lib/logger";
 import { OnboardingPlanState } from "@/components/onboarding/types";
 
-const areValuesEqual = (val1: any, val2: any) => {
-  // Treat null, undefined, and 0 as equal for numeric fields
-  if ((val1 === null || val1 === undefined) && (val2 === null || val2 === undefined)) {
-    return true;
-  }
-  return val1 === val2;
-};
-
 export async function updateSpendingAndRecalculate(
   plan: OnboardingPlanState,
   formData: any
@@ -29,62 +21,46 @@ export async function updateSpendingAndRecalculate(
     const planReport = await db.planReport.findUnique({ where: { planId: plan.id } });
     const existingResult = planReport?.projectionCache as unknown as { earliestPurchaseYear: number; message: string; isAffordable: boolean; };
 
-    const currentData = {
-      monthlyNonHousingDebt: plan.monthlyNonHousingDebt,
-      currentAnnualInsurancePremium: plan.currentAnnualInsurancePremium,
-      hasNewChild: plan.hasNewChild,
-      yearToHaveChild: plan.yearToHaveChild,
-      monthlyChildExpenses: plan.monthlyChildExpenses,
-    };
-
-    const hasChanged = Object.keys(formData).some(key => !areValuesEqual(formData[key as keyof typeof formData], currentData[key as keyof typeof currentData]));
     const previousFirstViableYear = plan.firstViableYear;
 
     let result = { earliestPurchaseYear: 0, message: "", isAffordable: false };
     let customMessage = "";
     let caseNumber: number = 0;
 
-    if (hasChanged) {
-      await db.$transaction([
-        db.plan.update({
-          where: { id: plan.id },
-          data: formData,
-        })
-      ]);
-      result = await runProjectionWithEngine(plan.id);
-      const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
-
-      if (result.earliestPurchaseYear !== 0 && existingEarliestYear !== 0 && result.earliestPurchaseYear === existingEarliestYear) {
-          customMessage = "Chi tiêu rất ấn tượng đấy 😀";
-          caseNumber = 4;
-      } else if (result.earliestPurchaseYear > existingEarliestYear) {
-          customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵";
-          caseNumber = 3;
-      } else {
-          customMessage = `Những khoản chi này càng đưa căn nhà mơ ước của bạn ra xa hơn, bạn chưa thể mua được nhà 😞`;
-          caseNumber = 5;
-      }
-      await db.$transaction([
-        db.planReport.upsert({
-          where: { planId: plan.id },
-          update: { projectionCache: result },
-          create: { planId: plan.id, projectionCache: result },
-        })
-      ]);
-      await db.plan.update({
+    await db.$transaction([
+      db.plan.update({
         where: { id: plan.id },
-        data: { firstViableYear: result.earliestPurchaseYear }
-      });
+        data: formData,
+      })
+    ]);
+    result = await runProjectionWithEngine(plan.id);
+    const existingEarliestYear = existingResult?.earliestPurchaseYear || 0;
+
+    if (result.earliestPurchaseYear === 0) {
+      customMessage = "Rất tiếc, bạn vẫn sẽ không thể mua được nhà vào năm mong muốn 😞.";
+      caseNumber = 2;
+    } else if (existingEarliestYear !== 0 && result.earliestPurchaseYear === existingEarliestYear) {
+      customMessage = "Ấn tượng đấy 😀";
+      caseNumber = 1;
+    } else if (result.earliestPurchaseYear > existingEarliestYear) {
+      customMessage = "Với những chi phí này, thời gian mua nhà sớm nhất của bạn sẽ bị lùi lại 🥵";
+      caseNumber = 3;
     } else {
-      result = existingResult;
-      if (result.earliestPurchaseYear !== 0) {
-        customMessage = "Ấn tượng đấy 😀"; // Case 1: Good & Unchanged
-        caseNumber = 1;
-      } else {
-          customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn."; // Case 2: Bad & Unchanged
-          caseNumber = 2;
-      }
+      customMessage = "Sự hỗ trợ từ gia đình và chi tiêu rất ấn tượng đấy 😀";
+      caseNumber = 4;
     }
+
+    await db.$transaction([
+      db.planReport.upsert({
+        where: { planId: plan.id },
+        update: { projectionCache: result },
+        create: { planId: plan.id, projectionCache: result },
+      })
+    ]);
+    await db.plan.update({
+      where: { id: plan.id },
+      data: { firstViableYear: result.earliestPurchaseYear }
+    });
 
     revalidatePath(`/plan/${plan.id}`);
     return {

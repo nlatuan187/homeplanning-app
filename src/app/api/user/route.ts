@@ -42,6 +42,15 @@ export async function GET(req: NextRequest) {
       where: { userId },
     });
 
+    const planReport = await db.planReport.findUnique({
+      where: { planId: plan?.id },
+    });
+
+    const projection = planReport?.projectionCache?.projections;
+    const loanAmount = Math.round(projection.loanAmountNeeded || 0);
+    const housePrice = Math.round(projection.housePriceProjected || 0);
+    const amountSaved = Math.round(housePrice - loanAmount);
+
     return NextResponse.json({
       user: {
         id: clerkUser.id,
@@ -54,8 +63,10 @@ export async function GET(req: NextRequest) {
         time: plan?.firstViableYear,
         type: plan?.targetHouseType,
         location: plan?.targetLocation,
-        price: plan?.targetHousePriceN0,
-      }
+      },
+      amountSaved: `~${amountSaved}`,
+      housePrice: `~${housePrice}`,
+      loanAmount: `~${loanAmount}`,
     });
   } catch (error) {
     console.error("Error fetching user:", error);

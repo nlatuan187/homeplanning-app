@@ -91,9 +91,11 @@ export async function computeOnboardingOutcome(plan: PlanWithDetails): Promise<{
   return { projections, earliestPurchaseYear: earliestYear, purchaseProjection, message };
 }
 
-export async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; isAffordable: boolean; projections?: ProjectionRow[]; }> {
+export async function runProjectionWithEngine(planId: string): Promise<{ earliestPurchaseYear: number; message: string; isAffordable: boolean; projections?: ProjectionRow; }> {
   const enginePlan = await buildPlanForProjection(planId);
   const outcome = await computeOnboardingOutcome(enginePlan);
+  const projection = outcome.projections.find((r) => r.year === outcome.earliestPurchaseYear);
+  console.log("projection", projection);
 
   const isAffordable = outcome.purchaseProjection?.isAffordable ?? false;
 
@@ -101,7 +103,7 @@ export async function runProjectionWithEngine(planId: string): Promise<{ earlies
     earliestPurchaseYear: outcome.earliestPurchaseYear,
     message: outcome.message,
     isAffordable: isAffordable,
-    projections: outcome.projections
+    projections: projection,
   };
 }
 
