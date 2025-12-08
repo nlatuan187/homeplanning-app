@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
 /**
  * @swagger
@@ -39,16 +39,24 @@ import { auth } from '@clerk/nextjs/server';
  */
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    const { userId, sessionId } = await auth();
 
-    if (!userId) {
+    if (!userId || !sessionId) {
       return NextResponse.json({
         error: 'No active session'
       }, { status: 401 });
     }
 
-    // Clerk handles session invalidation automatically
-    // For mobile apps, they should clear their stored tokens
+    // Revoke the Clerk session
+    try {
+      const client = await clerkClient();
+      await client.sessions.revokeSession(sessionId);
+    } catch (error) {
+      console.error('[LOGOUT_REVOKE_ERROR]', error);
+      // Continue to return success to client even if revocation fails
+      // as the client should clear their own tokens regardless.
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Logged out successfully'
@@ -60,5 +68,16 @@ export async function POST(req: Request) {
       error: 'Logout failed'
     }, { status: 500 });
   }
+}
+
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    },
+  });
 }
 

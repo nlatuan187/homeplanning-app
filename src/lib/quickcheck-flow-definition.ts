@@ -12,9 +12,7 @@ const analysisContent = {
       summary: "Lựa chọn của bạn đang tập trung vào sự an toàn và tăng trưởng ổn định.",
       image: "/onboarding/hanoi-chungcu.png",
       points: {
-        "Bức tranh toàn cảnh": "Trong 5 năm qua, chung cư Hà Nội đã chứng tỏ là một tài sản tăng trưởng rất bền bỉ, mang lại sự an tâm cho người sở hữu.",
-        "Động lực chính": "Sức mạnh của phân khúc này đến từ nhu cầu ở thực, luôn hiện hữu và gia tăng theo sự phát triển của đô thị.",
-        "Ý nghĩa với bạn (người mua nhà)": "Việc lựa chọn chung cư mang lại một nền tảng vững chắc cho kế hoạch của bạn, dễ dàng tiếp cận các khoản vay và có tính thanh khoản tốt.",
+        "": "",
       },
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
@@ -23,9 +21,7 @@ const analysisContent = {
       summary: "Bạn đang hướng tới một tài sản có tiềm năng tăng trưởng đột phá và giá trị lâu dài.",
       image: "/onboarding/hanoi-nhadat.png",
       points: {
-        "Bức tranh toàn cảnh": "Nhà đất Hà Nội luôn là kênh đầu tư hấp dẫn với tiềm năng tăng giá mạnh mẽ, đặc biệt ở các khu vực có quy hoạch hạ tầng tốt.",
-        "Động lực chính": "Quyền sở hữu đất đai vĩnh viễn và tâm lý 'tấc đất tấc vàng' là động lực chính thúc đẩy giá trị của phân khúc này.",
-        "Ý nghĩa với bạn (người mua nhà)": "Sở hữu nhà đất không chỉ là một tài sản mà còn là một di sản. Tuy nhiên, nó đòi hỏi một nguồn vốn lớn hơn và sự tìm hiểu kỹ lưỡng về pháp lý.",
+        "": "",
       },
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
@@ -36,9 +32,7 @@ const analysisContent = {
       summary: "Bạn đang chọn một giải pháp nhà ở hiện đại, linh hoạt và phù hợp với nhịp sống năng động.",
       image: "/onboarding/hcmc-chungcu.png",
       points: {
-        "Bức tranh toàn cảnh": "Thị trường chung cư TP.HCM cực kỳ sôi động với đa dạng phân khúc, đáp ứng mọi nhu cầu từ cơ bản đến cao cấp.",
-        "Động lực chính": "Dân số trẻ và tốc độ đô thị hóa nhanh chóng là động lực tăng trưởng chính, giữ cho thị trường luôn có nhu cầu cao.",
-        "Ý nghĩa với bạn (người mua nhà)": "Chung cư là lựa chọn thông minh để an cư tại một thành phố lớn, với nhiều tiện ích đi kèm và cộng đồng dân cư văn minh.",
+        "": "",
       },
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
@@ -47,9 +41,7 @@ const analysisContent = {
       summary: "Lựa chọn của bạn thể hiện tầm nhìn đầu tư dài hạn vào một trong những thị trường bất động sản giá trị nhất cả nước.",
       image: "/onboarding/hcmc-nhadat.png",
       points: {
-        "Bức tranh toàn cảnh": "Giá trị nhà đất tại TP.HCM liên tục tăng trưởng nhờ vị thế trung tâm kinh tế và sự khan hiếm của quỹ đất.",
-        "Động lực chính": "Dòng vốn đầu tư mạnh mẽ và nhu cầu tích lũy tài sản của người dân là những yếu tố cốt lõi thúc đẩy thị trường.",
-        "Ý nghĩa với bạn (người mua nhà)": "Đây là một tài sản lớn có khả năng chống lại lạm phát và gia tăng giá trị vượt trội theo thời gian, nhưng cần sự chuẩn bị tài chính vững vàng.",
+        "": "",
       },
       ctaText: "Tôi đã hiểu, tiếp tục",
     }
