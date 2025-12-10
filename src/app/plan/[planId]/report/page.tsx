@@ -41,14 +41,14 @@ export default function ReportPage() {
   const [isLoadingReport, setIsLoadingReport] = useState(true);
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [plan, setPlan] = useState<Plan | null>(null);
   const [projectionData, setProjectionData] = useState<ProjectionRow[] | null>(null);
   const [confirmedYearData, setConfirmedYearData] = useState<ProjectionRow | null>(null);
   const [loanSummary, setLoanSummary] = useState<LoanSummary | null>(null);
   const [reportSections, setReportSections] = useState<ReportSections | null>(null);
   const [isEditingPlan, setIsEditingPlan] = useState(false); // State for edit button
-  
+
   const [activeTab, setActiveTab] = useState("tich-luy");
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function ReportPage() {
           sessionStorage.removeItem(`report_${planId}`); // Clear invalid cache
         }
       }
-      
+
       // Don't set isLoadingReport true here yet, let cache check decide overlay
       try {
         // First, check cache status to decide if loading animation is needed
@@ -90,13 +90,13 @@ export default function ReportPage() {
             setIsLoadingReport(false); // Data will load quickly from cache via generateFinalReport
           } else {
             setShowLoadingOverlay(true); // No valid cache or plan issue, show loading animation
-            setIsLoadingReport(true); 
+            setIsLoadingReport(true);
           }
           initialOverlayStateSet = true;
         } else if (!showLoadingOverlay) {
           // If overlay was skipped due to cache, ensure isLoadingReport is false before fetching
           // This case might be redundant if generateFinalReport is fast with cache
-           setIsLoadingReport(false);
+          setIsLoadingReport(false);
         }
 
 
@@ -118,17 +118,17 @@ export default function ReportPage() {
 
             // Cache the successful result in sessionStorage
             const dataToCache = {
-                plan: successResult.plan,
-                projectionData: successResult.projectionData,
-                confirmedYearData: successResult.confirmedYearData,
-                loanSummary: successResult.loanSummary,
-                reportSections: successResult.reportSections,
+              plan: successResult.plan,
+              projectionData: successResult.projectionData,
+              confirmedYearData: successResult.confirmedYearData,
+              loanSummary: successResult.loanSummary,
+              reportSections: successResult.reportSections,
             };
             try {
-                sessionStorage.setItem(`report_${planId}`, JSON.stringify(dataToCache));
-                console.log("Đã lưu báo cáo vào bộ nhớ đệm của trình duyệt (sessionStorage).");
+              sessionStorage.setItem(`report_${planId}`, JSON.stringify(dataToCache));
+              console.log("Đã lưu báo cáo vào bộ nhớ đệm của trình duyệt (sessionStorage).");
             } catch (e) {
-                console.error("Không thể lưu báo cáo vào sessionStorage:", e);
+              console.error("Không thể lưu báo cáo vào sessionStorage:", e);
             }
           } else {
             throw new Error("Dữ liệu báo cáo không đầy đủ từ server.");
@@ -156,7 +156,7 @@ export default function ReportPage() {
     setIsEditingPlan(true);
     try {
       // Call editPlan server action to save revision and redirect
-      await editPlanAction(planId, undefined, "goal"); 
+      await editPlanAction(planId, undefined, "goal");
     } catch (error) {
       console.error("Error initiating plan edit from report page:", error);
       // Optionally set an error state here to display to the user
@@ -191,15 +191,15 @@ export default function ReportPage() {
       </main>
     );
   }
-  
-  if (!plan || !projectionData || !reportSections || !confirmedYearData || !loanSummary ) {
-     // This state can occur briefly if loading overlay finishes before data is fully set,
-     // or if there was an error not caught by the error state.
+
+  if (!plan || !projectionData || !reportSections || !confirmedYearData || !loanSummary) {
+    // This state can occur briefly if loading overlay finishes before data is fully set,
+    // or if there was an error not caught by the error state.
     return (
       <main className="min-h-screen bg-black text-white p-4">
         <div className="container mx-auto max-w-5xl text-center">
           <p className="text-slate-300">Đang tải dữ liệu báo cáo...</p>
-           {/* Fallback loading spinner if needed */}
+          {/* Fallback loading spinner if needed */}
         </div>
       </main>
     );
@@ -213,7 +213,7 @@ export default function ReportPage() {
     "du-phong": "/gradient_duphong.png",
     "bao-ve": "/gradient_baove.png",
   };
-  
+
   const currentGradient = gradientImages[activeTab] || gradientImages["tich-luy"];
 
   // Determine ReportHeaderCard props based on activeTab and plan
@@ -230,7 +230,7 @@ export default function ReportPage() {
     switch (activeTab) {
       case "tich-luy":
         headerCardTitle = "MỤC TIÊU TÍCH LŨY";
-        headerCardDescription = `Tăng lương trung bình ${plan.pctSalaryGrowth}%/năm, ${projectionData?.some(p=>p.otherIncome > 0) ? "có thêm thu nhập khác, " : ""}và đảm bảo đầu tư sinh lời ${plan.pctInvestmentReturn}%/năm.`;
+        headerCardDescription = `Tăng lương trung bình ${plan.pctSalaryGrowth}%/năm, ${projectionData?.some(p => p.otherIncome > 0) ? "có thêm thu nhập khác, " : ""}và đảm bảo đầu tư sinh lời ${plan.pctInvestmentReturn}%/năm.`;
         break;
       case "chi-tieu":
         headerCardTitle = "MỤC TIÊU CHI TIÊU";
@@ -279,9 +279,9 @@ export default function ReportPage() {
       <div className="container mx-auto max-w-5xl px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Sticky Header for TabsList and ReportHeaderCard */}
-          <div 
+          <div
             className="z-30 bg-cover bg-center rounded-xl mt-1" // Assuming top-nav height is ~64px (top-16)
-            style={{ backgroundImage: `url(${currentGradient})`}}
+            style={{ backgroundImage: `url(${currentGradient})` }}
           >
             <div className="bg-black/40 backdrop-blur-sm p-4 rounded-xl"> {/* Overlay for text readability, also rounded */}
               <TabsList className="grid w-full grid-cols-5 bg-white/10 rounded-lg p-1">
@@ -298,19 +298,19 @@ export default function ReportPage() {
 
           <div className="mt-6">
             <TabsContent value="tich-luy">
-                <AccumulationReportTab data={reportSections.assetEfficiency} />
+              <AccumulationReportTab data={reportSections.assetEfficiency} />
             </TabsContent>
             <TabsContent value="chi-tieu">
-                <SpendingReportTab data={reportSections.spendingPlan} setActiveTab={setActiveTab} />
+              <SpendingReportTab data={reportSections.spendingPlan} setActiveTab={setActiveTab} />
             </TabsContent>
             <TabsContent value="vay-muon">
-                <BorrowingReportTab data={reportSections.capitalStructure} />
+              <BorrowingReportTab data={reportSections.capitalStructure} />
             </TabsContent>
             <TabsContent value="du-phong">
-                <BackupPlansSection data={reportSections.backupPlans} />
+              <BackupPlansSection data={reportSections.backupPlans} />
             </TabsContent>
             <TabsContent value="bao-ve">
-                <InsuranceSection data={reportSections.insurance} />
+              <InsuranceSection data={reportSections.insurance} />
             </TabsContent>
           </div>
         </Tabs>

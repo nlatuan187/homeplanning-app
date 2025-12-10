@@ -11,18 +11,14 @@ const analysisContent = {
       title: "Phân tích Thị trường Chung cư tại Hà Nội",
       summary: "Lựa chọn của bạn đang tập trung vào sự an toàn và tăng trưởng ổn định.",
       image: "/onboarding/hanoi-chungcu.png",
-      points: {
-        "": "",
-      },
+      points: null,
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
     NHA_DAT: {
       title: "Phân tích Thị trường Nhà đất tại Hà Nội",
       summary: "Bạn đang hướng tới một tài sản có tiềm năng tăng trưởng đột phá và giá trị lâu dài.",
       image: "/onboarding/hanoi-nhadat.png",
-      points: {
-        "": "",
-      },
+      points: null,
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
   },
@@ -31,18 +27,14 @@ const analysisContent = {
       title: "Phân tích Thị trường Chung cư tại TP.HCM",
       summary: "Bạn đang chọn một giải pháp nhà ở hiện đại, linh hoạt và phù hợp với nhịp sống năng động.",
       image: "/onboarding/hcmc-chungcu.png",
-      points: {
-        "": "",
-      },
+      points: null,
       ctaText: "Tôi đã hiểu, tiếp tục",
     },
     NHA_DAT: {
       title: "Phân tích Thị trường Nhà đất tại TP.HCM",
       summary: "Lựa chọn của bạn thể hiện tầm nhìn đầu tư dài hạn vào một trong những thị trường bất động sản giá trị nhất cả nước.",
       image: "/onboarding/hcmc-nhadat.png",
-      points: {
-        "": "",
-      },
+      points: null,
       ctaText: "Tôi đã hiểu, tiếp tục",
     }
   }
