@@ -62,7 +62,7 @@ const bodySchema = z.object({
  *       # ... other responses
  * 
  */
-export async function PATCH(req: NextRequest, { params }: { params: { planId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ planId: string }> }) {
     try {
         // Use hybrid auth verification
         const { verifyMobileToken } = await import('@/lib/mobileAuth');
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { planId: st
 
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { planId } = params;
+        const { planId } = await params;
         const body = await bodySchema.parse(await req.json());
 
         // Fetch current plan and report for comparison
