@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { OnboardingPlanState } from "@/components/onboarding/types";
 import { runProjectionWithEngine } from "./projectionHelpers";
 import { PlanWithDetails } from "@/lib/calculations/projections/generateProjections";
+import { redirect } from "next/navigation";
 import { Plan } from "@prisma/client";
 
 /**
@@ -142,10 +143,10 @@ export async function updateAssumptionSectionAndRecalculate(planId: string, data
       create: { planId, projectionCache: calculationResult as any },
     });
     await db.plan.update({
-        where: { id: planId },
-        data: { firstViableYear: calculationResult.earliestPurchaseYear }
+      where: { id: planId },
+      data: { firstViableYear: calculationResult.earliestPurchaseYear }
     });
-    
+
     revalidatePath(`/plan/${planId}`);
     revalidatePath('/dashboard');
 
@@ -178,10 +179,10 @@ export async function updateSinglePlanField(
 
     // Đảm bảo chỉ chủ sở hữu mới có thể sửa
     const plan = await db.plan.findFirst({
-        where: { id: planId, userId: user.id }
+      where: { id: planId, userId: user.id }
     });
     if (!plan) {
-        return { success: false, error: "Plan not found." };
+      return { success: false, error: "Plan not found." };
     }
 
     await db.plan.update({
@@ -220,14 +221,14 @@ export async function runProjectionForPlan(planId: string) {
     });
 
     await db.plan.update({
-        where: { id: plan.id },
-        data: { firstViableYear: calculationResult.earliestPurchaseYear }
+      where: { id: plan.id },
+      data: { firstViableYear: calculationResult.earliestPurchaseYear }
     });
-    
+
     // Lấy lại plan đã cập nhật đầy đủ để trả về cho client
     const updatedPlan = await db.plan.findUnique({
-        where: { id: plan.id },
-        include: { familySupport: true }
+      where: { id: plan.id },
+      include: { familySupport: true }
     });
 
     revalidatePath(`/plan/${plan.id}`);
@@ -271,3 +272,12 @@ export async function deleteOnboardingProgress(planId: string) {
     return { success: false, error: (error as Error).message };
   }
 }
+
+/**
+ * Redirects to the edit page for a plan.
+ * Restored to fix missing export issue.
+ */
+export async function editPlan(planId: string, _?: any, section?: string) {
+  redirect(`/plan/${planId}/edit`);
+}
+
