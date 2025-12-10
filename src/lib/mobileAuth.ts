@@ -20,6 +20,19 @@ export async function verifyMobileToken(req: NextRequest): Promise<string | null
         try {
             const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as any;
             if (decoded && decoded.userId) {
+                // Check Blacklist
+                if (decoded.jti) {
+                    const { db } = await import('@/lib/db');
+                    const blacklisted = await db.tokenBlacklist.findUnique({
+                        where: { jti: decoded.jti }
+                    });
+
+                    if (blacklisted) {
+                        console.log('[MOBILE_AUTH_HELPER] Token blacklisted:', decoded.jti);
+                        return null;
+                    }
+                }
+
                 // console.log('[MOBILE_AUTH_HELPER] Custom JWT verified for user:', decoded.userId);
                 return decoded.userId;
             }

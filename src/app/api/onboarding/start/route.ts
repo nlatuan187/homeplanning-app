@@ -105,8 +105,12 @@ export async function POST(req: NextRequest) {
       const client = await clerkClient();
       const clerkUser = await client.users.getUser(userId);
       userEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
-    } catch (e) {
-      logger.warn('Could not fetch user from Clerk', { userId, error: String(e) });
+    } catch (error: any) {
+      // If user is not found in Clerk (deleted), return 401
+      if (error.status === 404) {
+        return NextResponse.json({ error: "User not found" }, { status: 401 });
+      }
+      logger.warn('Could not fetch user from Clerk', { userId, error: String(error) });
     }
 
     // Upsert user to ensure they exist in database

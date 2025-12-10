@@ -35,20 +35,33 @@ export async function GET(req: NextRequest) {
     }
 
     const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
+    let clerkUser;
+
+    try {
+      clerkUser = await client.users.getUser(userId);
+    } catch (error: any) {
+      if (error.status === 404) {
+        return NextResponse.json({ error: "User not found" }, { status: 401 });
+      }
+      throw error;
+    }
+
     const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
 
     const plan = await db.plan.findFirst({
       where: { userId },
     });
 
-    const planReport = await db.planReport.findUnique({
-      where: { planId: plan?.id },
-    });
+    let planReport = null;
+    if (plan) {
+      planReport = await db.planReport.findUnique({
+        where: { planId: plan.id },
+      });
+    }
 
     const projection = planReport?.projectionCache?.projections;
-    const loanAmount = Math.round(projection.loanAmountNeeded || 0);
-    const housePrice = Math.round(projection.housePriceProjected || 0);
+    const loanAmount = Math.round(projection?.loanAmountNeeded || 0);
+    const housePrice = Math.round(projection?.housePriceProjected || 0);
     const amountSaved = Math.round(housePrice - loanAmount);
 
     return NextResponse.json({

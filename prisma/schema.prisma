@@ -223,3 +223,12 @@ model Notification {
 
   @@index([userId])
 }
+
+model TokenBlacklist {
+  jti       String   @id // Unique Token ID (JWT ID)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt]) // Useful for cleanup jobs
+}

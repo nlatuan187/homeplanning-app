@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
 /**
@@ -37,25 +37,45 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
  *                   type: string
  *                   example: "No active session"
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { userId, sessionId } = await auth();
+    const { verifyMobileToken } = await import('@/lib/mobileAuth');
+    const userId = await verifyMobileToken(req);
 
-    if (!userId || !sessionId) {
+    if (!userId) {
       return NextResponse.json({
         error: 'No active session'
       }, { status: 401 });
     }
 
-    // Revoke the Clerk session
+    // 4. Blacklist the token (Prevent reuse)
     try {
-      const client = await clerkClient();
-      await client.sessions.revokeSession(sessionId);
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.decode(token) as any;
+
+        if (decoded && decoded.jti) {
+          const { db } = await import('@/lib/db');
+          // Use expiration from token, or default to 30 days if missing
+          const expiresAt = decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+          await db.tokenBlacklist.create({
+            data: {
+              jti: decoded.jti,
+              userId: userId,
+              expiresAt: expiresAt
+            }
+          });
+          console.log('[LOGOUT] Token blacklisted:', decoded.jti);
+        }
+      }
     } catch (error) {
-      console.error('[LOGOUT_REVOKE_ERROR]', error);
-      // Continue to return success to client even if revocation fails
-      // as the client should clear their own tokens regardless.
+      console.error('[LOGOUT_BLACKLIST_ERROR]', error);
     }
+
+    // Revoke the Clerk session (optional, mainly for web sessions)
 
     return NextResponse.json({
       success: true,
@@ -70,7 +90,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function OPTIONS(req: Request) {
+export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
