@@ -148,11 +148,13 @@ enum FamilyLoanRepaymentType {
 enum HouseType {
   CHUNG_CU
   NHA_DAT
+  KHAC
 }
 
 enum Location {
   HCMC
   HANOI
+  KHAC
 }
 
 // BẢNG MỚI CHO REPORT

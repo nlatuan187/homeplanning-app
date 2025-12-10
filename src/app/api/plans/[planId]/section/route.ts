@@ -124,7 +124,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pl
                         customMessage = "Rất tiếc, bạn sẽ không thể mua được nhà vào năm mong muốn."; // Case 2: Bad & Unchanged
                         caseNumber = 2;
                     }
-
                 } else {
                     // 1. Update DB
                     await updateSpending(planId, userId, validatedData);
@@ -148,31 +147,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pl
                     }
                 }
 
-                if (hasChanged) {
-                    await db.$transaction([
-                        db.planReport.upsert({
-                            where: { planId },
-                            update: { projectionCache: result as any },
-                            create: { planId, projectionCache: result as any },
-                        }),
-                        db.plan.update({
-                            where: { id: planId },
-                            data: { firstViableYear: result.earliestPurchaseYear }
-                        }),
-                        db.onboardingProgress.updateMany({
-                            where: { planId },
-                            data: { spendingState: OnboardingSectionState.COMPLETED }
-                        })
-                    ]);
-                    await invalidateReportCache(planId);
-                } else {
-                    // Even if unchanged, ensure progress is marked completed
-                    await db.onboardingProgress.updateMany({
+                await db.$transaction([
+                    db.planReport.upsert({
+                        where: { planId },
+                        update: {
+                            projectionCache: {
+                                earliestPurchaseYear: result.earliestPurchaseYear,
+                                projections: result.projections as any,
+                                isAffordable: result.isAffordable,
+                                message: result.message
+                            }
+                        },
+                        create: {
+                            planId,
+                            projectionCache: {
+                                earliestPurchaseYear: result.earliestPurchaseYear,
+                                projections: result.projections as any,
+                                isAffordable: result.isAffordable,
+                                message: result.message
+                            },
+                        },
+                    }),
+                    db.plan.update({
+                        where: { id: planId },
+                        data: { firstViableYear: result.earliestPurchaseYear }
+                    }),
+                    db.onboardingProgress.updateMany({
                         where: { planId },
                         data: { spendingState: OnboardingSectionState.COMPLETED }
-                    });
-                }
-
+                    })
+                ]);
+                await invalidateReportCache(planId);
                 // Return only what the mobile app needs for the "Spending" feedback UI
                 return NextResponse.json({
                     success: true,

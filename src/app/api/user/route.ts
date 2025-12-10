@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
         where: { planId: plan.id },
       });
     }
-    const actualCache = (planReport?.projectionCache as any)?.projectionCache;
+    const actualCache = planReport?.projectionCache;
     const projection = actualCache?.projections || actualCache;
     const loanAmount = projection?.loanAmountNeeded;
     const housePrice = projection?.housePriceProjected;
