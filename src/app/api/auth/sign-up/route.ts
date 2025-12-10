@@ -65,11 +65,16 @@ export async function POST(req: Request) {
     });
 
     // 3. Tạo user trong database local để đồng bộ
-    await db.user.create({
-      data: {
+    // Sử dụng upsert để xử lý trường hợp email đã tồn tại trong DB local (nhưng không có trong Clerk)
+    // Trường hợp này xảy ra nếu database không đồng bộ hoàn toàn với Clerk (VD: xoá user bên Clerk nhưng chưa xoá DB)
+    await db.user.upsert({
+      where: { email: emailAddress },
+      update: {
+        id: newUser.id, // Update ID mới từ Clerk liên kết với email cũ
+      },
+      create: {
         id: newUser.id,
         email: emailAddress,
-        // Các trường khác có thể để default hoặc null
       }
     });
 

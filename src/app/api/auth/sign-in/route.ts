@@ -81,11 +81,13 @@ export async function POST(request: Request) {
     }
 
     // 3. Tạo Custom JWT (Long-lived) cho Mobile App
+    const jti = crypto.randomUUID();
     const payload = {
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
+      jti: jti,
     };
 
     // Explicitly use HS256
