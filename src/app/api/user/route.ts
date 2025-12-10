@@ -58,11 +58,11 @@ export async function GET(req: NextRequest) {
         where: { planId: plan.id },
       });
     }
-
-    const projection = planReport?.projectionCache?.projections;
-    const loanAmount = Math.round(projection?.loanAmountNeeded || 0);
-    const housePrice = Math.round(projection?.housePriceProjected || 0);
-    const amountSaved = Math.round(housePrice - loanAmount);
+    const actualCache = (planReport?.projectionCache as any)?.projectionCache;
+    const projection = actualCache?.projections || actualCache;
+    const loanAmount = projection?.loanAmountNeeded;
+    const housePrice = projection?.housePriceProjected;
+    const amountSaved = housePrice - loanAmount;
 
     return NextResponse.json({
       user: {
@@ -77,9 +77,9 @@ export async function GET(req: NextRequest) {
         type: plan?.targetHouseType,
         location: plan?.targetLocation,
       },
-      amountSaved: `~${amountSaved}`,
-      housePrice: `~${housePrice}`,
-      loanAmount: `~${loanAmount}`,
+      amountSaved: amountSaved,
+      housePrice: housePrice,
+      loanAmount: loanAmount,
     });
   } catch (error) {
     console.error("Error fetching user:", error);
