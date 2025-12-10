@@ -13,10 +13,48 @@ export type QuickCheckResultPayload = ProjectionResult;
 export async function createPlanFromOnboarding(
   onboardingData: Partial<OnboardingPlanState>
 ) {
+  // --- 1. Map Frontend Enums to Prisma Enums ---
+
+  // House Type Mapping
+  const houseTypeMapping: Record<string, "CHUNG_CU" | "NHA_DAT" | "KHAC"> = {
+    "Chung cư": "CHUNG_CU",
+    "Nhà mặt đất": "NHA_DAT",
+    "Khác": "KHAC",
+    "CHUNG_CU": "CHUNG_CU",
+    "NHA_DAT": "NHA_DAT",
+    "KHAC": "KHAC",
+  };
+
+  let mappedTargetHouseType: "CHUNG_CU" | "NHA_DAT" | "KHAC" | null = null;
+  if (onboardingData.targetHouseType && houseTypeMapping[onboardingData.targetHouseType]) {
+    mappedTargetHouseType = houseTypeMapping[onboardingData.targetHouseType];
+  }
+
+  // Location Mapping
+  const locationMapping: Record<string, "HCMC" | "HANOI" | "KHAC"> = {
+    "HCMC": "HCMC",
+    "HANOI": "HANOI",
+    "KHAC": "KHAC",
+    "Hồ Chí Minh": "HCMC",
+    "Hà Nội": "HANOI",
+    "Tỉnh/Thành khác": "KHAC",
+  };
+
+  let mappedTargetLocation: "HCMC" | "HANOI" | "KHAC" | null = null;
+  if (onboardingData.targetLocation && locationMapping[onboardingData.targetLocation]) {
+    mappedTargetLocation = locationMapping[onboardingData.targetLocation];
+  } else if (onboardingData.targetLocation) {
+    mappedTargetLocation = "KHAC";
+  }
+
   console.log("[createPlanFromOnboarding] Called with data:", {
     yearsToPurchase: onboardingData.yearsToPurchase,
     targetHousePriceN0: onboardingData.targetHousePriceN0 ?? 0 * 1000,
     monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
+    rawHouseType: onboardingData.targetHouseType,
+    mappedHouseType: mappedTargetHouseType,
+    rawLocation: onboardingData.targetLocation,
+    mappedLocation: mappedTargetLocation
   });
 
   const clerkUser = await currentUser();
@@ -111,7 +149,7 @@ export async function createPlanFromOnboarding(
       // --- OPTIMIZATION: Use lightweight projection for updates ---
       // SỬA LỖI: Không ghi đè yearsToPurchase bằng khoảng thời gian (duration).
       // Hàm calculateOnboardingProjection cần nhận vào NĂM (Year, ví dụ: 2028).
-      const dataForProjection = { ...onboardingData }; 
+      const dataForProjection = { ...onboardingData };
       const projectionResult = await calculateOnboardingProjection(dataForProjection);
 
       const updates = {
@@ -119,13 +157,13 @@ export async function createPlanFromOnboarding(
         yearsToPurchase: yearsToPurchase, // Ở đây dùng duration là đúng cho DB
         hasCoApplicant: onboardingData.hasCoApplicant || false,
         targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
-        targetHouseType: onboardingData.targetHouseType,
-        targetLocation: onboardingData.targetLocation,
+        targetHouseType: mappedTargetHouseType,
+        targetLocation: mappedTargetLocation,
         initialSavings: onboardingData.initialSavings || 0,
         userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
         monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
         // Add the result from the lightweight calculation
-        firstViableYear: projectionResult.earliestAffordableYear ?? null, 
+        firstViableYear: projectionResult.earliestAffordableYear ?? null,
         affordabilityOutcome: projectionResult.isAffordable ? "ScenarioB" : "ScenarioA",
         // Reset other fields to default
         monthlyNonHousingDebt: 0,
@@ -134,8 +172,8 @@ export async function createPlanFromOnboarding(
         yearToHaveChild: null,
         monthlyChildExpenses: 0,
         // SỬA LẠI: Gán đúng năm mua nhà (VD: 2025) từ dữ liệu đầu vào
-        confirmedPurchaseYear: onboardingData.yearsToPurchase, 
-        
+        confirmedPurchaseYear: onboardingData.yearsToPurchase,
+
         pctSalaryGrowth: 7.0,
         pctHouseGrowth: 10.0,
         pctExpenseGrowth: 4.0,
@@ -200,8 +238,8 @@ export async function createPlanFromOnboarding(
       yearsToPurchase: yearsToPurchase,
       hasCoApplicant: onboardingData.hasCoApplicant,
       targetHousePriceN0: onboardingData.targetHousePriceN0 * 1000,
-      targetHouseType: onboardingData.targetHouseType,
-      targetLocation: onboardingData.targetLocation,
+      targetHouseType: mappedTargetHouseType,
+      targetLocation: mappedTargetLocation,
       initialSavings: onboardingData.initialSavings || 0,
       userMonthlyIncome: onboardingData.userMonthlyIncome || 0,
       monthlyLivingExpenses: onboardingData.monthlyLivingExpenses,
@@ -228,6 +266,7 @@ export async function createPlanFromOnboarding(
       earliestPurchaseYear: projectionResult.earliestAffordableYear,
       message: projectionResult.error || "Initial calculation.",
       isAffordable: projectionResult.isAffordable,
+      projections: projectionResult.projectionData,
     };
 
     const newPlan = await db.$transaction(async (tx) => {

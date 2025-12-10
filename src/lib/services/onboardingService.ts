@@ -62,9 +62,7 @@ export async function startOnboardingPlan(
   await db.planReport.create({
     data: {
       planId: newPlan.id,
-      projectionCache: {
-        projectionCache,
-      },
+      projectionCache,
     },
   });
 
