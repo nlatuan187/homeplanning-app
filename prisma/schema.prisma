@@ -41,10 +41,10 @@ model Plan {
   updatedAt DateTime @updatedAt
 
   // Page 1: Goal Inputs
-  yearsToPurchase    Int     @default(3)
+  yearsToPurchase    Int        @default(3)
   targetHousePriceN0 Float
-  targetHouseType    String?
-  targetLocation     String?
+  targetHouseType    HouseType?
+  targetLocation     Location?
 
   // Page 2: Income Inputs
   hasCoApplicant    Boolean @default(false)
@@ -143,6 +143,16 @@ enum FamilyGiftTiming {
 enum FamilyLoanRepaymentType {
   MONTHLY
   LUMP_SUM
+}
+
+enum HouseType {
+  CHUNG_CU
+  NHA_DAT
+}
+
+enum Location {
+  HCMC
+  HANOI
 }
 
 // BẢNG MỚI CHO REPORT

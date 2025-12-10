@@ -64,6 +64,9 @@ export async function GET(req: NextRequest) {
     const housePrice = projection?.housePriceProjected;
     const amountSaved = housePrice - loanAmount;
 
+    const type = plan?.targetHouseType || null;
+    const location = plan?.targetLocation || null;
+
     return NextResponse.json({
       user: {
         id: clerkUser.id,
@@ -74,8 +77,8 @@ export async function GET(req: NextRequest) {
       },
       plan: {
         time: plan?.firstViableYear,
-        type: plan?.targetHouseType,
-        location: plan?.targetLocation,
+        type: type,
+        location: location,
       },
       amountSaved: amountSaved,
       housePrice: housePrice,
