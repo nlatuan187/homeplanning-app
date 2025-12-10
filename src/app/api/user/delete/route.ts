@@ -29,7 +29,20 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Delete from Clerk (Source of Truth)
+    // 2. Revoke all active sessions to invalidate tokens immediately
+    try {
+      const client = await clerkClient();
+      const sessions = await client.sessions.getSessionList({ userId });
+
+      await Promise.all(
+        sessions.data.map((session) => client.sessions.revokeSession(session.id))
+      );
+    } catch (error) {
+      console.error("Error revoking sessions:", error);
+      // Proceed with deletion even if revocation fails
+    }
+
+    // 3. Delete from Clerk (Source of Truth)
     // This will trigger the webhooks to clean up other services if any
     try {
       const client = await clerkClient();

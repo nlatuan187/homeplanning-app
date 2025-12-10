@@ -94,11 +94,13 @@ export async function POST(req: Request) {
     }
 
     // 3. Tạo Custom JWT (Long-lived)
+    const jti = crypto.randomUUID(); // Unique Token ID
     const payload = {
       userId: user.id,
       email: user.emailAddresses[0]?.emailAddress,
       firstName: user.firstName,
       lastName: user.lastName,
+      jti: jti, // Include JTI in payload
     };
 
     // Explicitly use HS256
