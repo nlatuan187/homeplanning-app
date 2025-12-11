@@ -15,10 +15,13 @@ model User {
   phone        String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  name         String?
   plans        Plan[]
   feedback     Feedback[]
   deviceTokens DeviceToken[]
   notifications Notification[]
+  expertChatRequests ExpertChatRequest[]
+  expertBookings ExpertOneOnOneBooking[]
 }
 
 model Feedback {
@@ -236,6 +239,7 @@ model Notification {
   @@index([userId])
 }
 
+
 model TokenBlacklist {
   jti       String   @id // Unique Token ID (JWT ID)
   userId    String
@@ -243,4 +247,59 @@ model TokenBlacklist {
   createdAt DateTime @default(now())
 
   @@index([expiresAt]) // Useful for cleanup jobs
+}
+
+// --- EXPERT CONSULTATION FEATURES ---
+
+enum ExpertRequestStatus {
+  PENDING
+  CONTACTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpertBookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model ExpertChatRequest {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    ExpertRequestStatus @default(PENDING)
+  notes     String?             @db.Text // Internal notes by admin
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([userId])
+}
+
+model ExpertOneOnOneBooking {
+  id            String              @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Booking Details
+  status        ExpertBookingStatus @default(PENDING)
+  notes         String?             @db.Text // User's notes when booking
+  adminNotes    String?             @db.Text // Internal notes
+  
+  // Payment Info
+  paymentStatus PaymentStatus       @default(PENDING)
+  amount        Float               @default(499000) // Default price from screenshot
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([userId])
 }

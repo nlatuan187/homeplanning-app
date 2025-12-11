@@ -22,6 +22,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/onboarding/start',     // TẠM THỜI MỞ PUBLIC ĐỂ TEST
   '/api/section/next-step(.*)', // << THÊM DÒNG NÀY VÀO ĐÂY
   '/api/docs',                 // API tài liệu Swagger
+  '/api/expert/booking',       // API đặt lịch
+  '/api/expert/chat',          // API chat với chuyên gia
 
   // == API DÙNG HYBRID AUTH (Custom Token) ==
   '/api/plans(.*)',            // Cho phép Custom Token xử lý
