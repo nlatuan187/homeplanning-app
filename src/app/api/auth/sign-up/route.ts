@@ -82,8 +82,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, userId: newUser.id }, { status: 201 });
 
   } catch (error: any) {
-    if (error.errors && error.errors[0].code === 'form_identifier_exists') {
+    // Xử lý lỗi email đã tồn tại
+    if (error.errors && error.errors[0]?.code === 'form_identifier_exists') {
       return NextResponse.json({ error: "Email này đã được sử dụng." }, { status: 400 });
+    }
+
+    // Xử lý lỗi mật khẩu bị lộ (pwned)
+    if (error.errors && error.errors[0]?.code === 'form_password_pwned') {
+      return NextResponse.json({
+        error: "Mật khẩu này đã bị lộ trong một vụ rò rỉ dữ liệu trước đây. Để bảo vệ tài khoản của bạn, vui lòng chọn mật khẩu khác."
+      }, { status: 422 });
     }
 
     console.error('[API_SIGN_UP_ERROR]', JSON.stringify(error, null, 2));
